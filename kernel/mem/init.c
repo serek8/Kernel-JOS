@@ -85,9 +85,9 @@ void mem_init(struct boot_info *boot_info)
 	 * still not accessible until lab 2.
 	 */
 	npages = MIN(BOOT_MAP_LIM, highest_addr) / PAGE_SIZE;
-
+	cprintf("npages = %d\n", npages);
 	/* Remove this line when you're ready to test this function. */
-	panic("mem_init: This function is not finished\n");
+	// panic("mem_init: This function is not finished\n");
 
 	/*
 	 * Allocate an array of npages 'struct page_info's and store it in 'pages'.
@@ -95,8 +95,9 @@ void mem_init(struct boot_info *boot_info)
 	 * physical page, there is a corresponding struct page_info in this array.
 	 * 'npages' is the number of physical pages in memory.  Your code goes here.
 	 */
-	pages = boot_alloc(npages * sizeof *pages);
-
+	pages = boot_alloc(npages * sizeof(struct page_info));
+	cprintf("pages = %p\n", pages);
+	cprintf("pages = %p\n", boot_alloc(0));
 	/*
 	 * Now that we've allocated the initial kernel data structures, we set
 	 * up the list of free physical pages. Once we've done so, all further
@@ -148,10 +149,18 @@ void page_init(struct boot_info *boot_info)
 	 */
 	for (i = 0; i < npages; ++i) {
 		/* LAB 1: your code here. */
+		list_init(&pages[i].pp_node);
+		pages[i].pp_ref = 0;
+		pages[i].pp_order = 0;
+		pages[i].pp_free = 0;
 	}
-
+	// cprintf("boot_info->mmap_addr = %p\n", boot_info->mmap_addr);
+	// cprintf("Kernel boot_info->mmap_addr = %p\n", KADDR(boot_info->mmap_addr));
 	entry = (struct mmap_entry *)KADDR(boot_info->mmap_addr);
+	// we need to update 'end' because boot_alloc used space beyond kernel area
 	end = PADDR(boot_alloc(0));
+
+	show_boot_mmap(boot_info); // #REMOVE#
 
 	/* Go through the entries in the memory map:
 	 *  1) Ignore the entry if the region is not free memory.
@@ -165,8 +174,44 @@ void page_init(struct boot_info *boot_info)
 	 *  - boot_info->elf_hdr points to the ELF header.
 	 *  - Any address in [KERNEL_LMA, end) is part of the kernel.
 	 */
+
+	/* LAB 1: your code here. */
+	 
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
-		/* LAB 1: your code here. */
+		if(entry->type != MMAP_FREE){
+			continue;
+		}
+		uint64_t region_page_index_start = (uint64_t)PAGE_INDEX(entry->addr);
+		uint64_t region_page_index_end = (uint64_t)PAGE_INDEX(MIN(entry->addr+entry->len, BOOT_MAP_LIM));
+		// cprintf("region_page_index_start =%p\nregion_page_index_end =%p\n", region_page_index_start, region_page_index_end);
+		uint64_t region_page_index = 0;
+		for (region_page_index = region_page_index_start; region_page_index < region_page_index_end; ++region_page_index) {
+
+			// Condition #1
+			if(region_page_index == 0){ 
+				// cprintf("Condition #1 !!!");
+				continue; 
+			}
+
+			// Condition #2
+			uint64_t elf_hdr_page_index_start = (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)boot_info->elf_hdr, PAGE_SIZE));
+			// 512*8 is the lenght of all sections in ELF header (boot/main.c:47), which is smaller than 1 page (4KB)
+			if(elf_hdr_page_index_start == region_page_index){ 
+				// cprintf("Condition #2 !!!");
+				continue; 
+			}
+
+			// Condition #3
+			if((uint64_t)PAGE_INDEX(KERNEL_LMA) <= region_page_index && 
+				region_page_index < (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)end, PAGE_SIZE))){
+					// cprintf("Condition #3 !!!");
+					continue;
+			}
+			// cprintf("page_free(%p)\n", region_page_index*1024*4);
+			page_free(&pages[i]);
+		}
+
+
 	}
 }
 

@@ -11,4 +11,3 @@ extern char bootstacktop[], bootstack[];
 void *boot_alloc(uint32_t n);
 void align_boot_info(struct boot_info *boot_info);
 void show_boot_mmap(struct boot_info *boot_info);
-
