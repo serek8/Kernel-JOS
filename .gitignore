@@ -1,0 +1,7 @@
+/obj
+/x86_64-elf-7.3.0-Linux-x86_64
+.settings
+gradelib.pyc
+._README
+.gdbrc
+jos.out
