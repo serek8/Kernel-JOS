@@ -5,3 +5,7 @@ gradelib.pyc
 ._README
 .gdbrc
 jos.out
+.DS_Store
+**/.DS_Store
+._.DS_Store
+**/._.DS_Store
