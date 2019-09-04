@@ -92,7 +92,34 @@ void show_buddy_info(void)
 struct page_info *buddy_merge(struct page_info *page)
 {
 	/* LAB 1: your code here. */
-	return NULL;
+	struct list *node;
+	uint64_t order = page->pp_order;
+	if(page->pp_order == BUDDY_MAX_ORDER-1){
+		return page;
+	}
+	list_foreach(&page_free_list[page->pp_order], node) {
+		struct page_info *page_buddy = container_of(node, struct page_info, pp_node);
+		physaddr_t page_pa = page2pa(page);
+		physaddr_t page_buddy_pa = page2pa(page_buddy);
+		physaddr_t page_buddy_correct_pa = page_pa ^ 1UL << (order+12);
+		// cprintf("(loop)page_pa(%p , %d) | page_buddy_pa(%p) | correct_pa(%p)\n", page_pa, page->pp_order, page_buddy_pa, page_buddy_correct_pa);
+		if(page_buddy_pa == page_buddy_correct_pa){ // Found correct buddies
+			struct page_info *l_page = page_pa < page_buddy_pa ? page : page_buddy;
+			struct page_info *p_page = page_pa < page_buddy_pa ? page_buddy : page;
+			// cprintf("ordered l_page_pa(%p) | p_page_pa(%p)\n", page2pa(l_page), page2pa(p_page));
+
+			// Remove the page_buddy from the page_free_list because we'll increase its order
+			if(l_page == page_buddy){
+				list_remove(&l_page->pp_node);
+			}
+			l_page->pp_order += 1;
+			p_page->pp_order += 1;
+			
+			return buddy_merge(l_page);
+		}
+	}
+	// Going beyond list_foreach means that no buddy was found	
+	return page;
 }
 
 /* Given the order req_order, attempts to find a page of that order or a larger
@@ -139,6 +166,9 @@ struct page_info *page_alloc(int alloc_flags)
 void page_free(struct page_info *pp)
 {
 	/* LAB 1: your code here. */
+	pp->pp_free = 0x1;
+	pp = buddy_merge(pp);
+	list_push(&page_free_list[pp->pp_order], &pp->pp_node); 
 }
 
 /*
