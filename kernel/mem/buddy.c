@@ -71,13 +71,15 @@ void show_buddy_info(void)
 {
 	/* LAB 1: your code here. */
 	if(lhs->pp_order-1 != req_order){
-		lhs = buddy_split(lhs, lhs->pp_order-1)
+		return buddy_split(lhs, lhs->pp_order-1);
 	}
-	list_remove(lhs);
+	list_remove(&lhs->pp_node);
 	physaddr_t lhs_pa = page2pa(lhs);
-	struct page_info *phs = pa2page(lhs_pa ^ 1UL << (order+12));
-	list_push(page_free_list[req_order], phs);
-	return lhs_pa;
+	struct page_info *phs = pa2page(lhs_pa ^ 1UL << (req_order+12));
+	lhs->pp_order -= 1;
+	phs->pp_order -= 1;
+	list_push(&page_free_list[req_order], &phs->pp_node);
+	return lhs;
 }
 
 /* Merges the buddy of the page with the page if the buddy is free to form
@@ -143,10 +145,7 @@ struct page_info *buddy_find(size_t req_order)
 	struct page_info *page;
 	struct list *node;
 	list_foreach(page_free_list + req_order, node) {
-		page = container_of(node, struct page_info, pp_node);
-		if(order == req_order){
-			return page;
-		}
+		return container_of(node, struct page_info, pp_node);
 	}
 	return buddy_split(buddy_find(req_order+1), req_order);
 }
@@ -173,9 +172,9 @@ struct page_info *page_alloc(int alloc_flags)
 		// huge here
 	}
 	else{
-		list_pop_left
-		list_remove(page_free_list[page->pp_order]);
-		
+		struct page_info *page = buddy_find(0);
+		list_remove(&page->pp_node);
+		return page;
 	}
 	return NULL;
 }
