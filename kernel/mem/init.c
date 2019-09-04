@@ -142,8 +142,12 @@ void page_init(struct boot_info *boot_info)
 			}
 
 			// Condition #2
-			if (pa == PAGE_ADDR(PADDR(boot_info)) || pa == (uintptr_t)boot_info->elf_hdr){
-				continue;
+			if (pa == PAGE_ADDR(PADDR(boot_info)) || 
+				(PAGE_ADDR(boot_info->mmap_addr) <= pa && 
+				    pa <= PAGE_ADDR(boot_info->mmap_addr+sizeof(struct mmap_entry)*boot_info->mmap_len)  
+				) || 
+				pa == (uintptr_t)boot_info->elf_hdr){
+					continue;
 			}
 
 			// Condition #3
