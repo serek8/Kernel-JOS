@@ -97,7 +97,14 @@ size_t count_total_free_pages(void)
  struct page_info *buddy_split(struct page_info *lhs, size_t req_order)
 {
 	/* LAB 1: your code here. */
-	return NULL;
+	if(lhs->pp_order-1 != req_order){
+		lhs = buddy_split(lhs, lhs->pp_order-1)
+	}
+	list_remove(lhs);
+	physaddr_t lhs_pa = page2pa(lhs);
+	struct page_info *phs = pa2page(lhs_pa ^ 1UL << (order+12));
+	list_push(page_free_list[req_order], phs);
+	return lhs_pa;
 }
 
 /* Merges the buddy of the page with the page if the buddy is free to form
@@ -159,7 +166,16 @@ struct page_info *buddy_merge(struct page_info *page)
 struct page_info *buddy_find(size_t req_order)
 {
 	/* LAB 1: your code here. */
-	return NULL;
+	size_t order;
+	struct page_info *page;
+	struct list *node;
+	list_foreach(page_free_list + req_order, node) {
+		page = container_of(node, struct page_info, pp_node);
+		if(order == req_order){
+			return page;
+		}
+	}
+	return buddy_split(buddy_find(req_order+1), req_order);
 }
 
 /*
@@ -180,6 +196,14 @@ struct page_info *buddy_find(size_t req_order)
 struct page_info *page_alloc(int alloc_flags)
 {
 	/* LAB 1: your code here. */
+	if(alloc_flags & ALLOC_HUGE){
+		// huge here
+	}
+	else{
+		list_pop_left
+		list_remove(page_free_list[page->pp_order]);
+		
+	}
 	return NULL;
 }
 
