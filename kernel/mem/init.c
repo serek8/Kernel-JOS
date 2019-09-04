@@ -129,31 +129,30 @@ void page_init(struct boot_info *boot_info)
 		if(entry->type != MMAP_FREE){
 			continue;
 		}
-		uint64_t region_page_index_start = (uint64_t)PAGE_INDEX(entry->addr);
-		uint64_t region_page_index_end = (uint64_t)PAGE_INDEX(MIN(entry->addr+entry->len, BOOT_MAP_LIM));
-		// cprintf("region_page_index_start =%p\nregion_page_index_end =%p\n", region_page_index_start, region_page_index_end);
-		uint64_t region_page_index = 0;
-		for (region_page_index = region_page_index_start; region_page_index < region_page_index_end; ++region_page_index) {
+		physaddr_t pa;
+		for (pa = entry->addr; pa < entry->addr + entry->len; pa += PAGE_SIZE){
+			if (pa >= BOOT_MAP_LIM){ // We mapped only 8 bytes
+				continue;
+			}
+			struct page_info *page = pa2page(pa);
 
 			// Condition #1
-			if(region_page_index == 0){ 
-				continue; 
+			if (pa == 0){
+				continue;
 			}
 
 			// Condition #2
-			uint64_t elf_hdr_page_index_start = (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)boot_info->elf_hdr, PAGE_SIZE));
-			// 512*8 is the lenght of all sections in ELF header (boot/main.c:47), which is smaller than 1 page (4KB)
-			if(elf_hdr_page_index_start == region_page_index){ 
-				continue; 
+			if (pa == PAGE_ADDR(PADDR(boot_info)) || pa == (uintptr_t)boot_info->elf_hdr){
+				continue;
 			}
 
 			// Condition #3
-			if((uint64_t)PAGE_INDEX(KERNEL_LMA) <= region_page_index && 
-				region_page_index < (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)end, PAGE_SIZE))){
-					continue;
+			if (KERNEL_LMA <= pa && pa < end) {
+				continue;
 			}
-			page_free(&pages[region_page_index]);
+			page_free(page);
 		}
 	}
 }
+
 
