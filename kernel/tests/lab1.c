@@ -178,11 +178,15 @@ void lab1_check_mem(struct boot_info *boot_info)
 	lab1_check_free_list_order();
 	lab1_check_memory_layout(boot_info);
 	// lab1_check_split_and_merge();
-	page_alloc(0);
-	// page_alloc(0);
-	// page_alloc(0);
-	// page_alloc(0);
-	// page_alloc(0);
+	for(int a=0; a<600; a++){page_alloc(0);}
 	show_buddy_info();
+	// page_alloc(0);
+	// show_buddy_info();
+	// page_alloc(0);
+	// show_buddy_info();
+	// page_alloc(0);
+	// show_buddy_info();
+	// page_alloc(0);
+	// show_buddy_info();
 	// page_alloc(0);
 }
