@@ -176,7 +176,6 @@ void page_init(struct boot_info *boot_info)
 	 */
 
 	/* LAB 1: your code here. */
-	 
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
 		if(entry->type != MMAP_FREE){
 			continue;
@@ -189,7 +188,6 @@ void page_init(struct boot_info *boot_info)
 
 			// Condition #1
 			if(region_page_index == 0){ 
-				// cprintf("Condition #1 !!!");
 				continue; 
 			}
 
@@ -197,21 +195,16 @@ void page_init(struct boot_info *boot_info)
 			uint64_t elf_hdr_page_index_start = (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)boot_info->elf_hdr, PAGE_SIZE));
 			// 512*8 is the lenght of all sections in ELF header (boot/main.c:47), which is smaller than 1 page (4KB)
 			if(elf_hdr_page_index_start == region_page_index){ 
-				// cprintf("Condition #2 !!!");
 				continue; 
 			}
 
 			// Condition #3
 			if((uint64_t)PAGE_INDEX(KERNEL_LMA) <= region_page_index && 
 				region_page_index < (uint64_t)PAGE_INDEX(ROUNDDOWN((uint64_t)end, PAGE_SIZE))){
-					// cprintf("Condition #3 !!!");
 					continue;
 			}
-			// cprintf("page_free(%p)\n", region_page_index*1024*4);
-			page_free(&pages[i]);
+			page_free(&pages[region_page_index]);
 		}
-
-
 	}
 }
 
