@@ -164,6 +164,9 @@ struct page_info *buddy_find(size_t req_order)
 	list_foreach(page_free_list + req_order, node) {
 		return container_of(node, struct page_info, pp_node);
 	}
+	if(req_order >= BUDDY_MAX_ORDER-1){
+		return NULL;
+	}
 	return buddy_split(buddy_find(req_order+1), req_order);
 }
 
