@@ -37,6 +37,8 @@ static inline void *_kaddr(const char *file, int line, physaddr_t pa)
 	return (void *)(pa + KERNEL_VMA);
 }
 
+#define ORDER_TO_SIZE(order) (1UL << (order+PAGE_TABLE_SHIFT))
+#define POISON_BYTE 0xaa
 
 enum {
 	/* For page_alloc, zero the returned physical page. */

@@ -178,4 +178,16 @@ void lab1_check_mem(struct boot_info *boot_info)
 	lab1_check_free_list_order();
 	lab1_check_memory_layout(boot_info);
 	lab1_check_split_and_merge();
+
+	// for(int i=0; i<100; i++){
+	// 	struct page_info *p = page_alloc(0);
+	// 	cprintf("p=%p\n", p);
+	// }
+	struct page_info *p = page_alloc(0);
+	page_free(p);
+	uint8_t *x = page2kva(p);
+	*x = 0xbb;
+	page_alloc(0);
+	// page_free(p);
+
 }
