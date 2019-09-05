@@ -17,3 +17,4 @@
 #include <kernel/mem/user.h>
 #include <kernel/mem/walk.h>
 
+#define BONUS_LAB1
