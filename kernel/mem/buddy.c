@@ -226,6 +226,16 @@ void page_free(struct page_info *pp)
 {
 	/* LAB 1: your code here. */
 	#ifdef BONUS_LAB1
+	// invalid free
+	uint8_t invalid = 1;
+	for(int i=0; i<npages; i++) {
+		if(pages+i == pp) {
+			invalid = 0;
+			break;
+		}
+	}
+	if(invalid) panic("invalid free\n");
+
 	// double free
 	if(pp->pp_free == 0x1) panic("double free");
 
