@@ -12,3 +12,4 @@
 #include <kernel/mem/tlb.h>
 #include <kernel/mem/walk.h>
 
+#define BONUS_LAB1

@@ -205,6 +205,9 @@ struct page_info *page_alloc(int alloc_flags)
 void page_free(struct page_info *pp)
 {
 	/* LAB 1: your code here. */
+	#ifdef BONUS_LAB1
+	if(pp->pp_free == 0x1) panic("double free");
+	#endif
 	pp->pp_free = 0x1;
 	pp = buddy_merge(pp);
 	list_push(&page_free_list[pp->pp_order], &pp->pp_node); 
