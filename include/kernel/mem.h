@@ -4,3 +4,4 @@
 #include <kernel/mem/buddy.h>
 #include <kernel/mem/init.h>
 
+#define BONUS_LAB1
