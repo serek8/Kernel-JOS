@@ -225,6 +225,35 @@ void lab1_check_split_and_merge(void)
 	cprintf("[LAB 1] check_split_and_merge() succeeded!\n");
 }
 
+// Bonus check: double free
+void lab_1_check_double_free(){
+	struct page_info *p = page_alloc(0);
+	page_free(p);
+	page_free(p);
+}
+
+// Bonus check: use-after-free
+void lab_1_check_use_after_free(){
+	struct page_info *p = page_alloc(0);
+	page_free(p);
+	uint8_t *x = page2kva(p);
+	*x = 0xbb;
+	page_alloc(0);
+}
+
+// Bonus check: invalid free
+void lab_1_check_invalid_free(){
+	struct page_info *invalid = (struct page_info*)0x99999;
+	page_free(invalid);
+}
+
+// Bonus check: page_info corruption
+void lab_1_check_page_info_corruption(){
+	struct page_info *p = page_alloc(0);
+	p->canary = 9;
+	page_free(p);
+}
+
 void lab1_check_mem(struct boot_info *boot_info)
 {
 	lab1_check_free_list_avail();
@@ -233,19 +262,9 @@ void lab1_check_mem(struct boot_info *boot_info)
 	lab1_check_buddy_consistency();
 	lab1_check_split_and_merge();
 
-	// for(int i=0; i<100; i++){
-	// 	struct page_info *p = page_alloc(0);
-	// 	cprintf("p=%p\n", p);
-	// }
-
-	// test use-after-free
-	// struct page_info *p = page_alloc(0);
-	// page_free(p);
-	// uint8_t *x = page2kva(p);
-	// *x = 0xbb;
-	// page_alloc(0);
-
-	// test invalid free
-	struct page_info *invalid = (struct page_info*)0x9999999999;
-	page_free(invalid);
+	// Use one check function at one time
+	// lab_1_check_double_free();
+	// lab_1_check_use_after_free();
+	// lab_1_check_invalid_free();
+	// lab_1_check_page_info_corruption();
 }
