@@ -102,7 +102,7 @@ size_t count_total_free_pages(void)
 	}
 	list_remove(&lhs->pp_node);
 	physaddr_t lhs_pa = page2pa(lhs);
-	struct page_info *phs = pa2page(lhs_pa ^ 1UL << (req_order+12));
+	struct page_info *phs = pa2page(lhs_pa ^ ORDER_TO_SIZE(req_order));
 	lhs->pp_order -= 1;
 	phs->pp_order -= 1;
 	list_push(&page_free_list[req_order], &phs->pp_node);
@@ -137,7 +137,7 @@ struct page_info *buddy_merge(struct page_info *page)
 		struct page_info *page_buddy = container_of(node, struct page_info, pp_node);
 		physaddr_t page_pa = page2pa(page);
 		physaddr_t page_buddy_pa = page2pa(page_buddy);
-		physaddr_t page_buddy_correct_pa = page_pa ^ 1UL << (order+12);
+		physaddr_t page_buddy_correct_pa = page_pa ^ ORDER_TO_SIZE(order);
 		if(page_buddy_pa == page_buddy_correct_pa){ // Found correct buddies
 			struct page_info *l_page = page_pa < page_buddy_pa ? page : page_buddy;
 			struct page_info *p_page = page_pa < page_buddy_pa ? page_buddy : page;
@@ -198,9 +198,19 @@ struct page_info *page_alloc(int alloc_flags)
 	assert(page != NULL);
 	page->pp_free = 0;
 	list_remove(&page->pp_node);
+
+	#ifdef BONUS_LAB1
+	uint8_t *page_ka = page2kva(page);
+	for(unsigned int i = 0; i<ORDER_TO_SIZE(page->pp_order); i++){
+		if(page_ka[i] != POISON_BYTE) {
+			panic("Use-after-free detection");
+		}
+	}
+	#endif
+
 	if(alloc_flags & ALLOC_ZERO){
 		void *page_ka = page2kva(page);
-		memset(page_ka, '\0', 1UL << (order+12));
+		memset(page_ka, '\0', ORDER_TO_SIZE(order));
 	}
 	return page;
 }
@@ -216,8 +226,13 @@ void page_free(struct page_info *pp)
 {
 	/* LAB 1: your code here. */
 	#ifdef BONUS_LAB1
+	// double free
 	if(pp->pp_free == 0x1) panic("double free");
+
+	// use-after-free
+	memset(page2kva(pp), POISON_BYTE, ORDER_TO_SIZE(pp->pp_order));
 	#endif
+	
 	pp->pp_free = 0x1;
 	pp = buddy_merge(pp);
 	list_push(&page_free_list[pp->pp_order], &pp->pp_node); 
