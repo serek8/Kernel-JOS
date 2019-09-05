@@ -190,6 +190,10 @@ struct page_info *page_alloc(int alloc_flags)
 	list_remove(&page->pp_node);
 
 	#ifdef BONUS_LAB1
+	// page_info corruption
+	if(page->canary != PAGE_CANARY) panic("page_info corruption\n");
+
+	// Use-after-free detection
 	uint8_t *page_ka = page2kva(page);
 	for(unsigned int i = 0; i<ORDER_TO_SIZE(page->pp_order); i++){
 		if(page_ka[i] != POISON_BYTE) {
@@ -216,6 +220,7 @@ void page_free(struct page_info *pp)
 {
 	/* LAB 1: your code here. */
 	#ifdef BONUS_LAB1
+
 	// invalid free
 	uint8_t invalid = 1;
 	for(int i=0; i<npages; i++) {
@@ -225,6 +230,9 @@ void page_free(struct page_info *pp)
 		}
 	}
 	if(invalid) panic("invalid free\n");
+
+	// page_info corruption
+	if(pp->canary != PAGE_CANARY) panic("page_info corruption\n");
 
 	// double free
 	if(pp->pp_free == 0x1) panic("double free");
