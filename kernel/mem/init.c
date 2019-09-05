@@ -160,6 +160,9 @@ void page_init(struct boot_info *boot_info)
 		pages[i].pp_ref = 0;
 		pages[i].pp_order = 0;
 		pages[i].pp_free = 0;
+		#ifdef BONUS_LAB1
+		pages[i].canary = PAGE_CANARY;
+		#endif
 	}
 	// cprintf("boot_info->mmap_addr = %p\n", boot_info->mmap_addr);
 	// cprintf("Kernel boot_info->mmap_addr = %p\n", KADDR(boot_info->mmap_addr));

@@ -4,6 +4,9 @@
 
 #include <x86-64/paging.h>
 
+#define PAGE_CANARY 0xdeadbeef
+#define BONUS_LAB1 1
+
 #ifndef __ASSEMBLER__
 /*
  * Page descriptor structures, mapped at USER_PAGES.
@@ -34,6 +37,10 @@ struct page_info {
 
 	/* Reserved. */
 	uint64_t pp_zero;
+
+	#ifdef BONUS_LAB1
+	uint32_t canary;
+	#endif
 };
 #endif /* !__ASSEMBLER__ */
 
