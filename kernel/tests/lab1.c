@@ -183,11 +183,15 @@ void lab1_check_mem(struct boot_info *boot_info)
 	// 	struct page_info *p = page_alloc(0);
 	// 	cprintf("p=%p\n", p);
 	// }
-	struct page_info *p = page_alloc(0);
-	page_free(p);
-	uint8_t *x = page2kva(p);
-	*x = 0xbb;
-	page_alloc(0);
-	// page_free(p);
 
+	// test use-after-free
+	// struct page_info *p = page_alloc(0);
+	// page_free(p);
+	// uint8_t *x = page2kva(p);
+	// *x = 0xbb;
+	// page_alloc(0);
+
+	// test invalid free
+	struct page_info *invalid = (struct page_info*)0x9999999999;
+	page_free(invalid);
 }
