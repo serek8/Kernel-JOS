@@ -21,6 +21,10 @@ def test_order():
 def test_memory_layout():
     r.match(r'\[LAB 1\] check_memory_layout\(\) succeeded!')
 
+@test(10, 'Buddy consistency', parent=test_jos)
+def test_memory_layout():
+    r.match(r'\[LAB 1\] check_buddy_consistency\(\) succeeded!')
+
 @test(10, 'Buddy split/merge', parent=test_jos)
 def test_split_and_merge():
     r.match(r'\[LAB 1\] check_split_and_merge\(\) succeeded!')

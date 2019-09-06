@@ -94,6 +94,59 @@ void lab1_check_memory_layout(struct boot_info *boot_info)
 	cprintf("[LAB 1] check_memory_layout() succeeded!\n");
 }
 
+void check_buddy_consistency(physaddr_t addr, size_t order, struct page_info *parent)
+{
+	struct page_info *page;
+
+	page = pa2page(addr);
+
+	if (parent && parent != page) {
+		if (page->pp_free || list_is_empty(&page->pp_node) ||
+			page->pp_order < parent->pp_order) {
+			panic("page %p of order %u is free, while parent page "
+				"%p of order %u is already free",
+				page2pa(page), page->pp_order,
+				page2pa(parent), parent->pp_order);
+		}
+	}
+
+	if (page->pp_free && list_is_empty(&page->pp_node)) {
+		panic("page %p of order %u is free, but not on the free list",
+			page2pa(page), page->pp_order);
+	}
+
+	if (!page->pp_free && !list_is_empty(&page->pp_node)) {
+		panic("page %p of order %u is in use, but on the free list",
+			page2pa(page), page->pp_order);
+	}
+
+	if (page->pp_free && list_is_empty(&page->pp_node)) {
+		parent = page;
+	}
+
+	if (order == 0) {
+		return;
+	}
+
+	--order;
+	check_buddy_consistency(addr, order, parent);
+	check_buddy_consistency(addr | (1 << (order + 12)), order, parent);
+}
+
+void lab1_check_buddy_consistency(void)
+{
+	struct page_info *page;
+	physaddr_t addr;
+
+	for (addr = 0;
+	     addr < BOOT_MAP_LIM;
+	     addr += (1 << (BUDDY_MAX_ORDER + 12 - 1))) {
+		check_buddy_consistency(addr, BUDDY_MAX_ORDER - 1, NULL);
+	}
+
+	cprintf("[LAB 1] check_buddy_consistency() succeeded!\n");
+}
+
 void lab1_check_split_and_merge(void)
 {
 	struct list stolen_free_list[10];
@@ -177,5 +230,6 @@ void lab1_check_mem(struct boot_info *boot_info)
 	lab1_check_free_list_avail();
 	lab1_check_free_list_order();
 	lab1_check_memory_layout(boot_info);
+	lab1_check_buddy_consistency();
 	lab1_check_split_and_merge();
 }
