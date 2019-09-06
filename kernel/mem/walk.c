@@ -101,6 +101,30 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	physaddr_t entry;
+	uintptr_t next = base;
+	int next_index = PML4_INDEX(next);
+	uintptr_t next_end = pml4_end(next);
+
+	//while(next_index <= PML4_INDEX(end)) {
+	while(1) {
+		entry = pml4->entries[next_index];
+		
+		if(walker->get_pml4e) walker->get_pml4e(&entry, next, next_end, walker);
+
+		if((entry & PAGE_PRESENT) == 1) {
+			pdpt_walk_range((struct page_table*)PAGE_ADDR(entry), next, next_end, walker);
+			if(walker->unmap_pml4e) walker->unmap_pml4e(&entry, next, next_end, walker);
+		} else {
+			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
+		}
+
+		if(next_index == 511) break;
+		next = pml4_end(next) + 1;
+		next_index = PML4_INDEX(next);
+		next_end = pml4_end(next);
+	}
+
 	return 0;
 }
 
