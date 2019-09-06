@@ -47,6 +47,7 @@
 #define PML4_INDEX(x)       (((x) >> PML4_SHIFT) & PML4_MASK)
 
 #define PAGE_MASK (0xFFFF000000000FFF)
+#define PAGE_UMASK (PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER)
 #define PAGE_ADDR(x) ((x) & ~PAGE_MASK)
 
 #define PF_PRESENT  (1 << 0)
