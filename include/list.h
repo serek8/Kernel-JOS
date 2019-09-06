@@ -25,14 +25,24 @@ static inline int list_is_empty(struct list *head)
 	return head->next == head;
 }
 
+static inline struct list *list_head(struct list *head)
+{
+	return (head->next == head) ? NULL : head->next;
+}
+
+static inline struct list *list_tail(struct list *head)
+{
+	return (head->prev == head) ? NULL : head->prev;
+}
+
 static inline struct list *list_next(struct list *head, struct list *node)
 {
-	return (node->next == head) ? node->next : NULL;
+	return (node->next == head) ? NULL : node->next;
 }
 
 static inline struct list *list_prev(struct list *head, struct list *node)
 {
-	return (node->prev == head) ? node->prev : NULL;
+	return (node->prev == head) ? NULL : node->prev;
 }
 
 void list_init(struct list *head);
