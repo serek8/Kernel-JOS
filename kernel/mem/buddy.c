@@ -56,6 +56,23 @@ void show_buddy_info(void)
 	cprintf("  free: %u kiB\n", nfree / 1024);
 }
 
+/* Gets the total amount of free pages. */
+size_t count_total_free_pages(void)
+{
+	struct page_info *page;
+	struct list *node;
+	size_t order;
+	size_t nfree_pages;
+	size_t nfree = 0;
+
+	for (order = 0; order < BUDDY_MAX_ORDER; ++order) {
+		nfree_pages = count_free_pages(order);
+		nfree += nfree_pages * (order + 1);
+	}
+
+	return nfree;
+}
+
 /* Splits lhs into free pages until the order of the page is the requested
  * order req_order.
  *

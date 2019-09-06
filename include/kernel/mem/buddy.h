@@ -54,6 +54,7 @@ enum {
 
 size_t count_free_pages(size_t order);
 void show_buddy_info(void);
+size_t count_total_free_pages(void);
 struct page_info *page_alloc(int alloc_flags);
 void page_free(struct page_info *pp);
 void page_decref(struct page_info *pp);
