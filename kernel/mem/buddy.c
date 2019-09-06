@@ -225,6 +225,8 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 			return -1;
 		}
 
+		++page->pp_ref;
+
 		if (page_insert(pml4, page, (char *)base + i * PAGE_SIZE,
 		    PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC) < 0) {
 			return -1;
