@@ -254,6 +254,12 @@ void lab_1_check_page_info_corruption(){
 	page_free(p);
 }
 
+void lab1_exhaust_memory() {
+	for(int i=0; i<10000; i++) {
+		struct page_info *p = page_alloc(0);
+	}
+}
+
 void lab1_check_mem(struct boot_info *boot_info)
 {
 	lab1_check_free_list_avail();
@@ -267,4 +273,7 @@ void lab1_check_mem(struct boot_info *boot_info)
 	// lab_1_check_use_after_free();
 	// lab_1_check_invalid_free();
 	// lab_1_check_page_info_corruption();
+
+	// exhaust memory
+	// lab1_exhaust_memory();
 }
