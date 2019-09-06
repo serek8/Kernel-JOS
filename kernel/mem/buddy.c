@@ -97,6 +97,11 @@ size_t count_total_free_pages(void)
  struct page_info *buddy_split(struct page_info *lhs, size_t req_order)
 {
 	/* LAB 1: your code here. */
+	// lhs will be NULL if there is no page bigger than requested order
+	if(lhs == NULL) {
+		return NULL;
+	}
+
 	if(lhs->pp_order-1 != req_order){
 		return buddy_split(lhs, lhs->pp_order-1);
 	}
@@ -166,11 +171,11 @@ struct page_info *buddy_find(size_t req_order)
 	size_t order;
 	struct page_info *page;
 	struct list *node;
+	if(req_order >= BUDDY_MAX_ORDER){
+		return NULL;
+	}
 	list_foreach(page_free_list + req_order, node) {
 		return container_of(node, struct page_info, pp_node);
-	}
-	if(req_order >= BUDDY_MAX_ORDER-1){
-		return NULL;
 	}
 	return buddy_split(buddy_find(req_order+1), req_order);
 }
@@ -195,7 +200,11 @@ struct page_info *page_alloc(int alloc_flags)
 	/* LAB 1: your code here. */
 	uint64_t order = (alloc_flags & ALLOC_HUGE) ? BUDDY_2M_PAGE : BUDDY_4K_PAGE; 
 	struct page_info *page = buddy_find(order);
-	assert(page != NULL);
+	
+	if(page == NULL) {
+		panic("Could not allocate page of order %d. Out of memory.", order);
+	}
+
 	page->pp_free = 0;
 	list_remove(&page->pp_node);
 
