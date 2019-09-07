@@ -19,6 +19,11 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct boot_map_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	cprintf("pa=%p, base=%p, end=%p, global_base=%p, global_end=%p\n", info->pa, base, end, info->base, info->end);
+
+	*entry = info->flags | PAGE_ADDR(info->pa);
+	info->pa += PAGE_SIZE;
+
 	return 0;
 }
 
@@ -59,7 +64,10 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 	};
 	struct page_walker walker = {
 		.get_pte = boot_map_pte,
-		.get_pde = boot_map_pde,
+		// .get_pde = boot_map_pde,
+		.get_pde = ptbl_alloc,
+		.get_pml4e = ptbl_alloc,
+		.get_pdpte = ptbl_alloc,
 		.udata = &info,
 	};
 
@@ -86,5 +94,17 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	size_t i;
 
 	/* LAB 2: your code here. */
+	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
+		struct elf_proghdr hdr = prog_hdr[i];
+		if(hdr.p_va < KERNEL_VMA) continue;
+		flags = PAGE_PRESENT;
+		if(hdr.p_flags & ELF_PROG_FLAG_EXEC){ // check if segment should be exectuable
+			flags &= ~(PAGE_NO_EXEC); 
+		} else {
+			flags += PAGE_NO_EXEC | PAGE_WRITE;
+		}
+		cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
+		boot_map_region(pml4, (void*)hdr.p_va, hdr.p_filesz, hdr.p_pa, flags);
+	}
 }
 
