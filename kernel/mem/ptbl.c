@@ -14,6 +14,15 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if(*entry & PAGE_PRESENT){
+		return 0;
+	}
+
+	struct page_info *page = page_alloc(0);
+	physaddr_t pa = page2pa(page);
+	page->pp_ref += 1;
+	*entry  = (PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER | PAGE_ADDR(pa));
+	cprintf("in ptbl_alloc\n");
 	return 0;
 }
 
