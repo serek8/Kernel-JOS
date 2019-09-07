@@ -42,35 +42,16 @@ int pml4_setup(struct boot_info *boot_info)
 	*     Permissions: kernel RW, user NONE
 	* Your code goes here:
 	*/
+	cprintf("bootstack=%p\n", bootstack);
 
-	/* Map in the pages from the buddy allocator as RW-. */
-	// void *va = (void*)0x40000;
-	// struct page_info *p = page_alloc(0);
-	// uint32_t *value = page2kva(p);
-	// value[10] = 0xdeadbeef;
-	// cprintf("will insert at va=%p\n", va);
-	// page_insert(kernel_pml4, p, va, 0);
-
-	// // lookup page at 0x40000	
-	// cprintf("will lookup va=%p\n", va);
-	// struct page_info *p_lookup = page_lookup(kernel_pml4, va, NULL);
-	// if(p_lookup != NULL) {
-	// 	uint32_t *value_lookup = page2kva(p_lookup);
-	// 	cprintf("value: %x\n", value_lookup[10]);
-	// } else {
-	// 	cprintf("lookup failed\n");
-	// }
-	// cprintf("will remove va=%p\n", va);
-	// page_remove(kernel_pml4, va);
-	// cprintf("will lookup again va=%p\n", va);
-	// p_lookup = page_lookup(kernel_pml4, va, NULL);
-	// if(p_lookup != NULL) {
-	// 	uint32_t *value_lookup = page2kva(p_lookup);
-	// 	cprintf("value: %x\n", value_lookup[10]);
-	// } else {
-	// 	cprintf("lookup failed\n");
-	// }
-
+	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
+		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
+		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), base_va+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	}
+	// add guard page
+	void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
+	page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
+	// TODO: check PTSIZE
 
 	// setting kernel pages
 	// dump_page_tables(kernel_pml4, PAGE_HUGE);
@@ -81,6 +62,7 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
+	buddy_migrate();
 
 	return 0;
 }
@@ -150,15 +132,18 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Setup the initial PML4 for the kernel. */
 	pml4_setup(boot_info);
-	return;
 
 	/* Enable the NX-bit. */
+	write_msr(MSR_EFER, MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
 	lab2_check_pml4();
 
 	/* Load the kernel PML4. */
-
+	write_cr3(PADDR(((void *)kernel_pml4)));
+	// load_pml4(kernel_pml4);
+	return;
+	
 	/* Check the paging functions. */
 	lab2_check_paging();
 
