@@ -37,6 +37,9 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 
 	/* Map in the pages from the buddy allocator as RW-. */
+	struct page_info *p = page_alloc(0);
+	cprintf("will insert");
+	page_insert(kernel_pml4, p, (void*)0x40000, 0);
 
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
@@ -110,6 +113,7 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Setup the initial PML4 for the kernel. */
 	pml4_setup(boot_info);
+	return;
 
 	/* Enable the NX-bit. */
 
