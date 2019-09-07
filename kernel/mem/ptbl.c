@@ -22,7 +22,7 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	physaddr_t pa = page2pa(page);
 	page->pp_ref += 1;
 	*entry  = (PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER | PAGE_ADDR(pa));
-	cprintf("in ptbl_alloc\n");
+	cprintf("ptbl_alloc, pa=%p\n", pa);
 	return 0;
 }
 
@@ -94,7 +94,7 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	cprintf("removing empty table\n");
 	struct page_info *page = pa2page(PAGE_ADDR(*entry));
-	page_decref(page);
+	page_free(page);
 
 	*entry = 0; // sets PAGE_PRESENT 
 	return 0;
