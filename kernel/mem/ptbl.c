@@ -85,14 +85,17 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(!(*entry & PAGE_PRESENT)){
 		return -1; // no page table is present
 	}
-
-	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(entry)));
+	
+	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
 	for(uint64_t i=0; i<PAGE_TABLE_ENTRIES; i++){
 		if(pt->entries[i] & PAGE_PRESENT){
 			return 0;
 		}
 	}
-	struct page_info *page = pa2page(*entry);
+	cprintf("removing empty table\n");
+	struct page_info *page = pa2page(PAGE_ADDR(*entry));
 	page_decref(page);
+
+	*entry = 0; // sets PAGE_PRESENT 
 	return 0;
 }
