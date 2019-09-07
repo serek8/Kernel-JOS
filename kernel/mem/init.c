@@ -44,9 +44,22 @@ int pml4_setup(struct boot_info *boot_info)
 	*/
 
 	/* Map in the pages from the buddy allocator as RW-. */
+	void *va = (void*)0x40000;
 	struct page_info *p = page_alloc(0);
-	cprintf("will insert");
-	page_insert(kernel_pml4, p, (void*)0x40000, 0);
+	uint32_t *value = page2kva(p);
+	value[10] = 0xdeadbeef;
+	cprintf("will insert at va=%p\n", va);
+	page_insert(kernel_pml4, p, va, 0);
+
+	// lookup page at 0x40000	
+	cprintf("will lookup va=%p\n", va);
+	struct page_info *p_lookup = page_lookup(kernel_pml4, va, NULL);
+	if(p_lookup != NULL) {
+		uint32_t *value_lookup = page2kva(p_lookup);
+		cprintf("value: %x\n", value_lookup[10]);
+	} else {
+		cprintf("lookup failed\n");
+	}
 
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
