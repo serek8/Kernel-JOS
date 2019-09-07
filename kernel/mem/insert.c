@@ -23,7 +23,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 2: your code here. */
 	// ptbl_alloc(entry, base, end, walker);
 	page = info->page;
-	*entry += PAGE_ADDR(page2pa(page));
+	*entry = PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER | PAGE_ADDR(page2pa(page));
 
 	return 0;
 }

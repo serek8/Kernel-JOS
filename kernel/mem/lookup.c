@@ -16,6 +16,10 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	if((*entry & PAGE_PRESENT) == 1) {
+		info->entry = entry;
+	}
+
 	return 0;
 }
 
@@ -53,9 +57,13 @@ struct page_info *page_lookup(struct page_table *pml4, void *va,
 		.udata = &info,
 	};
 
-	if (walk_page_range(pml4, va, (void *)((uintptr_t)va + PAGE_SIZE),
-		&walker) < 0)
-		return NULL;
+	if (walk_page_range(pml4, va, (void *)((uintptr_t)va + PAGE_SIZE), &walker) < 0) return NULL;
+	
+	// extract information from lookup_info struct, set in the callback functions lookup_pde, lookup_pte
+	if(info.entry) {
+		// TODO: store the address of the PTE in entry_store
+		return pa2page(PAGE_ADDR(*info.entry));
+	}
 
 	return NULL;
 }
