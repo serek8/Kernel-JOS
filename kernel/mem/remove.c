@@ -17,8 +17,10 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	cprintf("remove_pte\n");
 	if(*entry & PAGE_PRESENT){
-		struct page_info *page = pa2page(PAGE_ADDR(*entry));
+		*entry = 0; // set PRESENT flag to 0
+		struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
 		page_decref(page);
 	}
 	// TODO TLB
@@ -35,7 +37,6 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
-	ptbl_free(entry, base, end, walker);
 
 	return 0;
 }
@@ -50,8 +51,11 @@ void unmap_page_range(struct page_table *pml4, void *va, size_t size)
 	struct page_walker walker = {
 		.get_pte = remove_pte,
 		.get_pde = remove_pde,
-		.get_pml4e = ptbl_free,
-		.get_pdpte = ptbl_free,
+		.unmap_pte = ptbl_free,
+		.unmap_pde = ptbl_free,
+		.unmap_pdpte = ptbl_free,
+		.unmap_pml4e = ptbl_free,
+		
 		.udata = &info,
 	};
 

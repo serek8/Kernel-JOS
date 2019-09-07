@@ -60,6 +60,16 @@ int pml4_setup(struct boot_info *boot_info)
 	} else {
 		cprintf("lookup failed\n");
 	}
+	cprintf("will remove va=%p\n", va);
+	page_remove(kernel_pml4, va);
+	cprintf("will lookup again va=%p\n", va);
+	p_lookup = page_lookup(kernel_pml4, va, NULL);
+	if(p_lookup != NULL) {
+		uint32_t *value_lookup = page2kva(p_lookup);
+		cprintf("value: %x\n", value_lookup[10]);
+	} else {
+		cprintf("lookup failed\n");
+	}
 
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
