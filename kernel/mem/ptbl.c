@@ -22,7 +22,7 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	physaddr_t pa = page2pa(page);
 	page->pp_ref += 1;
 	*entry  = (PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_ADDR(pa));
-	cprintf("ptbl_alloc, pa=%p\n", pa);
+	cprintf("ptbl_alloc, pa=%p, PAGE_ADDR(pa))=%p\n", pa, PAGE_ADDR(pa));
 	return 0;
 }
 
