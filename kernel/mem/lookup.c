@@ -61,7 +61,7 @@ struct page_info *page_lookup(struct page_table *pml4, void *va,
 	
 	// extract information from lookup_info struct, set in the callback functions lookup_pde, lookup_pte
 	if(info.entry) {
-		// TODO: store the address of the PTE in entry_store
+		if(entry_store) *entry_store = info.entry;
 		return pa2page(PAGE_ADDR(*info.entry));
 	}
 
