@@ -94,9 +94,26 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	size_t i;
 
 	/* LAB 2: your code here. */
+
+	// identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM * with permissions RW-.
+	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
+	for(uint64_t i = 0; i<pages_num; ++i){
+		cprintf("identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM\n");
+		// struct page_info *p = pa2page(PADDR((void*)(KERNEL_VMA + (PAGE_SIZE*i))));
+		// page_insert(kernel_pml4, p, (void*)KERNEL_VMA + (PAGE_SIZE*i), 0);
+
+		struct page_info *p = pa2page(PADDR((void*)(KERNEL_VMA + (PAGE_SIZE*i))));
+		page_insert(kernel_pml4, p, (void*)KERNEL_VMA + (PAGE_SIZE*i), PAGE_PRESENT | PAGE_WRITE);
+	}
+
+
+
+
+	// PARSING ELF
+
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
-		if(hdr.p_va < KERNEL_VMA) continue;
+		// if(hdr.p_va < KERNEL_VMA) continue;
 		flags = PAGE_PRESENT;
 		if(hdr.p_flags & ELF_PROG_FLAG_EXEC){ // check if segment should be exectuable
 			flags &= ~(PAGE_NO_EXEC); 
@@ -105,6 +122,7 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 		}
 		cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		boot_map_region(pml4, (void*)hdr.p_va, hdr.p_filesz, hdr.p_pa, flags);
+		// boot_map_region(pml4, (void*)hdr.p_pa, hdr.p_filesz, hdr.p_pa, flags);
 	}
 }
 
