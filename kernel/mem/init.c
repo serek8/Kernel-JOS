@@ -49,6 +49,7 @@ int pml4_setup(struct boot_info *boot_info)
 	*/
 	cprintf("bootstack=%p, bootstack_top=%p, KSTACK_TOP=%p\n", bootstack, bootstack + KSTACK_SIZE, KSTACK_TOP);
 
+	// 1) Map kernel stack
 	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
 		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
 		void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
@@ -56,13 +57,14 @@ int pml4_setup(struct boot_info *boot_info)
 		// page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	}
+
+	// 2) add guard page
 	// add guard page
-	void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
-	page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
+	// void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
+	// page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
 	// TODO: check PTSIZE
 
-	// setting kernel pages
-	// dump_page_tables(kernel_pml4, PAGE_HUGE);
+	// 3) setting kernel pages
 	cprintf("==== setting kernel pages ====\n");
 	boot_map_kernel(kernel_pml4, boot_info->elf_hdr);
 	cprintf("==== setting kernel pages END ====\n");
@@ -70,7 +72,7 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
-	// buddy_migrate();
+	buddy_migrate();
 
 	return 0;
 }
@@ -148,10 +150,10 @@ void mem_init(struct boot_info *boot_info)
 	// lab2_check_pml4();
 
 	/* Load the kernel PML4. */
-	// return;
+	
 	write_cr3(PADDR(((void *)kernel_pml4)));
 	// load_pml4(kernel_pml4);
-	return;
+	// return;
 	
 	/* Check the paging functions. */
 	lab2_check_paging();

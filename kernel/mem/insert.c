@@ -23,7 +23,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 2: your code here. */
 	page = info->page;
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
-	cprintf("insert_pte: va=%p ==> pa=%p\n", (void*)base, page2pa(page));
+	// cprintf("insert_pte: va=%p ==> pa=%p\n", (void*)base, page2pa(page));
 
 	return 0;
 }
