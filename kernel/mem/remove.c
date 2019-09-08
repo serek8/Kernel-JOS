@@ -37,6 +37,12 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)){
+		struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
+		page_decref(page);
+		*entry = 0; // set PRESENT flag to 0
+	}
+	// TODO TLB
 
 	return 0;
 }
