@@ -47,7 +47,21 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
-	ptbl_alloc(entry, base, end, walker);
+	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
+		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
+		page_decref(old_page);
+		// TODO: invalidate TLB
+	}
+
+	page = info->page;
+	// 4K page
+	if(page->pp_order == BUDDY_4K_PAGE) {
+		ptbl_alloc(entry, base, end, walker);
+	} else {
+		// huge page
+		page->pp_ref++;
+		*entry = info->flags | PAGE_ADDR(page2pa(page));
+	}
 
 	return 0;
 }
@@ -81,10 +95,11 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
     uint64_t flags)
 {
 	/* LAB 2: your code here. */
-	struct insert_info info;
-	info.page = page;
-	info.pml4 = pml4;
-	info.flags = flags;
+	struct insert_info info = {
+		.page = page,
+		.pml4 = pml4,
+		.flags = flags,
+	};
 
 	struct page_walker walker = {
 		.get_pte = insert_pte,
@@ -93,6 +108,17 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		.get_pdpte = ptbl_alloc,
 		.udata = &info,
 	};
+
+	// check if PAGE_PRESENT is set
+	if(!(flags & PAGE_PRESENT)) return -1;
+
+	// check if huge page is aligned
+	if(page->pp_order == BUDDY_2M_PAGE && !hpage_aligned((uintptr_t)va)) return -1;
+
+	// add flag for huge page
+	if(page->pp_order == BUDDY_2M_PAGE) info.flags = info.flags | PAGE_HUGE;
+
+	// TODO: handle corner case
 
 
 	return walk_page_range(pml4, va, (void *)((uintptr_t)va + PAGE_SIZE),
