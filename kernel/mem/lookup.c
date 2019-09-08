@@ -16,7 +16,7 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
-	if((*entry & PAGE_PRESENT) == 1) {
+	if(*entry & PAGE_PRESENT) {
 		info->entry = entry;
 	}
 
@@ -31,6 +31,10 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
+		info->entry = entry;
+	}
+
 	return 0;
 }
 
