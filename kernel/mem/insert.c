@@ -21,7 +21,13 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page;
 
 	/* LAB 2: your code here. */
+	if(*entry & PAGE_PRESENT) {
+		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
+		page_decref(old_page);
+		// TODO: invalidate TLB
+	}
 	page = info->page;
+	page->pp_ref++;
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
 
 	return 0;
