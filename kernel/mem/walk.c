@@ -209,8 +209,8 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
 int walk_page_range(struct page_table *pml4, void *base, void *end,
 	struct page_walker *walker)
 {
-	return pml4_walk_range(pml4, ROUNDDOWN((uintptr_t)base, PAGE_SIZE),
-		ROUNDUP((uintptr_t)end, PAGE_SIZE) - 1, walker);
+	return pml4_walk_range(pml4, sign_extend(ROUNDDOWN((uintptr_t)base, PAGE_SIZE)),
+		sign_extend(ROUNDUP((uintptr_t)end, PAGE_SIZE)) - 1, walker);
 }
 
 /* Helper function to walk over all pages. */

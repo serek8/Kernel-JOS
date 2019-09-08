@@ -13,6 +13,11 @@ extern struct list page_free_list[];
 /* The kernel's initial PML4. */
 struct page_table *kernel_pml4;
 
+static uintptr_t sign_extend2(uintptr_t addr)
+{
+	return (addr < USER_LIM) ? addr : (0xffff000000000000ull | addr);
+}
+
 /* This function sets up the initial PML4 for the kernel. */
 int pml4_setup(struct boot_info *boot_info)
 {
@@ -38,7 +43,10 @@ int pml4_setup(struct boot_info *boot_info)
 
 	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
 		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
-		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), base_va+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+		void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
+		cprintf("creating stack for cr3, va=%p ==> pa=%p\n", new_va_addr, (void*)(bootstack+i));
+		// page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	}
 	// add guard page
 	void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
@@ -54,7 +62,7 @@ int pml4_setup(struct boot_info *boot_info)
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
-	buddy_migrate();
+	// buddy_migrate();
 
 	return 0;
 }
@@ -126,12 +134,13 @@ void mem_init(struct boot_info *boot_info)
 	pml4_setup(boot_info);
 
 	/* Enable the NX-bit. */
-	write_msr(MSR_EFER, MSR_EFER_NXE);
+	// write_msr(MSR_EFER, MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
-	lab2_check_pml4();
+	// lab2_check_pml4();
 
 	/* Load the kernel PML4. */
+	// return;
 	write_cr3(PADDR(((void *)kernel_pml4)));
 	// load_pml4(kernel_pml4);
 	return;
