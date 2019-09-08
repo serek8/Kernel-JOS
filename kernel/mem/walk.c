@@ -60,7 +60,7 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
 
 		if(walker->get_pte) walker->get_pte(entry, next, next_end, walker);
 
-		if((*entry & PAGE_PRESENT) == 1) {
+		if(*entry & PAGE_PRESENT) {
 			if(walker->unmap_pte) walker->unmap_pte(entry, next, next_end, walker);
 		} else {
 			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
@@ -100,10 +100,11 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 
 		if(walker->get_pde) walker->get_pde(entry, next, next_end, walker);
 
-		if((*entry & PAGE_PRESENT) == 1) {
-			// TODO: consider huge page
-			ptbl_walk_range((struct page_table*)PAGE_ADDR(*entry), next, MIN(end, next_end), walker);
-			if(walker->unmap_pde) walker->unmap_pde(entry, next, next_end, walker);
+		if(*entry & PAGE_PRESENT) {
+			if(!(*entry & PAGE_HUGE)) {
+				ptbl_walk_range((struct page_table*)PAGE_ADDR(*entry), next, MIN(end, next_end), walker);
+				if(walker->unmap_pde) walker->unmap_pde(entry, next, next_end, walker);
+			}
 		} else {
 			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
 		}
@@ -143,8 +144,8 @@ static int pdpt_walk_range(struct page_table *pdpt, uintptr_t base,
 
 		if(walker->get_pdpte) walker->get_pdpte(entry, next, next_end, walker);
 
-		if((*entry & PAGE_PRESENT) == 1) {
-			// TODO: consider huge page
+		if(*entry & PAGE_PRESENT) {
+			// TODO: consider large page
 			pdir_walk_range((struct page_table*)PAGE_ADDR(*entry), next, MIN(end, next_end), walker);
 			if(walker->unmap_pdpte) walker->unmap_pdpte(entry, next, next_end, walker);
 		} else {
@@ -186,7 +187,7 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
 		
 		if(walker->get_pml4e) walker->get_pml4e(entry, next, next_end, walker);
 
-		if((*entry & PAGE_PRESENT) == 1) {
+		if(*entry & PAGE_PRESENT) {
 			pdpt_walk_range((struct page_table*)PAGE_ADDR(*entry), next, MIN(end, next_end), walker);
 			if(walker->unmap_pml4e) walker->unmap_pml4e(entry, next, next_end, walker);
 		} else {
