@@ -42,14 +42,14 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 
 	// 1) Map kernel stack
-	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
-		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
-		void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
-		cprintf("creating stack for cr3, va=%p ==> pa=%p\n", new_va_addr, (void*)(bootstack+i));
-		// page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	}
-
+	// for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
+	// 	void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
+	// 	void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
+	// 	cprintf("creating stack for cr3, va=%p ==> pa=%p\n", new_va_addr, (void*)(bootstack+i));
+	// 	// page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	// 	page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	// }
+	
 	// 2) add guard page
 	// add guard page
 	// void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
@@ -60,10 +60,11 @@ int pml4_setup(struct boot_info *boot_info)
 	cprintf("==== setting kernel pages ====\n");
 	boot_map_kernel(kernel_pml4, boot_info->elf_hdr);
 	cprintf("==== setting kernel pages END ====\n");
-
+	return 0;
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
+	
 	buddy_migrate();
 
 	return 0;
@@ -143,7 +144,7 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Load the kernel PML4. */
 	
-	write_cr3(PADDR(((void *)kernel_pml4)));
+	// write_cr3(PADDR(((void *)kernel_pml4)));
 	// load_pml4(kernel_pml4);
 	// return;
 	
@@ -229,6 +230,7 @@ void page_init(struct boot_info *boot_info)
 
 			// Condition #1
 			if (pa == 0){
+				page->pp_ref +=1;
 				continue;
 			}
 
@@ -238,11 +240,13 @@ void page_init(struct boot_info *boot_info)
 				    pa <= PAGE_ADDR(boot_info->mmap_addr+sizeof(struct mmap_entry)*boot_info->mmap_len)  
 				) || 
 				pa == (uintptr_t)boot_info->elf_hdr){
+					page->pp_ref +=1;
 					continue;
 			}
 
 			// Condition #3
 			if (KERNEL_LMA <= pa && pa < end) {
+				page->pp_ref +=1;
 				continue;
 			}
 			page_free(page);

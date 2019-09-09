@@ -109,7 +109,7 @@ size_t count_total_free_pages(void)
 	physaddr_t lhs_pa = page2pa(lhs);
 	struct page_info *phs = pa2page(lhs_pa ^ ORDER_TO_SIZE(req_order));
 	lhs->pp_order -= 1;
-	phs->pp_order -= 1;
+	phs->pp_order = lhs->pp_order;
 	list_push(&page_free_list[req_order], &phs->pp_node);
 	return lhs;
 }
@@ -150,7 +150,7 @@ struct page_info *buddy_merge(struct page_info *page)
 			// Remove the page_buddy from the page_free_list because we'll increase its order
 			list_remove(&page_buddy->pp_node);
 			l_page->pp_order += 1;
-			p_page->pp_order += 1;
+			p_page->pp_order = 0;
 			return buddy_merge(l_page);
 		}
 	}
