@@ -18,9 +18,7 @@
 #define KERNEL_LIM UINT64_C(0xffffffffffffffff)
 #endif
 
-/* User accessible page tables. These are the only addresses at which they are
- * contiguous.
- */
+/* A fixed location for the array of page_info structs. */
 #ifdef __ASSEMBLER__
 #define KPAGES 0xFFFFFF8000000000
 #else
