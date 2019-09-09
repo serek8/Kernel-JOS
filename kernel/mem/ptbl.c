@@ -120,7 +120,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		page_decref(pte_page);
 		tlb_invalidate(info->pml4, (void*)(base + PAGE_SIZE * i));
 	}
-	page_free(pt_page);
+	page_decref(pt_page);
 
 	cprintf("All pages can be merged into a huge page!\n");
 	
@@ -149,7 +149,7 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	cprintf("removing empty table\n");
 	struct page_info *page = pa2page(PAGE_ADDR(*entry));
-	page_free(page);
+	page_decref(page);
 
 	*entry = 0; // sets PAGE_PRESENT 
 	return 0;
