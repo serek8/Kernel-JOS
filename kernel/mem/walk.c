@@ -95,10 +95,10 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 
 	// cprintf("init pdir_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 	while(next_index <= PAGE_DIR_INDEX(end)) {
-		// cprintf("pdir_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
+		// cprintf("    pdir_walk_range, next_index=%d, next=%p, base=%p, end=%p, next_end=%p\n", next_index, next, base, end, next_end);
 		entry = &pdir->entries[next_index];
 
-		if(walker->get_pde) walker->get_pde(entry, next, next_end, walker);
+		if(walker->get_pde) walker->get_pde(entry, next, MIN(end, next_end), walker);  // Jan changed next_end to end | TODO checkme
 
 		if(*entry & PAGE_PRESENT) {
 			if(!(*entry & PAGE_HUGE)) {
@@ -139,7 +139,7 @@ static int pdpt_walk_range(struct page_table *pdpt, uintptr_t base,
 
 	// cprintf("init pdpt_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 	while(next_index <= PDPT_INDEX(end)) {
-		// cprintf("pdpt_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
+		// cprintf("  pdpt_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 		entry = &pdpt->entries[next_index];
 
 		if(walker->get_pdpte) walker->get_pdpte(entry, next, next_end, walker);
