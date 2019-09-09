@@ -155,7 +155,9 @@ void mem_init(struct boot_info *boot_info)
 	lab2_check_paging();
 
 	/* Add the rest of the physical memory to the buddy allocator. */
-	// page_init_ext(boot_info);
+	cprintf("Add the rest of the physical memory to the buddy allocator\n");
+	page_init_ext(boot_info);
+	cprintf("END - Add the rest of the physical memory to the buddy allocator\n");
 
 	/* Check the buddy allocator. */
 	lab2_check_buddy(boot_info);
@@ -225,7 +227,8 @@ void page_init(struct boot_info *boot_info)
 
 			// Condition #1
 			if (pa == 0){
-				page->pp_ref +=1;
+				page->pp_ref +=1; // TODO: maybe set page->pp_free=0
+				page->pp_free = 0;
 				continue;
 			}
 
@@ -236,12 +239,14 @@ void page_init(struct boot_info *boot_info)
 				) || 
 				pa == (uintptr_t)boot_info->elf_hdr){
 					page->pp_ref +=1;
+					page->pp_free = 0;
 					continue;
 			}
 
 			// Condition #3
 			if (KERNEL_LMA <= pa && pa < end) {
 				page->pp_ref +=1;
+				page->pp_free = 0;
 				continue;
 			}
 			page_free(page);
@@ -269,7 +274,54 @@ void page_init_ext(struct boot_info *boot_info)
 	 *  4) Hand the page to the buddy allocator by calling page_free().
 	 */
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
-		/* LAB 2: your code here. */
+		/* LAB 2: your code here. */	
+		if(entry->type != MMAP_FREE){
+			continue;
+		}
+		physaddr_t pa;
+		for (pa = entry->addr; pa < entry->addr + entry->len; pa += PAGE_SIZE){
+			if (pa < BOOT_MAP_LIM){ // We mapped only 8 bytes
+				continue;
+			}
+			// cprintf("npages=%d, PAGE_INDEX=%d\n", npages, PAGE_INDEX(pa));
+			if(npages <= PAGE_INDEX(pa)){
+				buddy_map_chunk(kernel_pml4, PAGE_INDEX(pa));
+			}
+			struct page_info *page = pa2page(pa);
+			// Condition #1
+			if (pa == 0){
+				page->pp_free = 0;
+				continue;
+			}
+
+			// Condition #2
+			if (pa == PAGE_ADDR(PADDR(boot_info)) || 
+				(PAGE_ADDR(boot_info->mmap_addr) <= pa && 
+				    pa <= PAGE_ADDR(boot_info->mmap_addr+sizeof(struct mmap_entry)*boot_info->mmap_len)  
+				) || 
+				pa == (uintptr_t)boot_info->elf_hdr){
+					page->pp_free = 0;
+					continue;
+			}
+
+			// Condition #3
+			if (KERNEL_LMA <= pa && pa < end) {
+				page->pp_free = 0;
+				continue;
+			}
+
+			// // Check if already belongs to 'pages'
+			// if (pa/PAGE_SIZE < npages) {
+			// 	cprintf("already belongs to pages, pa=%p\n", pa);
+			// 	continue;
+			// }
+
+			// cprintf("free new page, pa=%p\n", pa);
+			// struct page_info *page = pa2page(pa);
+			page->canary = PAGE_CANARY;
+			page_free(page);
+			// cprintf("after free\n", pa);
+		}
 	}
 }
 
