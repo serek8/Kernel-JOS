@@ -11,6 +11,7 @@ BOOT_OBJS := \
     $(OBJDIR)/boot/boot1.o \
     $(OBJDIR)/boot/boot2.o \
     $(OBJDIR)/boot/a20.o \
+    $(OBJDIR)/boot/compat.o \
     $(OBJDIR)/boot/mmap.o \
     $(OBJDIR)/boot/main.o
 

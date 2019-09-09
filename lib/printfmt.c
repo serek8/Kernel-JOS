@@ -20,16 +20,14 @@
  * equivalent.
  */
 
-static const char * const error_string[MAXERROR] =
-{
-	[E_UNSPECIFIED]     = "unspecified error",
-	[E_BAD_ENV]         = "bad environment",
-	[E_INVAL]           = "invalid parameter",
-	[E_NO_MEM]          = "out of memory",
-	[E_NO_FREE_ENV]     = "out of environments",
-	[E_FAULT]           = "segmentation fault",
-	[E_IPC_NOT_RECV]    = "env is not recving",
-	[E_EOF]             = "unexpected end of file",
+static const char * const error_string[] = {
+	[EAGAIN] = "Resources temporarily unavailable",
+	[ECHILD] = "No child process",
+	[EFAULT] = "Bad address",
+	[EINVAL] = "Invalid argument",
+	[ENOMEM] = "Not enough space",
+	[ENOSYS] = "Function not implemented",
+	[EPERM] = "Operation not permitted",
 };
 
 /*
@@ -172,7 +170,7 @@ void vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt,
 			err = va_arg(ap, int);
 			if (err < 0)
 				err = -err;
-			if (err >= MAXERROR || (p = error_string[err]) == NULL)
+			if (err >= length_of(error_string) || (p = error_string[err]) == NULL)
 				printfmt(putch, putdat, "error %d", err);
 			else
 				printfmt(putch, putdat, "%s", p);
@@ -276,7 +274,7 @@ int vsnprintf(char *buf, int n, const char *fmt, va_list ap)
 	struct sprintbuf b = {buf, buf+n-1, 0};
 
 	if (buf == NULL || n < 1)
-		return -E_INVAL;
+		return -EINVAL;
 
 	/* Print the string to the buffer. */
 	vprintfmt((void*)sprintputch, &b, fmt, ap);

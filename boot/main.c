@@ -37,6 +37,9 @@
 void readsect(void*, uint32_t);
 void readseg(uint32_t, uint32_t, uint32_t);
 
+extern void puts32(const char *s);
+extern void read_sector32(void *, uint32_t);
+
 void bootmain(struct boot_info *boot_info)
 {
 	struct elf_proghdr *ph, *eph;
@@ -44,11 +47,13 @@ void bootmain(struct boot_info *boot_info)
 	boot_info->elf_hdr = ELFHDR;
 
 	/* read 1st page off disk */
-	readseg((uint32_t) ELFHDR, SECTSIZE*8, 0);
+	readseg((uint32_t) ELFHDR, SECTSIZE * 8, 0);
 
 	/* is this a valid ELF? */
-	if (ELFHDR->e_magic != ELF_MAGIC)
+	if (ELFHDR->e_magic != ELF_MAGIC) {
+		puts32("bad ELF");
 		goto bad;
+	}
 
 	/* load each program segment (ignores ph flags) */
 	ph = (struct elf_proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
@@ -68,6 +73,18 @@ bad:
 	outw(0x8A00, 0x8E00);
 	while (1)
 		/* do nothing */;
+}
+
+void *memcpy(void *dst, const void *src, size_t n)
+{
+	const char *s = src;
+	char *d = dst;
+
+	while (n--) {
+		*d++ = *s++;
+	}
+
+	return dst;
 }
 
 /*
@@ -100,27 +117,9 @@ void readseg(uint32_t pa, uint32_t count, uint32_t offset)
 	}
 }
 
-void waitdisk(void)
-{
-	/* wait for disk ready */
-	while ((inb(0x1F7) & 0xC0) != 0x40)
-		/* do nothing */;
-}
-
 void readsect(void *dst, uint32_t offset)
 {
-	waitdisk();
-
-	outb(0x1F2, 1); /* count = 1 */
-	outb(0x1F3, offset);
-	outb(0x1F4, offset >> 8);
-	outb(0x1F5, offset >> 16);
-	outb(0x1F6, (offset >> 24) | 0xE0);
-	outb(0x1F7, 0x20); /* cmd 0x20 - read sectors */
-
-	waitdisk();
-
-	/* read a sector */
-	insl(0x1F0, dst, SECTSIZE/4);
+	read_sector32((void *)0x1000, offset);
+	memcpy(dst, (void *)0x1000, SECTSIZE);
 }
 

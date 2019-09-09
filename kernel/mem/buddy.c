@@ -322,7 +322,13 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 		if (!page) {
 			return -1;
 		}
+<<<<<<< HEAD
 		// cprintf("buddy_map_chunk: free page_insert, i=%d, va=%p pa=%p\n", i, base + i * PAGE_SIZE, page2pa(page));
+=======
+
+		++page->pp_ref;
+
+>>>>>>> master
 		if (page_insert(pml4, page, (char *)base + i * PAGE_SIZE,
 		    PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC) < 0) {
 			return -1;

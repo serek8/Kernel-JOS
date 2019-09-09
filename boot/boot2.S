@@ -28,13 +28,13 @@ boot2:
 	/* Load the global descriptor table and set up the segment registers. */
 	lgdt gdtr
 
-	movw $GDT_KDATA, %ax
+	movw $0x10, %ax
 	movw %ax, %ds
 	movw %ax, %es
 	movw %ax, %fs
 	movw %ax, %gs
 	movw %ax, %ss
-	ljmp $GDT_KCODE, $boot32
+	ljmp $0x8, $boot32
 
 .code32
 boot32:
@@ -57,20 +57,35 @@ gdt:
 	.word 0
 	.byte 0
 
-	/* Kernel code descriptor. */
-	.word 0xFFFF
+	/* 32-bit code descriptor. */
+	.word 0xffff
 	.word 0
 	.byte 0
-	.word GDT_KCODE_FLAGS | GDT_SIZE | GDT_GRANULARITY | GDT_LIMIT(0xF)
+	.word GDT_EXEC | GDT_DEFAULT | GDT_PRESENT | GDT_SIZE | GDT_GRANULARITY | GDT_LIMIT(0xf)
 	.byte 0
 
-	/* Kernel data descriptor. */
-	.word 0xFFFF
+	/* 32-bit data descriptor. */
+	.word 0xffff
 	.word 0
 	.byte 0
-	.word GDT_KDATA_FLAGS | GDT_SIZE | GDT_GRANULARITY | GDT_LIMIT(0xF)
+	.word GDT_RW | GDT_DEFAULT | GDT_PRESENT | GDT_SIZE | GDT_GRANULARITY | GDT_LIMIT(0xf)
 	.byte 0
 
+	/* 16-bit code descriptor. */
+	.word 0xffff
+	.word 0
+	.byte 0
+	.word GDT_EXEC | GDT_DEFAULT | GDT_PRESENT | GDT_LIMIT(0xf)
+	.byte 0
+
+	/* 16-bit data descriptor. */
+	.word 0xffff
+	.word 0
+	.byte 0
+	.word GDT_RW | GDT_DEFAULT | GDT_PRESENT | GDT_LIMIT(0xf)
+	.byte 0
+
+.global gdtr
 gdtr:
 	.word . - gdt - 1
 	.long gdt
@@ -78,5 +93,5 @@ gdtr:
 .section .rodata
 
 .global test
-error_a20: .ascii "error: unable to enable the A20 line.\r\n\0"
+error_a20: .ascii "error: unable to enable the A20 line.\0"
 
