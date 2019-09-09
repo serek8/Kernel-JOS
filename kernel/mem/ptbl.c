@@ -83,6 +83,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		return 0;
 	}
 
+	struct insert_info *info = walker->udata;
 	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
 	struct page_info *pt_page = pa2page(PAGE_ADDR(*entry));
 	uint64_t flags = 0;
@@ -117,6 +118,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
 		page_decref(pte_page);
+		tlb_invalidate(info->pml4, (void*)(base + PAGE_SIZE * i));
 	}
 	page_free(pt_page);
 
