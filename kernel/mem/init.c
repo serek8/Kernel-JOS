@@ -60,12 +60,16 @@ int pml4_setup(struct boot_info *boot_info)
 	cprintf("==== setting kernel pages ====\n");
 	boot_map_kernel(kernel_pml4, boot_info->elf_hdr);
 	cprintf("==== setting kernel pages END ====\n");
-	// return 0;
+	
+	// 4) Buddy migrate
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
+	// 3) set mapping for pages before migrate
+	boot_map_region(kernel_pml4, (void*)KPAGES, ROUNDUP(npages * sizeof(struct page_info), PAGE_SIZE), PADDR(pages), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	cprintf("mapped pages before migrate\n");
+	buddy_migrate();
 	
-	// buddy_migrate();
 
 	return 0;
 }
@@ -146,14 +150,12 @@ void mem_init(struct boot_info *boot_info)
 	cprintf("works in old cr3\n");
 	write_cr3(PADDR(((void *)kernel_pml4)));
 	cprintf("works in new cr3\n");
-	// load_pml4(kernel_pml4);
-	// return;
 	
 	/* Check the paging functions. */
 	lab2_check_paging();
 
 	/* Add the rest of the physical memory to the buddy allocator. */
-	page_init_ext(boot_info);
+	// page_init_ext(boot_info);
 
 	/* Check the buddy allocator. */
 	lab2_check_buddy(boot_info);
