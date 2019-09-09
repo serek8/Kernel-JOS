@@ -20,7 +20,7 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	uintptr_t offset = base - info->base;
-	cprintf("boot_map_pte: pa=%p, base=%p, end=%p\n", info->pa + offset, base, end);
+	cprintf("boot_map_pte: pa=%p, base=%p, end=%p, flags=%x\n", info->pa + offset, base, end, info->flags);
 	*entry = info->flags | PAGE_ADDR(info->pa + offset);
 	return 0;
 }
@@ -46,7 +46,7 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		cprintf("boot_map_pde: mapped as HUGE page | va=%p, pa=%p\n", base, info->pa+offset);
 	} 
 	else if(*entry & PAGE_PRESENT &&  *entry != PAGE_HUGE){
-		cprintf("boot_map_pde: entry exist, mapped as SMALL page\n");
+		cprintf("boot_map_pde: entry exist, mapped as SMALL page | va=%p, pa=%p\n", base, info->pa+offset);
 	}
 	else{
 		cprintf("boot_map_pde: entry doesnt exist or huge, pa=%p\n", base, info->pa+offset);
@@ -113,6 +113,8 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	cprintf(">> identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM\n");
 	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
 	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE);
+	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, (KERNEL_VMA), PAGE_PRESENT | PAGE_WRITE);
+	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, (KERNEL_VMA), PAGE_PRESENT | PAGE_WRITE);
 	
 	
 	// 2) PARSING ELF
