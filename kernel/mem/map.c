@@ -150,5 +150,9 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 		cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		boot_map_region(pml4, (void*)hdr.p_va, hdr.p_filesz, hdr.p_pa, flags);
 	}
+
+	// // 3) set mapping for pages before migrate
+	// boot_map_region(pml4, (void*)KPAGES, ROUNDUP(npages * sizeof(struct page_info), PAGE_SIZE), PADDR(pages), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	// cprintf("mapped pages before migrate\n");
 }
 
