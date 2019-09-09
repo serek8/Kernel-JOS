@@ -19,11 +19,9 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct boot_map_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
-	cprintf("pa=%p, base=%p, end=%p, global_base=%p, global_end=%p\n", info->pa, base, end, info->base, info->end);
-
-	*entry = info->flags | PAGE_ADDR(info->pa);
-	info->pa += PAGE_SIZE;
-
+	uintptr_t offset = base - info->base;
+	cprintf("boot_map_pte: pa=%p, base=%p, end=%p\n", info->pa + offset, base, end);
+	*entry = info->flags | PAGE_ADDR(info->pa + offset);
 	return 0;
 }
 
@@ -39,6 +37,22 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct boot_map_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+
+	uintptr_t offset = base - info->base;
+	// cprintf("base=%p, end=%p, pa=%p, info->base=%p, offset=%p\n", base, end, info->pa, info->base, offset);
+
+	if((*entry & PAGE_PRESENT) == 0 && end - base + 1 == HPAGE_SIZE){ // && end - base == 2MB
+		*entry = info->flags | PAGE_HUGE | PAGE_PRESENT | PAGE_ADDR(info->pa+offset);
+		cprintf("boot_map_pde: mapped as HUGE page | va=%p, pa=%p\n", base, info->pa+offset);
+	} 
+	else if(*entry & PAGE_PRESENT &&  *entry != PAGE_HUGE){
+		cprintf("boot_map_pde: entry exist, mapped as SMALL page\n");
+	}
+	else{
+		cprintf("boot_map_pde: entry doesnt exist or huge, pa=%p\n", base, info->pa+offset);
+		ptbl_split(entry, base, end, walker);
+	}
+
 	return 0;
 }
 
@@ -64,8 +78,8 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 	};
 	struct page_walker walker = {
 		.get_pte = boot_map_pte,
-		// .get_pde = boot_map_pde,
-		.get_pde = ptbl_alloc,
+		.get_pde = boot_map_pde,
+		// .get_pde = ptbl_alloc,
 		.get_pml4e = ptbl_alloc,
 		.get_pdpte = ptbl_alloc,
 		.udata = &info,
@@ -113,22 +127,18 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	size_t i;
 
 	/* LAB 2: your code here. */
-
+	
 	// 1) identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM * with permissions RW-.
+	cprintf(">> identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM\n");
 	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
-	for(uint64_t i = 0; i<pages_num; ++i){
-		// cprintf("identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM\n");
-		// struct page_info *p = pa2page(PADDR((void*)(KERNEL_VMA + (PAGE_SIZE*i))));
-		// page_insert(kernel_pml4, p, (void*)KERNEL_VMA + (PAGE_SIZE*i), 0);
-
-		struct page_info *p = pa2page(PADDR((void*)(KERNEL_VMA + (PAGE_SIZE*i))));
-		page_insert(kernel_pml4, p, (void*)KERNEL_VMA + (PAGE_SIZE*i), PAGE_PRESENT | PAGE_WRITE);
-	}
-
+	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE);
+	
+	
 	// 2) PARSING ELF
+	cprintf(">> PARSING ELF\n");
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
-		// if(hdr.p_va < KERNEL_VMA) continue;
+		if(hdr.p_va < KERNEL_VMA) continue;
 		flags = PAGE_PRESENT;
 		if(hdr.p_flags & ELF_PROG_FLAG_EXEC){ // check if segment should be exectuable
 			flags &= ~(PAGE_NO_EXEC); 
@@ -137,7 +147,6 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 		}
 		cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		boot_map_region(pml4, (void*)hdr.p_va, hdr.p_filesz, hdr.p_pa, flags);
-		// boot_map_region(pml4, (void*)hdr.p_pa, hdr.p_filesz, hdr.p_pa, flags);
 	}
 }
 
