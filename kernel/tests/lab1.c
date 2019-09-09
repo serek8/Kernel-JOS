@@ -101,7 +101,7 @@ void check_buddy_consistency(physaddr_t addr, size_t order, struct page_info *pa
 	page = pa2page(addr);
 
 	if (parent && parent != page) {
-		if (page->pp_free || list_is_empty(&page->pp_node) ||
+		if (page->pp_free || !list_is_empty(&page->pp_node) ||
 			page->pp_order < parent->pp_order) {
 			panic("page %p of order %u is free, while parent page "
 				"%p of order %u is already free",
