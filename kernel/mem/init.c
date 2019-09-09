@@ -65,7 +65,7 @@ int pml4_setup(struct boot_info *boot_info)
 	 * buddy_migrate().
 	 */
 	
-	buddy_migrate();
+	// buddy_migrate();
 
 	return 0;
 }
