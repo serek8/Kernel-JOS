@@ -22,6 +22,7 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	physaddr_t pa = page2pa(page);
 	page->pp_ref += 1;
 	*entry  = (PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_ADDR(pa));
+	memset(KADDR(pa), 0x00, PAGE_SIZE);
 	// cprintf("ptbl_alloc, pa=%p, PAGE_ADDR(pa))=%p\n", pa, PAGE_ADDR(pa));
 	return 0;
 }
@@ -47,6 +48,15 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if((*entry & PAGE_PRESENT) == 0){
+		ptbl_alloc(entry, base, end, walker);
+		cprintf("boot_map_pde: created entry, will map as small page\n");
+		return 0;
+	}
+	panic("boot_map_pde: order is smaller TODO\n");
+	
+
+
 	return 0;
 }
 
