@@ -13,6 +13,11 @@ extern struct list page_free_list[];
 /* The kernel's initial PML4. */
 struct page_table *kernel_pml4;
 
+static uintptr_t sign_extend2(uintptr_t addr)
+{
+	return (addr < USER_LIM) ? addr : (0xffff000000000000ull | addr);
+}
+
 /* This function sets up the initial PML4 for the kernel. */
 int pml4_setup(struct boot_info *boot_info)
 {
@@ -42,27 +47,33 @@ int pml4_setup(struct boot_info *boot_info)
 	*     Permissions: kernel RW, user NONE
 	* Your code goes here:
 	*/
-	cprintf("bootstack=%p\n", bootstack);
-
+	cprintf("bootstack=%p, bootstack_top=%p, KSTACK_TOP=%p\n", bootstack, bootstack + KSTACK_SIZE, KSTACK_TOP);
+	
+	// 1) Map kernel stack
 	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
 		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
-		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), base_va+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+		void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
+		cprintf("creating stack for cr3, va=%p ==> pa=%p\n", new_va_addr, (void*)(bootstack+i));
+		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	}
+	
+	// 2) add guard page
 	// add guard page
-	void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
-	page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
+	// void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
+	// page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
 	// TODO: check PTSIZE
 
-	// setting kernel pages
-	// dump_page_tables(kernel_pml4, PAGE_HUGE);
+	// 3) setting kernel pages
 	cprintf("==== setting kernel pages ====\n");
 	boot_map_kernel(kernel_pml4, boot_info->elf_hdr);
 	cprintf("==== setting kernel pages END ====\n");
-
+	// return 0;
 	/* Migrate the struct page_info structs to the newly mapped area using
 	 * buddy_migrate().
 	 */
-	buddy_migrate();
+	
+	// buddy_migrate();
 
 	return 0;
 }
@@ -137,12 +148,14 @@ void mem_init(struct boot_info *boot_info)
 	write_msr(MSR_EFER, MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
-	lab2_check_pml4();
+	// lab2_check_pml4();
 
 	/* Load the kernel PML4. */
+	cprintf("works in old cr3\n");
 	write_cr3(PADDR(((void *)kernel_pml4)));
+	cprintf("works in new cr3\n");
 	// load_pml4(kernel_pml4);
-	return;
+	// return;
 	
 	/* Check the paging functions. */
 	lab2_check_paging();
@@ -218,6 +231,7 @@ void page_init(struct boot_info *boot_info)
 
 			// Condition #1
 			if (pa == 0){
+				page->pp_ref +=1;
 				continue;
 			}
 
@@ -227,11 +241,13 @@ void page_init(struct boot_info *boot_info)
 				    pa <= PAGE_ADDR(boot_info->mmap_addr+sizeof(struct mmap_entry)*boot_info->mmap_len)  
 				) || 
 				pa == (uintptr_t)boot_info->elf_hdr){
+					page->pp_ref +=1;
 					continue;
 			}
 
 			// Condition #3
 			if (KERNEL_LMA <= pa && pa < end) {
+				page->pp_ref +=1;
 				continue;
 			}
 			page_free(page);

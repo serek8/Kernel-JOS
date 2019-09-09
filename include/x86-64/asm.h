@@ -93,6 +93,11 @@ static inline void *read_rsp(void)
 	return ret;
 }
 
+static inline void write_rsp(uintptr_t value)
+{
+	asm volatile("movq %0, %%rsp\n" :: "r" (value));
+}
+
 static inline uint64_t read_rflags(void)
 {
 	uint64_t rflags;
