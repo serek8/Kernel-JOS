@@ -104,7 +104,12 @@ void unmap_user_pages(struct page_table *pml4)
 /* Unmaps the physical page at the virtual address va. */
 void page_remove(struct page_table *pml4, void *va)
 {
-	// TODO: change to also take into account huge pages.
-	unmap_page_range(pml4, va, HPAGE_SIZE); // HPAGE_SIZE is only temporary fix to make the tests pass
+	uint64_t size = PAGE_SIZE;
+	struct page_info *page = page_lookup(pml4, va, NULL);
+	if(page->pp_order == BUDDY_2M_PAGE) {
+		size = HPAGE_SIZE;
+	}
+	
+	unmap_page_range(pml4, va, size);
 }
 
