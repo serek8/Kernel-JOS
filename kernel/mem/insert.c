@@ -117,13 +117,17 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 	// check if huge page is aligned
 	if(page->pp_order == BUDDY_2M_PAGE && !hpage_aligned((uintptr_t)va)) return -1;
 
+	uint64_t size = PAGE_SIZE;
 	// add flag for huge page
-	if(page->pp_order == BUDDY_2M_PAGE) info.flags = info.flags | PAGE_HUGE;
+	if(page->pp_order == BUDDY_2M_PAGE) {
+		info.flags = info.flags | PAGE_HUGE;
+		size = HPAGE_SIZE;
+	}
 
 	// TODO: handle corner case
 
 
-	return walk_page_range(pml4, va, (void *)((uintptr_t)va + PAGE_SIZE),
+	return walk_page_range(pml4, va, (void *)((uintptr_t)va + size),
 		&walker);
 }
 
