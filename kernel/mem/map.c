@@ -112,7 +112,7 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	// 1) identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM * with permissions RW-.
 	cprintf(">> identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM\n");
 	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
-	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE);
+	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, (KERNEL_VMA), PAGE_PRESENT | PAGE_WRITE);
 	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, (KERNEL_VMA), PAGE_PRESENT | PAGE_WRITE);
 	
