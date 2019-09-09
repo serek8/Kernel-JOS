@@ -155,9 +155,9 @@ void mem_init(struct boot_info *boot_info)
 	lab2_check_paging();
 
 	/* Add the rest of the physical memory to the buddy allocator. */
-	cprintf("Add the rest of the physical memory to the buddy allocator\n");
+	cprintf("Adding the rest of the physical memory to the buddy allocator\n");
 	page_init_ext(boot_info);
-	cprintf("END - Add the rest of the physical memory to the buddy allocator\n");
+	cprintf("Done\n");
 
 	/* Check the buddy allocator. */
 	lab2_check_buddy(boot_info);
@@ -294,6 +294,7 @@ void page_init_ext(struct boot_info *boot_info)
 			// cprintf("npages=%d, PAGE_INDEX=%d\n", npages, PAGE_INDEX(pa));
 			if(npages <= PAGE_INDEX(pa)){
 				buddy_map_chunk(kernel_pml4, PAGE_INDEX(pa));
+				cprintf(".");
 			}
 			struct page_info *page = pa2page(pa);
 			// Condition #1
@@ -318,17 +319,8 @@ void page_init_ext(struct boot_info *boot_info)
 				continue;
 			}
 
-			// // Check if already belongs to 'pages'
-			// if (pa/PAGE_SIZE < npages) {
-			// 	cprintf("already belongs to pages, pa=%p\n", pa);
-			// 	continue;
-			// }
-
-			// cprintf("free new page, pa=%p\n", pa);
-			// struct page_info *page = pa2page(pa);
 			page->canary = PAGE_CANARY;
 			page_free(page);
-			// cprintf("after free\n", pa);
 		}
 	}
 }
