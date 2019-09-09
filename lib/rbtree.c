@@ -192,6 +192,10 @@ int rb_remove(struct rb_tree *tree, struct rb_node *node)
 		dir = node->parent->child[RB_LEFT] == node;
 		sibling = node->parent->child[dir];
 
+		if (!sibling) {
+			break;
+		}
+
 		if (sibling->color == RB_RED) {
 			node->parent->color = RB_RED;
 			sibling->color = RB_BLACK;
