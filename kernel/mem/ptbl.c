@@ -88,7 +88,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	uint64_t flags = 0;
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
 		if(!(pt->entries[i] & PAGE_PRESENT)){
-			cprintf("i=%d, entries[i]=%p, entry not present\n", i, pt->entries[i]);
+			// cprintf("i=%d, entries[i]=%p, entry not present\n", i, pt->entries[i]);
 			return 0;
 		}
 		if(!flags) {
