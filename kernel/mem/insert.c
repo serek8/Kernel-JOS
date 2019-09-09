@@ -3,12 +3,6 @@
 
 #include <kernel/mem.h>
 
-struct insert_info {
-	struct page_table *pml4;
-	struct page_info *page;
-	uint64_t flags;
-};
-
 /* If the PTE already points to a present page, the reference count of the page
  * gets decremented and the TLB gets invalidated. Then this function increments
  * the reference count of the new page and sets the PTE to the new page with
@@ -24,7 +18,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(*entry & PAGE_PRESENT) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		// TODO: invalidate TLB
+		tlb_invalidate(info->pml4, (void*)base);
 	}
 	page = info->page;
 	page->pp_ref++;
@@ -51,7 +45,7 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		// TODO: invalidate TLB
+		tlb_invalidate(info->pml4, (void*)base);
 	}
 
 	page = info->page;
@@ -112,7 +106,9 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 	};
 
 	// check if PAGE_PRESENT is set
-	if(!(flags & PAGE_PRESENT)) return -1;
+	if(!(flags & PAGE_PRESENT)){
+		cprintf("WARNING! Inserting a page without PAGE_PRESENT flag!\n");
+	} 
 
 	// check if huge page is aligned
 	if(page->pp_order == BUDDY_2M_PAGE && !hpage_aligned((uintptr_t)va)) return -1;
