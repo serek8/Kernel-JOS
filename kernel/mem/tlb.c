@@ -15,5 +15,8 @@ void tlb_invalidate(struct page_table *pml4, void *va)
 	 * Note: for now, there is only one address space, so always invalidate.
 	 */
 	/* LAB 2: your code here. */
+	if(read_cr3() == (uintptr_t)PADDR(pml4)){
+		flush_page(va);
+	}
 }
 
