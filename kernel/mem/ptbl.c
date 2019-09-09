@@ -79,6 +79,49 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
+	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
+		return 0;
+	}
+
+	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
+	struct page_info *pt_page = pa2page(PAGE_ADDR(*entry));
+	uint64_t flags = 0;
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
+		if(!(pt->entries[i] & PAGE_PRESENT)){
+			cprintf("i=%d, entries[i]=%p, entry not present\n", i, pt->entries[i]);
+			return 0;
+		}
+		if(!flags) {
+			flags = pt->entries[i] & PAGE_MASK;
+		}
+		if(!(pt->entries[i] & flags)) {
+			cprintf("i=%d, entries[i]=%p, flags not equal\n", i, pt->entries[i]);
+			return 0;
+		}
+
+		// cprintf("i=%d, entries[i]=%p\n", i, pt->entries[i]);
+	}
+
+	// copy data to huge page
+	struct page_info *page = page_alloc(ALLOC_HUGE);
+	physaddr_t pa = page2pa(page);
+	void* start_addr = KADDR(PAGE_ADDR(pt->entries[0]));
+	memcpy(page2kva(page), start_addr, HPAGE_SIZE);
+
+	// point PDE to newly created huge page
+	flags &= ~(PAGE_ACCESSED); // feels dirty bc there could be other flags set by the CPU
+	cprintf("old_flags=0x%x, new_flags=0x%x\n", flags, flags | PAGE_HUGE | PAGE_ADDR(pa));
+	*entry = flags | PAGE_HUGE | PAGE_ADDR(pa);
+
+	// clear up pages
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
+		page_decref(pte_page);
+	}
+	page_free(pt_page);
+
+	cprintf("All pages can be merged into a huge page!\n");
+	
 	return 0;
 }
 
