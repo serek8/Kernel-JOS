@@ -148,7 +148,7 @@ void mem_init(struct boot_info *boot_info)
 	write_msr(MSR_EFER, MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
-	// lab2_check_pml4();
+	lab2_check_pml4();
 
 	/* Load the kernel PML4. */
 	cprintf("works in old cr3\n");
