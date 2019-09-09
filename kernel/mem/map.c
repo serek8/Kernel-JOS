@@ -20,7 +20,7 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	uintptr_t offset = base - info->base;
-	cprintf("boot_map_pte: pa=%p, base=%p, end=%p, flags=%x\n", info->pa + offset, base, end, info->flags);
+	// cprintf("boot_map_pte: pa=%p, base=%p, end=%p, flags=%x\n", info->pa + offset, base, end, info->flags);
 	*entry = info->flags | PAGE_ADDR(info->pa + offset);
 	return 0;
 }
