@@ -107,6 +107,7 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		.get_pde = insert_pde,
 		.get_pml4e = ptbl_alloc,
 		.get_pdpte = ptbl_alloc,
+		.unmap_pde = ptbl_merge,
 		.udata = &info,
 	};
 
