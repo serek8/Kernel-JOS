@@ -21,4 +21,5 @@ int mon_buddyinfo(int argc, char **argv, struct int_frame *frame);
 int mon_pageinfo(int argc, char **argv, struct int_frame *frame);
 int mon_ptdump(int argc, char **argv, struct int_frame *frame);
 int mon_vmainfo(int argc, char **argv, struct int_frame *frame);
+int mon_buddydump(int argc, char **argv, struct int_frame *frame);
 
