@@ -33,7 +33,7 @@ int pml4_setup(struct boot_info *boot_info)
 
 	/* Use the physical memory that 'bootstack' refers to as the kernel
 	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
-	 * Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_TOP].
+	 * Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_TOP).
 	 */
 
 	/* Map in the pages from the buddy allocator as RW-. */
