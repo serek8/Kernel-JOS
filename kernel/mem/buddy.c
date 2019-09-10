@@ -203,12 +203,12 @@ struct page_info *page_alloc(int alloc_flags)
 	if(page->canary != PAGE_CANARY) panic("page_info corruption\n");
 
 	// Use-after-free detection
-	// uint8_t *page_ka = page2kva(page);
-	// for(unsigned int i = 0; i<ORDER_TO_SIZE(page->pp_order); i++){
-	// 	if(page_ka[i] != POISON_BYTE) {
-	// 		panic("Use-after-free detection");
-	// 	}
-	// }
+	uint8_t *page_ka = page2kva(page);
+	for(unsigned int i = 0; i<ORDER_TO_SIZE(page->pp_order); i++){
+		if(page_ka[i] != POISON_BYTE) {
+			panic("Use-after-free detection");
+		}
+	}
 	#endif
 
 	if(alloc_flags & ALLOC_ZERO){
@@ -247,7 +247,7 @@ void page_free(struct page_info *pp)
 	if(pp->pp_free == 0x1) panic("double free");
 
 	// use-after-free
-	// memset(page2kva(pp), POISON_BYTE, ORDER_TO_SIZE(pp->pp_order));
+	memset(page2kva(pp), POISON_BYTE, ORDER_TO_SIZE(pp->pp_order));
 	#endif
 	
 	pp->pp_free = 0x1;
