@@ -334,8 +334,7 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 	size_t nblocks = (1 << (12 + BUDDY_MAX_ORDER - 1)) / PAGE_SIZE; // 2MB / PAGE_SIZE = 512
 	size_t nalloc = ROUNDUP(nblocks * sizeof *page, PAGE_SIZE) / PAGE_SIZE; // ROUNDUP(512 * sizeof(page_info)) / PAGE_SIZE = 
 	size_t i;
-	// cprintf("nblocks=%d, nalloc=%d\n", nblocks, nalloc);
-	// todo, check if nblocks = 512
+
 	index = ROUNDDOWN(index, nblocks); // index has to be multiple of 512
 	base = pages + index;
 	
@@ -354,8 +353,7 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 
 	for (i = 0; i < nblocks; ++i) {
 		page = base + i;
-		list_init(&page->pp_node); /// ?????
-		// cprintf("list_init at %p\n", page2pa(page));
+		list_init(&page->pp_node);
 	}
 
 	npages = index + nblocks;

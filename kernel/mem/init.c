@@ -45,7 +45,6 @@ int pml4_setup(struct boot_info *boot_info)
 	for(int i=0; i<KSTACK_SIZE; i+=PAGE_SIZE) {
 		void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE;
 		void *new_va_addr = (void *)sign_extend2(((uint64_t)base_va)+i);
-		cprintf("creating stack for cr3, va=%p ==> pa=%p\n", new_va_addr, (void*)(bootstack+i));
 		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), new_va_addr, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 		page_insert(kernel_pml4, pa2page((physaddr_t)bootstack+i), bootstack+KERNEL_VMA+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	}
@@ -54,12 +53,9 @@ int pml4_setup(struct boot_info *boot_info)
 	// add guard page
 	// void *base_va = (void*)KSTACK_TOP-KSTACK_SIZE-PAGE_SIZE;
 	// page_insert(kernel_pml4, NULL, base_va, PAGE_WRITE | PAGE_NO_EXEC);
-	// TODO: check PTSIZE
 
 	// 3) setting kernel pages
-	cprintf("==== setting kernel pages ====\n");
 	boot_map_kernel(kernel_pml4, boot_info->elf_hdr);
-	cprintf("==== setting kernel pages END ====\n");
 	
 	// 4) Buddy migrate
 	/* Migrate the struct page_info structs to the newly mapped area using
@@ -67,9 +63,7 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 	// 3) set mapping for pages before migrate
 	boot_map_region(kernel_pml4, (void*)KPAGES, ROUNDUP(npages * sizeof(struct page_info), PAGE_SIZE), PADDR(pages), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	cprintf("mapped pages before migrate\n");
 	buddy_migrate();
-	
 
 	return 0;
 }
@@ -147,9 +141,7 @@ void mem_init(struct boot_info *boot_info)
 	lab2_check_pml4();
 
 	/* Load the kernel PML4. */
-	// cprintf("works in old cr3\n");
 	write_cr3(PADDR(((void *)kernel_pml4)));
-	// cprintf("works in new cr3\n");
 	
 	/* Check the paging functions. */
 	lab2_check_paging();
