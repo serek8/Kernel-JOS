@@ -129,6 +129,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	flags &= ~(PAGE_ACCESSED); // feels dirty bc there could be other flags set by the CPU
 	cprintf("old_flags=0x%x, new_flags=0x%x\n", flags, flags | PAGE_HUGE | PAGE_ADDR(pa));
 	*entry = flags | PAGE_HUGE | PAGE_ADDR(pa);
+	page->pp_ref++;
 
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
