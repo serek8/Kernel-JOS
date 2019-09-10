@@ -286,8 +286,11 @@ void page_init_ext(struct boot_info *boot_info)
 			// cprintf("npages=%d, PAGE_INDEX=%d\n", npages, PAGE_INDEX(pa));
 			if(npages <= PAGE_INDEX(pa)){
 				buddy_map_chunk(kernel_pml4, PAGE_INDEX(pa));
-				cprintf(".");
+				boot_map_region(kernel_pml4, page2kva(pa2page(pa)), HPAGE_SIZE, pa, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+				// cprintf(".");
+				cprintf("Adding pa=%p, PAGE_INDEX(pa)=%d, pages_end=%p, npages=%d\n", pa, PAGE_INDEX(pa), pages+npages, npages);
 			}
+		
 			struct page_info *page = pa2page(pa);
 			// Condition #1
 			if (pa == 0){
