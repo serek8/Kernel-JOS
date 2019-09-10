@@ -48,12 +48,28 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
-	if((*entry & PAGE_PRESENT) == 0){
+	struct boot_map_info *info = (struct boot_map_info*)walker->udata;
+	struct page_info *page = pa2page(info->pa);
+	
+	if((*entry & PAGE_PRESENT) == 0){ // page is not present
 		ptbl_alloc(entry, base, end, walker);
-		cprintf("boot_map_pde: created entry, will map as small page\n");
+		// cprintf("boot_map_pde: created entry, will map as small page\n");
 		return 0;
+	} else if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) { // huge page
+		cprintf("!!!! ptbl_split: page is huge and we need to split up\n");
+		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
+
+		tlb_invalidate(info->pml4, (void*)base);
+
+		if(page->pp_order == BUDDY_4K_PAGE) {
+			ptbl_alloc(entry, base, end, walker);
+		} else {
+			page->pp_ref++;
+			*entry = info->flags | PAGE_ADDR(page2pa(page));
+		}
 	}
-	panic("boot_map_pde: order is smaller TODO\n");
+	panic("ptbl_split: else?\n");
+
 	
 
 
