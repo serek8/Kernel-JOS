@@ -32,16 +32,9 @@ int pml4_setup(struct boot_info *boot_info)
 	 */
 
 	/* Use the physical memory that 'bootstack' refers to as the kernel
-	* stack.  The kernel stack grows down from virtual address KSTACK_TOP.
-	* We consider the entire range from [KSTACK_TOP-PTSIZE, KSTACK_TOP)
-	* to be the kernel stack, but break this into two pieces:
-	*     * [KSTACK_TOP-KSTACK_SIZE, KSTACK_TOP) -- backed by physical memory
-	*     * [KSTACK_TOP-PTSIZE, KSTACK_TOP-KSTACK_SIZE) -- not backed; so if
-	*       the kernel overflows its stack, it will fault rather than
-	*       overwrite memory.  Known as a "guard page".
-	*     Permissions: kernel RW, user NONE
-	* Your code goes here:
-	*/
+	 * stack. The kernel stack grows down from virtual address KSTACK_TOP.
+	 * Map 'bootstack' to [KSTACK_TOP - KSTACK_SIZE, KSTACK_SIZE].
+	 */
 
 	/* Map in the pages from the buddy allocator as RW-. */
 
