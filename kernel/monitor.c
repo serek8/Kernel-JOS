@@ -12,7 +12,7 @@
 #include <kernel/console.h>
 #include <kernel/monitor.h>
 #include <kernel/mem.h>
-
+extern struct list page_free_list[];
 #define CMDBUF_SIZE 80  /* enough for one VGA text line */
 
 struct command {
@@ -29,6 +29,7 @@ static struct command commands[] = {
 	{ "buddyinfo", "Display debugging information for the buddy allocator", mon_buddyinfo },
 	{ "pageinfo", "Display page information for a given page index", mon_pageinfo },
 	{ "ptdump", "Display the page tables", mon_ptdump },
+	{ "buddydump", "Buddy free list dump", mon_buddydump },
 };
 
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
@@ -140,6 +141,25 @@ int mon_pageinfo(int argc, char **argv, struct int_frame *frame)
 int mon_ptdump(int argc, char **argv, struct int_frame *frame)
 {
 	return dump_page_tables(kernel_pml4, PAGE_HUGE);
+}
+
+int mon_buddydump(int argc, char **argv, struct int_frame *frame){
+	cprintf("===BUDDY DUMP===\n");
+	struct page_info *page;
+	struct list *node;
+	size_t order;
+	for (order = 0; order < BUDDY_MAX_ORDER; ++order) {
+		cprintf("\n\npage_free_list[%d] = \n", order);
+		list_foreach(page_free_list + order, node) {
+			page = container_of(node, struct page_info, pp_node);
+			cprintf("(pa=%p, order=%d, free=%d, ref=%d),\n", page2pa(page), page->pp_order, (int)page->pp_free, (int)page->pp_ref);
+			for(int i=1; i<(1<<page->pp_order); i++){
+				struct page_info *page2 = page + i;
+				cprintf("  (pa=%p, order=%d, free=%d, ref=%d),\n", page2pa(page2), page2->pp_order, (int)page2->pp_free, (int)page2->pp_ref);
+			}
+		}
+	}
+	return 0;
 }
 
 /***** Kernel monitor command interpreter *****/
