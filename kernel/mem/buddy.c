@@ -197,6 +197,12 @@ struct page_info *page_alloc(int alloc_flags)
 	if(page == NULL) {
 		panic("Could not allocate page of order %d. Out of memory.", order);
 	}
+	if(page->pp_free == 0) {
+		panic("Tried to allocate page but already free. pa=%p", page2pa(page));
+	}
+	if(page->pp_ref != 0) {
+		panic("Tried to allocate page but ref count not 0. pa=%p", page2pa(page));
+	}
 
 	page->pp_free = 0;
 	list_remove(&page->pp_node);
@@ -264,6 +270,10 @@ void page_free(struct page_info *pp)
  */
 void page_decref(struct page_info *pp)
 {
+	if(pp->pp_ref == 0) {
+		panic("Trying to decrement ref when already 0.\n");
+	}
+
 	if (--pp->pp_ref == 0) {
 		page_free(pp);
 	}
