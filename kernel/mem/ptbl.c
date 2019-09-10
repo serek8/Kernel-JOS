@@ -23,7 +23,6 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	page->pp_ref += 1;
 	*entry  = (PAGE_PRESENT | PAGE_WRITE | PAGE_USER | PAGE_ADDR(pa));
 
-	cprintf("ptbl_alloc, pa=%p, PAGE_ADDR(pa))=%p, KADDR(pa))=%p\n", pa, PAGE_ADDR(pa), KADDR(PAGE_ADDR(pa)));
 	return 0;
 }
 
@@ -53,7 +52,6 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	
 	if((*entry & PAGE_PRESENT) == 0){ // page is not present
 		ptbl_alloc(entry, base, end, walker);
-		// cprintf("boot_map_pde: created entry, will map as small page\n");
 		return 0;
 	} else if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) { // huge page
 		cprintf("!!!! ptbl_split: page is huge and we need to split up\n");
@@ -69,9 +67,6 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 	}
 	panic("ptbl_split: else?\n");
-
-	
-
 
 	return 0;
 }
@@ -104,21 +99,21 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *pt_page = pa2page(PAGE_ADDR(*entry));
 	uint64_t flags = 0;
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
+		// check if all entries are present
 		if(!(pt->entries[i] & PAGE_PRESENT)){
-			// cprintf("i=%d, entries[i]=%p, entry not present\n", i, pt->entries[i]);
 			return 0;
 		}
+		// copy flags from first entry
 		if(!flags) {
 			flags = pt->entries[i] & PAGE_MASK;
 		}
+		// check if all flags are the same
 		if(!(pt->entries[i] & flags)) {
-			cprintf("i=%d, entries[i]=%p, flags not equal\n", i, pt->entries[i]);
 			return 0;
 		}
-
-		// cprintf("i=%d, entries[i]=%p\n", i, pt->entries[i]);
 	}
 
+	// now pages in pt can be merged
 	// copy data to huge page
 	struct page_info *page = page_alloc(ALLOC_HUGE);
 	physaddr_t pa = page2pa(page);
@@ -126,8 +121,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	memcpy(page2kva(page), start_addr, HPAGE_SIZE);
 
 	// point PDE to newly created huge page
-	flags &= ~(PAGE_ACCESSED); // feels dirty bc there could be other flags set by the CPU
-	cprintf("old_flags=0x%x, new_flags=0x%x\n", flags, flags | PAGE_HUGE | PAGE_ADDR(pa));
+	flags &= ~(PAGE_ACCESSED);
 	*entry = flags | PAGE_HUGE | PAGE_ADDR(pa);
 	page->pp_ref++;
 
@@ -138,8 +132,6 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		tlb_invalidate(info->pml4, (void*)(base + PAGE_SIZE * i));
 	}
 	page_decref(pt_page);
-
-	cprintf("All pages can be merged into a huge page!\n");
 	
 	return 0;
 }
@@ -164,7 +156,7 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			return 0;
 		}
 	}
-	cprintf("removing empty table\n");
+
 	struct page_info *page = pa2page(PAGE_ADDR(*entry));
 	page_decref(page);
 
