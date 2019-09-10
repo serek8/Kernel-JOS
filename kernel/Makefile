@@ -38,12 +38,49 @@ KERNEL_SRCFILES += \
 	kernel/mem/walk.c \
 	kernel/tests/lab2.c
 
+# LAB 3 code
+KERNEL_SRCFILES += \
+	kernel/mem/kmem.c \
+	kernel/mem/populate.c \
+	kernel/mem/protect.c \
+	kernel/mem/slab.c \
+	kernel/mem/user.c \
+	kernel/sched/cpu.c \
+	kernel/sched/gdt.c \
+	kernel/sched/idt.c \
+	kernel/sched/stubs.S \
+	kernel/sched/syscall.c \
+	kernel/sched/task.c \
+	kernel/tests/lab3.c \
+
+# LAB 3 binaries
+KERNEL_BINFILES := \
+	user/badsegment \
+	user/breakpoint \
+	user/divzero \
+	user/evilhello \
+	user/faultexec \
+	user/faultwrite \
+	user/kernelexec \
+	user/kernelread \
+	user/kernelwrite \
+	user/hello \
+	user/nullexec \
+	user/nullhello \
+	user/nullread \
+	user/nullwrite \
+	user/overflowhello \
+	user/softint \
+	user/testbss
+
 # Only build files if they exist.
 KERNEL_SRCFILES := $(wildcard $(KERNEL_SRCFILES))
 
 KERNEL_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERNEL_SRCFILES))
 KERNEL_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERNEL_OBJFILES))
 KERNEL_OBJFILES := $(patsubst $(OBJDIR)/lib/%, $(OBJDIR)/kernel/%, $(KERNEL_OBJFILES))
+
+KERNEL_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERNEL_BINFILES))
 
 # How to build kernel object files
 $(OBJDIR)/kernel/%.o: kernel/%.c $(OBJDIR)/.vars.KERNEL_CFLAGS

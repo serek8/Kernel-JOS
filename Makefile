@@ -129,6 +129,8 @@ $(OBJDIR)/.vars.%: FORCE
 # Include Makefiles for subdirectories
 include boot/Makefile
 include kernel/Makefile
+include user/Makefile
+include lib/Makefile
 
 CPUS ?= 1
 
