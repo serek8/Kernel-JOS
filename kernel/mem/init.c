@@ -134,7 +134,7 @@ void mem_init(struct boot_info *boot_info)
 	 * can now map memory using boot_map_region or page_insert.
 	 */
 	page_init(boot_info);
-
+	
 	/* We will set up page tables here in lab 2. */
 
 	/* Setup the initial PML4 for the kernel. */
@@ -298,7 +298,7 @@ void page_init_ext(struct boot_info *boot_info)
 				cprintf(".");
 				// cprintf("Adding pa=%p, PAGE_INDEX(pa)=%d, pages_end=%p, npages=%d\n", pa, PAGE_INDEX(pa), pages+npages, npages);
 			}
-		
+			// cprintf("Inter pa=%p\n", pa, PAGE_INDEX(pa), pages+npages, npages);
 			struct page_info *page = pa2page(pa);
 			// Condition #1
 			if (pa == 0){
