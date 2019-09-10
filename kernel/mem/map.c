@@ -38,18 +38,12 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 2: your code here. */
 
 	uintptr_t offset = base - info->base;
-	// cprintf("base=%p, end=%p, pa=%p, info->base=%p, offset=%p\n", base, end, info->pa, info->base, offset);
 
 	if((*entry & PAGE_PRESENT) == 0 && end - base + 1 == HPAGE_SIZE){
 		*entry = info->flags | PAGE_HUGE | PAGE_PRESENT | PAGE_ADDR(info->pa+offset);
-		// cprintf("boot_map_pde: mapped as HUGE page | va=%p, pa=%p\n", base, info->pa+offset);
-	} 
-	
-	else if( (*entry & (PAGE_PRESENT | PAGE_HUGE)) ==  PAGE_PRESENT){ // page is present and not huge
+	} else if( (*entry & (PAGE_PRESENT | PAGE_HUGE)) ==  PAGE_PRESENT){ // page is present and not huge
 		// cprintf("boot_map_pde: entry exist, mapped as SMALL page | va=%p, pa=%p\n", base, info->pa+offset);
-	}
-	else{ // page is not present or is huge
-		// cprintf("boot_map_pde: entry doesnt exist or huge, pa=%p\n", base, info->pa+offset);
+	} else{ // page is not present or is huge
 		ptbl_split(entry, base, end, walker);
 	}
 
@@ -130,14 +124,10 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	/* LAB 2: your code here. */
 	
 	// 1) identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM * with permissions RW-.
-	// cprintf(">> identity mapping at the KERNEL_VMA - BOOT_MAP_LIM (%p - %p)\n", KERNEL_VMA, KERNEL_VMA + BOOT_MAP_LIM);
 	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
 	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, KERNEL_VMA, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	
-	
+
 	// 2) PARSING ELF
-	cprintf(">> PARSING ELF\n");
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
 		if(hdr.p_va < KERNEL_VMA) continue;
@@ -147,12 +137,8 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 		} else {
 			flags += PAGE_NO_EXEC | PAGE_WRITE;
 		}
-		cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
+		// cprintf("boot_map_region, flags=%lx, va=%p, pa=%p, size=%u\n", flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		boot_map_region(pml4, (void*)hdr.p_va, hdr.p_filesz, hdr.p_pa, flags);
 	}
-
-	// // 3) set mapping for pages before migrate
-	// boot_map_region(pml4, (void*)KPAGES, ROUNDUP(npages * sizeof(struct page_info), PAGE_SIZE), PADDR(pages), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-	// cprintf("mapped pages before migrate\n");
 }
 
