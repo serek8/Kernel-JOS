@@ -23,7 +23,6 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	page = info->page;
 	page->pp_ref++;
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
-	// cprintf("insert_pte: va=%p ==> pa=%p\n", (void*)base, page2pa(page));
 
 	return 0;
 }
@@ -119,9 +118,6 @@ int page_insert(struct page_table *pml4, struct page_info *page, void *va,
 		info.flags = info.flags | PAGE_HUGE;
 		size = HPAGE_SIZE;
 	}
-
-	// TODO: handle corner case
-
 
 	return walk_page_range(pml4, va, (void *)((uintptr_t)va + size),
 		&walker);
