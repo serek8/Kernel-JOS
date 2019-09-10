@@ -110,6 +110,8 @@ size_t count_total_free_pages(void)
 	struct page_info *phs = pa2page(lhs_pa ^ ORDER_TO_SIZE(req_order));
 	lhs->pp_order -= 1;
 	phs->pp_order = lhs->pp_order;
+	phs->pp_free = 1;
+	lhs->pp_free = 1;
 	list_push(&page_free_list[req_order], &phs->pp_node);
 	return lhs;
 }
@@ -151,6 +153,7 @@ struct page_info *buddy_merge(struct page_info *page)
 			list_remove(&page_buddy->pp_node);
 			l_page->pp_order += 1;
 			p_page->pp_order = 0;
+			p_page->pp_free = 0;
 			return buddy_merge(l_page);
 		}
 	}

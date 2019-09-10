@@ -147,9 +147,9 @@ void mem_init(struct boot_info *boot_info)
 	lab2_check_pml4();
 
 	/* Load the kernel PML4. */
-	cprintf("works in old cr3\n");
+	// cprintf("works in old cr3\n");
 	write_cr3(PADDR(((void *)kernel_pml4)));
-	cprintf("works in new cr3\n");
+	// cprintf("works in new cr3\n");
 	
 	/* Check the paging functions. */
 	lab2_check_paging();
@@ -157,7 +157,6 @@ void mem_init(struct boot_info *boot_info)
 	/* Add the rest of the physical memory to the buddy allocator. */
 	cprintf("Adding the rest of the physical memory to the buddy allocator\n");
 	page_init_ext(boot_info);
-	cprintf("Done\n");
 
 	/* Check the buddy allocator. */
 	lab2_check_buddy(boot_info);
@@ -281,6 +280,7 @@ void page_init_ext(struct boot_info *boot_info)
 	 *  3) If the physical address is below BOOT_MAP_LIM, ignore.
 	 *  4) Hand the page to the buddy allocator by calling page_free().
 	 */
+	int available_mem = 0;
 	for (i = 0; i < boot_info->mmap_len; ++i, ++entry) {
 		/* LAB 2: your code here. */	
 		if(entry->type != MMAP_FREE){
@@ -324,7 +324,9 @@ void page_init_ext(struct boot_info *boot_info)
 
 			page->canary = PAGE_CANARY;
 			page_free(page);
+			available_mem = pa+PAGE_SIZE;
 		}
 	}
+	cprintf("\nAvailable memory: %dM\n", available_mem/1024/1024+1);
 }
 
