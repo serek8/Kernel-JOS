@@ -3,12 +3,7 @@
 
 #include <kernel/mem.h>
 
-struct boot_map_info {
-	struct page_table *pml4;
-	uint64_t flags;
-	physaddr_t pa;
-	uintptr_t base, end;
-};
+
 
 /* Stores the physical address and the appropriate permissions into the PTE and
  * increments the physical address to point to the next page.
@@ -19,6 +14,10 @@ static int boot_map_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct boot_map_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	if(*entry & PAGE_PRESENT) {
+		tlb_invalidate(info->pml4, (void*)base);
+	}
+
 	uintptr_t offset = base - info->base;
 	// cprintf("boot_map_pte: pa=%p, base=%p, end=%p, flags=%x\n", info->pa + offset, base, end, info->flags);
 	*entry = info->flags | PAGE_ADDR(info->pa + offset);
@@ -41,15 +40,16 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	uintptr_t offset = base - info->base;
 	// cprintf("base=%p, end=%p, pa=%p, info->base=%p, offset=%p\n", base, end, info->pa, info->base, offset);
 
-	if((*entry & PAGE_PRESENT) == 0 && end - base + 1 == HPAGE_SIZE){ // && end - base == 2MB
+	if((*entry & PAGE_PRESENT) == 0 && end - base + 1 == HPAGE_SIZE){
 		*entry = info->flags | PAGE_HUGE | PAGE_PRESENT | PAGE_ADDR(info->pa+offset);
-		cprintf("boot_map_pde: mapped as HUGE page | va=%p, pa=%p\n", base, info->pa+offset);
+		// cprintf("boot_map_pde: mapped as HUGE page | va=%p, pa=%p\n", base, info->pa+offset);
 	} 
-	else if(*entry & PAGE_PRESENT &&  *entry != PAGE_HUGE){
-		cprintf("boot_map_pde: entry exist, mapped as SMALL page | va=%p, pa=%p\n", base, info->pa+offset);
+	
+	else if( (*entry & (PAGE_PRESENT | PAGE_HUGE)) ==  PAGE_PRESENT){ // page is present and not huge
+		// cprintf("boot_map_pde: entry exist, mapped as SMALL page | va=%p, pa=%p\n", base, info->pa+offset);
 	}
-	else{
-		cprintf("boot_map_pde: entry doesnt exist or huge, pa=%p\n", base, info->pa+offset);
+	else{ // page is not present or is huge
+		// cprintf("boot_map_pde: entry doesnt exist or huge, pa=%p\n", base, info->pa+offset);
 		ptbl_split(entry, base, end, walker);
 	}
 
@@ -71,6 +71,7 @@ void boot_map_region(struct page_table *pml4, void *va, size_t size,
 {
 	/* LAB 2: your code here. */
 	struct boot_map_info info = {
+		.pml4 = pml4,
 		.pa = pa,
 		.flags = flags,
 		.base = ROUNDDOWN((uintptr_t)va, PAGE_SIZE),
