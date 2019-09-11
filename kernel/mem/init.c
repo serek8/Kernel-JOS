@@ -280,7 +280,6 @@ void page_init_ext(struct boot_info *boot_info)
 				buddy_map_chunk(kernel_pml4, PAGE_INDEX(pa));
 				boot_map_region(kernel_pml4, page2kva(pa2page(pa)), HPAGE_SIZE, pa, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 				cprintf(".");
-				// cprintf("Adding pa=%p, PAGE_INDEX(pa)=%d, pages_end=%p, npages=%d\n", pa, PAGE_INDEX(pa), pages+npages, npages);
 			}
 			// cprintf("Inter pa=%p\n", pa, PAGE_INDEX(pa), pages+npages, npages);
 			struct page_info *page = pa2page(pa);
@@ -305,7 +304,7 @@ void page_init_ext(struct boot_info *boot_info)
 				page->pp_free = 0;
 				continue;
 			}
-
+			
 			page->canary = PAGE_CANARY;
 			page_free(page);
 			available_mem = pa+PAGE_SIZE;
