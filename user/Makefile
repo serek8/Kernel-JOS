@@ -2,10 +2,12 @@ OBJDIRS += user
 
 USERLIBS = jos
 
+-include $(OBJDIR)/user/%.d
+
 $(OBJDIR)/user/%.o: user/%.c $(OBJDIR)/.vars.USER_CFLAGS
 	@echo + cc[USER] $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(USER_CFLAGS) -c -o $@ $<
+	$(V)$(CC) -nostdinc $(USER_CFLAGS) -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJDIR)/user/%: $(OBJDIR)/user/%.o $(OBJDIR)/lib/entry.o $(USERLIBS:%=$(OBJDIR)/lib/lib%.a) user/user.ld
 	@echo + ld $@
