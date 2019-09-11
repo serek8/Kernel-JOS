@@ -9,8 +9,8 @@ struct protect_info {
 	uintptr_t base, end;
 };
 
-/* Stores the physical address and the appropriate permissions into the PTE and
- * increments the physical address to point to the next page.
+/* Changes the protection of the page. Avoid calling tlb_invalidate() if
+ * nothing changes at all.
  */
 static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
@@ -21,11 +21,11 @@ static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	return 0;
 }
 
-/* Stores the physical address and the appropriate permissions into the PDE and
- * increments the physical address to point to the next huge page if the
- * physical address is huge page aligned and if the area to be protectped covers a
- * 2M area. Otherwise this function calls ptbl_split() to split down the huge
- * page or allocate a page table.
+/* Changes the protection of the huge page, if the page is a huge page and if
+ * the range covers the full huge page. Otherwise if the page is a huge page,
+ * but if the range does not span an entire huge page, this function calls
+ * ptbl_split() to split up the huge page. Avoid calling tlb_invalidate() if
+ * nothing changes at all.
  */
 static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
