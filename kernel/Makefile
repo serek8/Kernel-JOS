@@ -80,23 +80,25 @@ KERNEL_OBJFILES := $(patsubst %.c, $(OBJDIR)/%.o, $(KERNEL_SRCFILES))
 KERNEL_OBJFILES := $(patsubst %.S, $(OBJDIR)/%.o, $(KERNEL_OBJFILES))
 KERNEL_OBJFILES := $(patsubst $(OBJDIR)/lib/%, $(OBJDIR)/kernel/%, $(KERNEL_OBJFILES))
 
+-include $(KERNEL_OBJFILES:.o=.d)
+
 KERNEL_BINFILES := $(patsubst %, $(OBJDIR)/%, $(KERNEL_BINFILES))
 
 # How to build kernel object files
 $(OBJDIR)/kernel/%.o: kernel/%.c $(OBJDIR)/.vars.KERNEL_CFLAGS
 	@echo + cc $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $<
+	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJDIR)/kernel/%.o: kernel/%.S $(OBJDIR)/.vars.KERNEL_CFLAGS
 	@echo + as $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $<
+	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJDIR)/kernel/%.o: lib/%.c $(OBJDIR)/.vars.KERNEL_CFLAGS
 	@echo + cc $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $<
+	$(V)$(CC) -nostdinc $(KERNEL_CFLAGS) -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 # Special flags for kernel/init
 $(OBJDIR)/kernel/main.o: override KERNEL_CFLAGS+=$(INIT_CFLAGS)

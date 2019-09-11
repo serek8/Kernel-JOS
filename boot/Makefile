@@ -15,15 +15,17 @@ BOOT_OBJS := \
     $(OBJDIR)/boot/mmap.o \
     $(OBJDIR)/boot/main.o
 
+-include $(BOOT_OBJS:.o=.d)
+
 $(OBJDIR)/boot/%.o: boot/%.c
 	@echo + cc -Os $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(BOOT_CFLAGS) -m32 -Os -c -o $@ $<
+	$(V)$(CC) -nostdinc $(BOOT_CFLAGS) -m32 -Os -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJDIR)/boot/%.o: boot/%.S
 	@echo + as $<
 	@mkdir -p $(@D)
-	$(V)$(CC) -nostdinc $(BOOT_CFLAGS) -m32 -c -o $@ $<
+	$(V)$(CC) -nostdinc $(BOOT_CFLAGS) -m32 -c -o $@ $< -MT $@ -MMD -MP -MF $(@:.o=.d)
 
 $(OBJDIR)/boot/boot: $(BOOT_OBJS)
 	@echo + ld boot/boot
