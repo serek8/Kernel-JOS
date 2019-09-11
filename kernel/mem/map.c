@@ -124,8 +124,12 @@ void boot_map_kernel(struct page_table *pml4, struct elf *elf_hdr)
 	/* LAB 2: your code here. */
 	
 	// 1) identity mapping at the KERNEL_VMA of size BOOT_MAP_LIM * with permissions RW-.
-	uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
-	boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	// uint64_t pages_num = BOOT_MAP_LIM / PAGE_SIZE;
+	// boot_map_region(kernel_pml4, (void*)KERNEL_VMA, BOOT_MAP_LIM, PADDR((void*)(KERNEL_VMA)), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	// Mapping only KERNEL_VMA of size BOOT_MAP_LIM isn't enough.
+	// If we want to support KADDR and PADDR macros we need to map them too.
+	boot_map_region(kernel_pml4, KADDR(0), 8*1024*1024, 0, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+
 
 	// 2) PARSING ELF
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
