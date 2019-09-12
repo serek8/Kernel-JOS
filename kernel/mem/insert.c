@@ -18,11 +18,13 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(*entry & PAGE_PRESENT) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
+		*entry = 0;
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 	page = info->page;
 	page->pp_ref++;
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
+	// cprintf("insert_pte entry=%p, base=%p, end=%p\n", *entry, base, end);
 
 	return 0;
 }
@@ -44,6 +46,7 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
+		*entry = 0;
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 
