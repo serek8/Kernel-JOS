@@ -137,6 +137,8 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	page_decref(pt_page);
 	
+	cprintf("Merged!!!\n");
+
 	return 0;
 }
 
