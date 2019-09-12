@@ -39,6 +39,9 @@ int slab_alloc_chunk(struct slab *slab)
 
 	/* LAB 3: your code here. */
 	page = page_alloc(ALLOC_ZERO);
+	if(page == NULL){
+		return -1;
+	}
 	uint64_t page_va = (uint64_t)page2kva(page);
 
 	info = (struct slab_info*)(page_va + slab->info_off);
@@ -82,7 +85,8 @@ void slab_free_chunk(struct slab *slab, struct slab_info *info)
 	/* LAB 3: your code here. */
 	list_remove(&info->node);
 	uint64_t chunk_start_va = ((uint64_t)info) - slab->info_off;
-	struct page_info *page = pa2page(PADDR((struct page_info*)chunk_start_va));
+	// struct page_info *page = pa2page(PADDR((struct page_info*)chunk_start_va));
+	struct page_info *page = page_lookup(kernel_pml4, (void*)chunk_start_va, NULL);
 	page_free(page);
 }
 
