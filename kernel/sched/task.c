@@ -62,6 +62,11 @@ void task_init(void)
 	 * to tasks.
 	 */
 	/* LAB 3: your code here. */
+	// Mapping for PIDMAP_BASE
+	for(int i = 0; i<pid_max*sizeof(struct task **); i+=PAGE_SIZE){
+		struct page_info *page = page_alloc(ALLOC_ZERO);
+		page_insert(kernel_pml4, page, (void*)PIDMAP_BASE+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	}
 }
 
 /* Sets up the virtual address space for the task. */
@@ -83,6 +88,13 @@ static int task_setup_vas(struct task *task)
 	 */
 
 	/* LAB 3: your code here. */
+	task->task_pml4 = page2kva(page);
+
+	// copy entries from kernel space of kernel_pml4 to kernel space of task_pml4
+	for(int i=PML4_INDEX(KERNEL_VMA); i<PAGE_TABLE_ENTRIES; i++) {
+		task->task_pml4->entries[i] = kernel_pml4->entries[i];
+	}
+	
 	return 0;
 }
 
@@ -205,6 +217,14 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 void task_create(uint8_t *binary, enum task_type type)
 {
 	/* LAB 3: your code here. */
+	struct task *task = task_alloc(0);
+
+	// TODO: load ELF binary
+
+	task->task_type = type;
+	if(task->task_type == TASK_TYPE_USER) {
+		nuser_tasks++;
+	}
 	/* LAB 5: your code here. */
 }
 
