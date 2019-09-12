@@ -98,6 +98,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
 	struct page_info *pt_page = pa2page(PAGE_ADDR(*entry));
 	uint64_t flags = 0;
+	physaddr_t pa_start = PAGE_ADDR(pt->entries[0]);
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
 		// check if all entries are present
 		if(!(pt->entries[i] & PAGE_PRESENT)){
@@ -109,6 +110,10 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 		// check if all flags are the same
 		if(!(pt->entries[i] & flags)) {
+			return 0;
+		}
+		// make sure that pages are contiguous
+		if(PAGE_ADDR(pt->entries[i]) != pa_start + PAGE_SIZE * i){
 			return 0;
 		}
 	}
