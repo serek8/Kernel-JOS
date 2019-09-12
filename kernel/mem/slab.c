@@ -38,6 +38,39 @@ int slab_alloc_chunk(struct slab *slab)
 	size_t i;
 
 	/* LAB 3: your code here. */
+	page = page_alloc(ALLOC_ZERO);
+	uint64_t page_va = (uint64_t)page2kva(page);
+
+	info = (struct slab_info*)(page_va + slab->info_off);
+	info->slab = slab;
+	list_init(&info->free_list);
+
+	// cprintf("slab_chunk->count=%d page_va=%p, info=%p\n", slab->count, page_va, info);
+
+	// Setup first object
+	obj = (struct slab_obj*)page_va;
+	list_init(&obj->node);
+	obj->info = info;
+	info->free_count = 1;
+	// cprintf("  obj[%d] obj=%p\n", 0, obj);
+	
+	
+	list_push_left(&info->free_list, &obj->node);
+	
+	
+	
+	for(int i=1; i<slab->count; i++){
+		struct slab_obj *next_obj =(struct slab_obj *)(page_va + i*slab->obj_size);
+		next_obj->info = info;
+		list_init(&next_obj->node);
+		list_push_left(&obj->node, &next_obj->node);
+		// cprintf("    obj[%d]->node=%p\n", i-1, &next_obj->node);
+		info->free_count += 1;
+		obj = next_obj;
+		// cprintf("  obj[%d] obj=%p\n", i, next_obj);
+	}
+
+	list_push(&slab->partial, &info->node);
 	return 0;
 }
 
@@ -47,6 +80,10 @@ int slab_alloc_chunk(struct slab *slab)
 void slab_free_chunk(struct slab *slab, struct slab_info *info)
 {
 	/* LAB 3: your code here. */
+	list_remove(&info->node);
+	uint64_t chunk_start_va = ((uint64_t)info) - slab->info_off;
+	struct page_info *page = pa2page(PADDR((struct page_info*)chunk_start_va));
+	page_free(page);
 }
 
 /* Initializes a slab allocator for the given object size as follows:

@@ -152,6 +152,10 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Check the buddy allocator. */
 	lab2_check_buddy(boot_info);
+
+	kmem_init();
+	lab3_check_kmem();
+
 }
 
 void mem_init_mp(void)
