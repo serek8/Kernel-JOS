@@ -17,7 +17,6 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	if(*entry & PAGE_PRESENT) {
-		// cprintf("lookup_pte entry=%p, base=%p, end=%p\n", PAGE_ADDR(*entry), base, end);
 		info->entry = entry;
 	}
 
@@ -33,7 +32,6 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
-		cprintf("lookup_pde entry=%p, base=%p, end=%p\n", *entry, base, end);
 		info->entry = entry;
 	}
 
