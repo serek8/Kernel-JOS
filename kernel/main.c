@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <kernel/sched/task.h>
+#include <kernel/sched/gdt.h>
+#include <kernel/sched/idt.h>
+#include <kernel/sched/syscall.h>
 
 void kmain(struct boot_info *boot_info)
 {
