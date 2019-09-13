@@ -48,11 +48,30 @@ syscall64:
 
 .global iret64
 iret64:
-	/* LAB 3: your code here. */
 	/* Restore the register state. */
-
 	/* Return from the interrupt. */
-	addq $16, %rsp
+	/* LAB 3: your code here. */
+
+	// Now the stack is misaligned by 8 bytes because 'call' instruction saved %rip on the stack
+	movq -8(%rsp), %rcx // we move the argument `struct int_frame *frame` to %rcx
+
+	sub $56, %rsp  // alignment 8 + 56 = 64. Which is dividable by 16, thus aligned!
+
+	movq 144(%rcx), %rax // rip at 18 postition
+	movq %rax, (%rsp)
+
+	movq 152(%rcx), %rax // cs at 19 postition
+	movq %rax, 8(%rsp)
+
+	movq 160(%rcx), %rax // rflags at 20 postition
+	movq %rax, 16(%rsp)
+
+	movq 168(%rcx), %rax // rsp at 21 postition
+	movq %rax, 24(%rsp)
+
+	movq 176(%rcx), %rax // ss at 22 postition
+	movq %rax, 32(%rsp)
+
 	iretq
 
 .global sysret64
