@@ -39,7 +39,7 @@ static int boot_map_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	uintptr_t offset = base - info->base;
 
-	if((*entry & PAGE_PRESENT) == 0 && end - base + 1 == HPAGE_SIZE){
+	if((*entry & PAGE_PRESENT) == 0 && (end - base + 1 == HPAGE_SIZE) && !hpage_aligned(info->pa)){
 		*entry = info->flags | PAGE_HUGE | PAGE_PRESENT | PAGE_ADDR(info->pa+offset);
 	} else if( (*entry & (PAGE_PRESENT | PAGE_HUGE)) ==  PAGE_PRESENT){ // page is present and not huge
 		// cprintf("boot_map_pde: entry exist, mapped as SMALL page | va=%p, pa=%p\n", base, info->pa+offset);
