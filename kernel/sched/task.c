@@ -199,12 +199,43 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
+	struct elf *elf_hdr = (struct elf *)binary;
+	struct elf_proghdr *prog_hdr = (struct elf_proghdr *)((char *)elf_hdr + elf_hdr->e_phoff);
+
+	task->task_frame.rip = elf_hdr->e_entry;
+	
+	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
+		struct elf_proghdr hdr = prog_hdr[i];
+		if(hdr.p_flags & ELF_PROG_LOAD){
+			continue;
+		}
+		uint64_t flags = PAGE_PRESENT;
+		flags += (hdr.p_flags & ELF_PROG_FLAG_EXEC) ? (PAGE_NO_EXEC | PAGE_WRITE) : 0;
+		cprintf("elf_proghdr[%d], flags=%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
+		if(hdr.p_memsz > PAGE_SIZE){
+			panic("Implement mapping bigger sections than 4KB");
+		}
+		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
+			panic("Implement mapping bigger sections than 4KB");
+		}
+
+		struct page_info *page = page_alloc(ALLOC_ZERO);
+		populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);	
+		load_pml4(task->task_pml4);
+		memcpy((void*)hdr.p_va, (void*)binary+hdr.p_pa, hdr.p_filesz);
+		protect_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);
+	}
+	
 
 	/* Now map one page for the program's initial stack at virtual address
 	 * USTACK_TOP - PAGE_SIZE.
 	 */
 
 	/* LAB 3: your code here. */
+	struct page_info *page = page_alloc(ALLOC_ZERO);
+	populate_region(kernel_pml4, (void*)USTACK_TOP, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	task->task_frame.rsp = USTACK_TOP;
+
 }
 
 /* Allocates a new task with task_alloc(), loads the named ELF binary using
@@ -220,6 +251,7 @@ void task_create(uint8_t *binary, enum task_type type)
 	struct task *task = task_alloc(0);
 
 	// TODO: load ELF binary
+	task_load_elf(task, binary);
 
 	task->task_type = type;
 	if(task->task_type == TASK_TYPE_USER) {
