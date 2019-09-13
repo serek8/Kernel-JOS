@@ -233,8 +233,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	struct page_info *page = page_alloc(ALLOC_ZERO);
-	populate_region(kernel_pml4, (void*)USTACK_TOP, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	populate_region(task->task_pml4, (void*)USTACK_TOP, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	task->task_frame.rsp = USTACK_TOP;
 
 }
@@ -350,6 +349,19 @@ void task_run(struct task *task)
 	 */
 
 	/* LAB 3: Your code here. */
-	panic("task_run() not yet implemented");
+	if(cur_task == NULL){
+		cur_task = task;
+	}
+	if(cur_task->task_status == TASK_RUNNING){
+		cur_task->task_status = TASK_RUNNABLE;
+	}
+	cur_task = task;
+	task->task_status = TASK_RUNNING;
+	task->task_runs += 1;
+	load_pml4(task->task_pml4);
+	task_pop_frame(&task->task_frame);
+
+
+	// panic("task_run() not yet implemented");
 }
 
