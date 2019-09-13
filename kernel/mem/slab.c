@@ -42,9 +42,9 @@ int slab_alloc_chunk(struct slab *slab)
 	if(page == NULL){
 		return -1;
 	}
+	page->pp_ref+=1;
 	uint64_t page_va = (uint64_t)page2kva(page);
 	cprintf("slab_alloc_chunk p=%p, order=%d, free=%d\n", page, page->pp_order, page->pp_free);	
-	page_insert(kernel_pml4, page, (void*)page_va, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 
 	info = (struct slab_info*)(page_va + slab->info_off);
 	info->slab = slab;
@@ -87,11 +87,8 @@ void slab_free_chunk(struct slab *slab, struct slab_info *info)
 	/* LAB 3: your code here. */
 	list_remove(&info->node);
 	uint64_t chunk_start_va = ((uint64_t)info) - slab->info_off;
-	struct page_info *page1 = pa2page(PADDR((struct page_info*)chunk_start_va));
-	struct page_info *page2 = page_lookup(kernel_pml4, (void*)chunk_start_va, NULL);
-
-	cprintf("va=%p, p1=%p, p2=%p, p1_order=%d, p2_order=%d, p1_free=%d, p2_free=%d\n", chunk_start_va, page1, page2, page1->pp_order, page2->pp_order, page1->pp_free, page2->pp_free);
-	page_decref(page2);
+	struct page_info *page = pa2page(PADDR((struct page_info*)chunk_start_va));
+	page_decref(page);
 }
 
 /* Initializes a slab allocator for the given object size as follows:
