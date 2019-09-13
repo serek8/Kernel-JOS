@@ -40,7 +40,7 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct insert_info *info = walker->udata;
-	struct page_info *page;
+	struct page_info *page = info->page;
 
 	/* LAB 2: your code here. */
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
@@ -48,9 +48,12 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		page_decref(old_page);
 		*entry = 0;
 		tlb_invalidate(info->pml4, (void*)base);
+		if(page->pp_order == BUDDY_4K_PAGE) {
+			cprintf("inserting a small page into a huge page range is not supported\n");
+		}
 	}
 
-	page = info->page;
+	
 	// 4K page
 	if(page->pp_order == BUDDY_4K_PAGE) {
 		ptbl_alloc(entry, base, end, walker);
