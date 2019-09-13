@@ -21,12 +21,35 @@ void kmain(struct boot_info *boot_info)
 	cons_init();
 	cprintf("\n");
 
+	/* Set up segmentation, interrupts and system calls. */
+	gdt_init();
+	idt_init();
+	syscall_init();
+
 	/* Lab 1 memory management initialization functions */
 	mem_init(boot_info);
+
+	/* Set up the slab allocator. */
+	kmem_init();
+
+	/* Set up the tasks. */
+	task_init();
+
+#if defined(TEST)
+	TASK_CREATE(TEST, TASK_TYPE_USER);
+
+	/* Run task with PID 1 */
+	struct task *task = pid2task(1, 0);
+	assert(task);
+	lab3_check_vas(task->task_pml4);
+	task_run(task);
+#else
+	lab3_check_kmem();
 
 	/* Drop into the kernel monitor. */
 	while (1)
 		monitor(NULL);
+#endif
 }
 
 /*
