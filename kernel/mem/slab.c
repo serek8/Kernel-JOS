@@ -44,13 +44,10 @@ int slab_alloc_chunk(struct slab *slab)
 	}
 	page->pp_ref+=1;
 	uint64_t page_va = (uint64_t)page2kva(page);
-	cprintf("slab_alloc_chunk p=%p, order=%d, free=%d\n", page, page->pp_order, page->pp_free);	
 
 	info = (struct slab_info*)(page_va + slab->info_off);
 	info->slab = slab;
 	list_init(&info->free_list);
-
-	// cprintf("slab_chunk->count=%d page_va=%p, info=%p\n", slab->count, page_va, info);
 
 	// Setup first object
 	obj = (struct slab_obj*)page_va;
