@@ -45,6 +45,9 @@ isr_common_stub:
 	pushq %rax
 
 	/* Recover the segments. */
+	movq $GDT_KDATA, %rax
+	mov %rax, %ds
+	mov %rax, %ss
 
 	/* Jump to the generic interrupt handler. */
 	movq %rsp, %rdi
@@ -89,6 +92,29 @@ iret64:
 
 	movq 176(%rdi), %rax // ss at 22 postition
 	movq %rax, 32(%rsp)
+
+	
+	movq 8(%rdi), %r15
+	movq 16(%rdi), %r14
+	movq 24(%rdi), %r13
+	movq 32(%rdi), %r12
+	movq 40(%rdi), %r11
+	movq 48(%rdi), %r10
+	movq 56(%rdi), %r9
+	movq 64(%rdi), %r8
+	// %rdi will be later on because it stores the ptr to int_frame
+	movq 80(%rdi), %rsi
+	movq 88(%rdi), %rbp
+	movq 96(%rdi), %rbx
+	movq 104(%rdi), %rdx
+	movq 112(%rdi), %rcx
+
+	movq 0(%rdi), %rax
+	mov %rax, %ds
+
+	movq 120(%rdi), %rax
+
+	movq 72(%rdi), %rdi
 
 	iretq
 
