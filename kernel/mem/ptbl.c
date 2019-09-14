@@ -47,24 +47,29 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	/* LAB 2: your code here. */
-	struct boot_map_info *info = (struct boot_map_info*)walker->udata;
-	struct page_info *page = pa2page(info->pa);
-	
 	if((*entry & PAGE_PRESENT) == 0){ // page is not present
 		ptbl_alloc(entry, base, end, walker);
 		return 0;
 	} else if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) { // huge page
-		cprintf("!!!! ptbl_split: page is huge and we need to split up\n");
-		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
+		// pml4 is the first element in *_info struct
+		struct page_table *pml4 = (struct page_table*)walker->udata;
+		struct page_info *huge_page = pa2page(PAGE_ADDR(*entry));
+		uint64_t flags = *entry & PAGE_MASK;
+		flags &= ~PAGE_HUGE;
+		tlb_invalidate(pml4, (void*)base);
+		*entry = 0;
 
-		tlb_invalidate(info->pml4, (void*)base);
-
-		if(page->pp_order == BUDDY_4K_PAGE) {
-			ptbl_alloc(entry, base, end, walker);
-		} else {
-			page->pp_ref++;
-			*entry = info->flags | PAGE_ADDR(page2pa(page));
+		ptbl_alloc(entry, base, end, walker);
+		struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
+		for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+			struct page_info *p4k = page_alloc(BUDDY_4K_PAGE);
+			p4k->pp_ref += 1;
+			
+			pt->entries[i] = flags | PAGE_ADDR(page2pa(p4k));
+			memcpy(page2kva(p4k), page2kva(huge_page)+PAGE_SIZE*i, PAGE_SIZE);
 		}
+
+		return 0;
 	}
 	panic("ptbl_split: else?\n");
 
