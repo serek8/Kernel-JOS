@@ -12,6 +12,8 @@
 #include <kernel/sched/idt.h>
 #include <kernel/sched/syscall.h>
 
+extern struct page_table *kernel_pml4;
+
 void kmain(struct boot_info *boot_info)
 {
 	extern char edata[], end[];
@@ -39,6 +41,8 @@ void kmain(struct boot_info *boot_info)
 
 	/* Set up the tasks. */
 	task_init();
+
+	lab3_check_populate_protect(kernel_pml4);
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
