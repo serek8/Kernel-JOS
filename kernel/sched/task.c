@@ -204,27 +204,27 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 
 	task->task_frame.rip = elf_hdr->e_entry;
 	
-	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
-		struct elf_proghdr hdr = prog_hdr[i];
-		if(hdr.p_flags & ELF_PROG_LOAD){
-			continue;
-		}
-		uint64_t flags = PAGE_PRESENT;
-		flags += (hdr.p_flags & ELF_PROG_FLAG_EXEC) ? (PAGE_NO_EXEC | PAGE_WRITE) : 0;
-		cprintf("elf_proghdr[%d], flags=%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
-		if(hdr.p_memsz > PAGE_SIZE){
-			panic("Implement mapping bigger sections than 4KB");
-		}
-		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
-			panic("Implement mapping bigger sections than 4KB");
-		}
+	// for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
+	// 	struct elf_proghdr hdr = prog_hdr[i];
+	// 	if(hdr.p_flags & ELF_PROG_LOAD){
+	// 		continue;
+	// 	}
+	// 	uint64_t flags = PAGE_PRESENT;
+	// 	flags += (hdr.p_flags & ELF_PROG_FLAG_EXEC) ? (PAGE_NO_EXEC | PAGE_WRITE) : 0;
+	// 	cprintf("elf_proghdr[%d], flags=%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
+	// 	if(hdr.p_memsz > PAGE_SIZE){
+	// 		panic("Implement mapping bigger sections than 4KB");
+	// 	}
+	// 	if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
+	// 		panic("Implement mapping bigger sections than 4KB");
+	// 	}
 
-		struct page_info *page = page_alloc(ALLOC_ZERO);
-		populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);	
-		load_pml4(task->task_pml4);
-		memcpy((void*)hdr.p_va, (void*)binary+hdr.p_pa, hdr.p_filesz);
-		protect_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);
-	}
+	// 	struct page_info *page = page_alloc(ALLOC_ZERO);
+	// 	populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);	
+	// 	load_pml4((void*)PADDR(task->task_pml4));
+	// 	memcpy((void*)hdr.p_va, (void*)binary+hdr.p_pa, hdr.p_filesz);
+	// 	protect_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);
+	// }
 	
 
 	/* Now map one page for the program's initial stack at virtual address
@@ -232,7 +232,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	populate_region(task->task_pml4, (void*)USTACK_TOP, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	populate_region(task->task_pml4, (void*)USTACK_TOP, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
 
 }
@@ -354,7 +354,7 @@ void task_run(struct task *task)
 	cur_task = task;
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;
-	load_pml4(task->task_pml4);
+	load_pml4((void*)PADDR(task->task_pml4));
 	task_pop_frame(&task->task_frame);
 
 
