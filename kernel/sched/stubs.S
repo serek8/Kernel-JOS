@@ -25,6 +25,25 @@ isr_common_stub:
 	/* LAB 3: your code here. */
 	/* Save the register state on the stack. */
 
+	pushq %rax
+	pushq %rcx
+	pushq %rdx
+	pushq %rbx
+	pushq %rbp
+	pushq %rsi
+	pushq %rdi
+	pushq %r8
+	pushq %r9
+	pushq %r10
+	pushq %r11
+	pushq %r12
+	pushq %r13
+	pushq %r14
+	pushq %r15
+
+	mov %ds, %rax // %cs
+	pushq %rax
+
 	/* Recover the segments. */
 
 	/* Jump to the generic interrupt handler. */
@@ -51,6 +70,7 @@ iret64:
 	/* Restore the register state. */
 	/* Return from the interrupt. */
 	/* LAB 3: your code here. */
+
 
 	// Now the stack is misaligned by 8 bytes because 'call' instruction saved %rip on the stack
 	sub $56, %rsp  // alignment 8 + 56 = 64. Which is dividable by 16, thus aligned!
@@ -80,3 +100,9 @@ sysret64:
 	/* Return from the system call. */
 	sysretq
 
+
+.global isr0
+isr0:
+	pushq $0
+	pushq $0
+	jmp isr_common_stub
