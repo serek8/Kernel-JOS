@@ -108,15 +108,10 @@ void isr0();
 void idt_init(void)
 {
 	/* LAB 3: your code here. */
-	unsigned flags = IDT_PRESENT | IDT_PRIVL(3) | IDT_GATE(0) | 7 << 9;
+	unsigned flags = IDT_PRESENT | IDT_PRIVL(3) | IDT_GATE(0) | IDT_INT_GATE32;
 	
-	for(int i=0; i<256; i++){
-		cprintf("entries[%d]=%p\n", i, entries[i]);
-		entries[i].always0 = 0;
-		set_idt_entry(&entries[i], isr0, flags, GDT_TSS0);
-		cprintf("entries[%d]=%p\n", i, entries[i]);
-	}
-	// set_idt_entry(&entries[0], isr0, flags, GDT_TSS0);
+	set_idt_entry(&entries[0], isr0, flags, GDT_KCODE);
+
 	load_idt(&idtr);
 	cprintf("idt_init: flags=%p\n", flags);
 	
