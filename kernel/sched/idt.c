@@ -110,7 +110,7 @@ void idt_init(void)
 	/* LAB 3: your code here. */
 	unsigned flags = IDT_PRESENT | IDT_PRIVL(3) | IDT_GATE(0) | IDT_INT_GATE32;
 	unsigned flags_ring0 = IDT_PRESENT | IDT_PRIVL(0) | IDT_GATE(0) | IDT_INT_GATE32;
-	
+
 	set_idt_entry(&entries[0], isr0, flags_ring0, GDT_KCODE);
 	set_idt_entry(&entries[1], isr1, flags, GDT_KCODE);
 	set_idt_entry(&entries[2], isr2, flags, GDT_KCODE);
@@ -383,7 +383,11 @@ void int_dispatch(struct int_frame *frame)
 	/* LAB 3: your code here. */
 	switch (frame->int_no) {
 		case INT_SYSCALL:
-			panic("syscalls not implemented \n");
+			// x86_64 Linux function calls: RDI, RSI, RDX, RCX, R8, R9, XMM0–7
+			// lib/syscall.c:syscall -> calls lib/stub.S:do_syscall and arguments are just forwarded
+			// therefore the last parameter would be in XMM0 which we don't save in frame
+			frame->rax = syscall(frame->rdi, frame->rsi, frame->rdx, frame->rcx, frame->r8, frame->r9, 0);
+			return;
 		case INT_PAGE_FAULT:
 			page_fault_handler(frame);
 			panic("we should never reach this");
