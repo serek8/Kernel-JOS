@@ -15,7 +15,8 @@ static int check_user_hole(uintptr_t base, uintptr_t end,
 	struct user_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
-	return 0;
+	info->va = base;
+	return -1;
 }
 
 static int check_user_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
@@ -24,7 +25,12 @@ static int check_user_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct user_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
-	return 0;
+	if((*entry & info->flags) == info->flags) {
+		return 0;
+	}
+
+	info->va = base;
+	return -1;
 }
 
 static int check_user_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
@@ -33,7 +39,12 @@ static int check_user_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct user_info *info = walker->udata;
 
 	/* LAB 3: your code here. */
-	return 0;
+	if((*entry & info->flags) == info->flags) {
+		return 0;
+	}
+
+	info->va = base;
+	return -1;
 }
 
 int check_user_mem(uintptr_t *fault_va, struct page_table *pml4, void *va,
