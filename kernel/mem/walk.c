@@ -58,12 +58,16 @@ static int ptbl_walk_range(struct page_table *ptbl, uintptr_t base,
 		// cprintf("ptbl_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 		entry = &ptbl->entries[next_index];
 
-		if(walker->get_pte) walker->get_pte(entry, sign_extend(next), next_end, walker);
+		if(walker->get_pte) {
+			if(walker->get_pte(entry, sign_extend(next), next_end, walker) < 0) return -1;
+		}
 
 		if(*entry & PAGE_PRESENT) {
 			if(walker->unmap_pte) walker->unmap_pte(entry, next, next_end, walker);
 		} else {
-			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
+			if(walker->pte_hole) {
+				if(walker->pte_hole(next, next_end, walker) < 0) return -1;
+			}
 		}
 
 		next = ptbl_end(next) + 1;
@@ -92,21 +96,26 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 	uintptr_t next = base;
 	int next_index = PAGE_DIR_INDEX(next);
 	uintptr_t next_end = pdir_end(next);
+	int ret = 0;
 
 	// cprintf("init pdir_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 	while(next_index <= PAGE_DIR_INDEX(end)) {
 		// cprintf("    pdir_walk_range, next_index=%d, next=%p, base=%p, end=%p, next_end=%p\n", next_index, next, base, end, next_end);
 		entry = &pdir->entries[next_index];
 
-		if(walker->get_pde) walker->get_pde(entry, sign_extend(next), MIN(end, next_end), walker);  // Jan changed next_end to end | TODO checkme
+		if(walker->get_pde) {
+			if(walker->get_pde(entry, sign_extend(next), MIN(end, next_end), walker) < 0) return -1; 
+		}
 
 		if(*entry & PAGE_PRESENT) {
 			if(!(*entry & PAGE_HUGE)) {
-				ptbl_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
+				ret = ptbl_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
 				if(walker->unmap_pde) walker->unmap_pde(entry, next, next_end, walker);
 			}
 		} else {
-			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
+			if(walker->pte_hole) {
+				if(walker->pte_hole(next, next_end, walker) < 0) return -1;
+			}
 		}
 
 		if(next_index == 511) break;
@@ -114,7 +123,7 @@ static int pdir_walk_range(struct page_table *pdir, uintptr_t base,
 		next_index = PAGE_DIR_INDEX(next);
 		next_end = pdir_end(next);
 	}
-	return 0;
+	return ret;
 }
 
 /* Walks over the page range from base to end iterating over the entries in the
@@ -136,20 +145,25 @@ static int pdpt_walk_range(struct page_table *pdpt, uintptr_t base,
 	uintptr_t next = base;
 	int next_index = PDPT_INDEX(next);
 	uintptr_t next_end = pdpt_end(next);
+	int ret = 0;
 
 	// cprintf("init pdpt_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 	while(next_index <= PDPT_INDEX(end)) {
 		// cprintf("  pdpt_walk_range, next_index=%d, next=%p, base=%p, end=%p, pdpt=%p\n", next_index, next, base, end, pdpt);
 		entry = &pdpt->entries[next_index];
 
-		if(walker->get_pdpte) walker->get_pdpte(entry, sign_extend(next), next_end, walker);
+		if(walker->get_pdpte) {
+			if(walker->get_pdpte(entry, sign_extend(next), next_end, walker) < 0) return -1;
+		}
 
 		if(*entry & PAGE_PRESENT) {
 			// TODO: consider large page
-			pdir_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
+			ret = pdir_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
 			if(walker->unmap_pdpte) walker->unmap_pdpte(entry, next, next_end, walker);
 		} else {
-			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
+			if(walker->pte_hole) {
+				if(walker->pte_hole(next, next_end, walker) < 0) return -1;
+			}
 		}
 
 		if(next_index == 511) break;
@@ -158,7 +172,7 @@ static int pdpt_walk_range(struct page_table *pdpt, uintptr_t base,
 		next_end = pdpt_end(next);
 	}
 
-	return 0;
+	return ret;
 }
 
 /* Walks over the page range from base to end iterating over the entries in the
@@ -179,19 +193,24 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
 	uintptr_t next = base;
 	int next_index = PML4_INDEX(next);
 	uintptr_t next_end = pml4_end(next);
+	int ret = 0;
 
 	// cprintf("init pml4_walk_range, next_index=%d, next=%p, base=%p, end=%p\n", next_index, next, base, end);
 	while(next_index <= PML4_INDEX(end)) {
 		// cprintf("pml4_walk_range, next_index=%d, next=%p, base=%p, end=%p, pml4=%p\n", next_index, next, base, end, pml4);
 		entry = &pml4->entries[next_index];
 		
-		if(walker->get_pml4e) walker->get_pml4e(entry, sign_extend(next), next_end, walker);
+		if(walker->get_pml4e) {
+			if(walker->get_pml4e(entry, sign_extend(next), next_end, walker) < 0) return -1;
+		}
 
 		if(*entry & PAGE_PRESENT) {
-			pdpt_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
+			ret = pdpt_walk_range((struct page_table*)KADDR(PAGE_ADDR(*entry)), next, MIN(end, next_end), walker);
 			if(walker->unmap_pml4e) walker->unmap_pml4e(entry, next, next_end, walker);
 		} else {
-			if(walker->pte_hole) walker->pte_hole(next, next_end, walker);
+			if(walker->pte_hole) {
+				if(walker->pte_hole(next, next_end, walker) < 0) return -1;
+			}
 		}
 
 		if(next_index == 511) break;
@@ -200,7 +219,7 @@ static int pml4_walk_range(struct page_table *pml4, uintptr_t base, uintptr_t en
 		next_end = pml4_end(next);
 	}
 
-	return 0;
+	return ret;
 }
 
 /* Helper function to walk over a page range starting at base and ending before
