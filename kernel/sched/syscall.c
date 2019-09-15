@@ -33,7 +33,7 @@ static void sys_cputs(const char *s, size_t len)
 	/* Check that the user has permission to read memory [s, s+len).
 	 * Destroy the environment if not. */
 	/* LAB 3: your code here. */
-
+	
 	/* Print the string supplied by the user. */
 	cprintf("%.*s", len, s);
 }
@@ -80,9 +80,13 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	 * Return any appropriate return value.
 	 */
 	/* LAB 3: your code here. */
-	panic("syscall not implemented");
+	// cprintf("syscallno=%d, a1=%s\n", syscallno, a1);
 
 	switch (syscallno) {
+		case SYS_cputs:
+			sys_cputs((const char*)a1, a2);
+			return 0;
+
 	default:
 		return -ENOSYS;
 	}
