@@ -110,8 +110,9 @@ void idt_init(void)
 {
 	/* LAB 3: your code here. */
 	unsigned flags = IDT_PRESENT | IDT_PRIVL(3) | IDT_GATE(0) | IDT_INT_GATE32;
+	unsigned flags_ring0 = IDT_PRESENT | IDT_PRIVL(0) | IDT_GATE(0) | IDT_INT_GATE32;
 	
-	set_idt_entry(&entries[0], isr0, flags, GDT_KCODE);
+	set_idt_entry(&entries[0], isr0, flags_ring0, GDT_KCODE);
 	set_idt_entry(&entries[1], isr1, flags, GDT_KCODE);
 	set_idt_entry(&entries[2], isr2, flags, GDT_KCODE);
 	set_idt_entry(&entries[3], isr3, flags, GDT_KCODE);
@@ -125,7 +126,7 @@ void idt_init(void)
 	set_idt_entry(&entries[11], isr11, flags, GDT_KCODE);
 	set_idt_entry(&entries[12], isr12, flags, GDT_KCODE);
 	set_idt_entry(&entries[13], isr13, flags, GDT_KCODE);
-	set_idt_entry(&entries[14], isr14, flags, GDT_KCODE);
+	set_idt_entry(&entries[14], isr14, flags_ring0, GDT_KCODE);
 	set_idt_entry(&entries[15], isr15, flags, GDT_KCODE);
 	set_idt_entry(&entries[16], isr16, flags, GDT_KCODE);
 	set_idt_entry(&entries[17], isr17, flags, GDT_KCODE);
@@ -392,6 +393,8 @@ void int_dispatch(struct int_frame *frame)
 		case INT_PAGE_FAULT:
 			page_fault_handler(frame);
 			panic("we should never reach this");
+		case INT_BREAK:
+			while(1) monitor(NULL);
 			
 	default: break;
 	}
