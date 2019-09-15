@@ -59,6 +59,7 @@ isr_common_stub:
 	movq $GDT_KDATA, %rax
 	mov %rax, %ds
 	mov %rax, %ss
+	mov %rax, %es
 
 	/* Jump to the generic interrupt handler. */
 	movq %rsp, %rdi
