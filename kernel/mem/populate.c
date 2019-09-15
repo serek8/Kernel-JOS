@@ -63,6 +63,10 @@ void populate_region(struct page_table *pml4, void *va, size_t size,
 	uint64_t flags)
 {
 	/* LAB 3: your code here. */
+	if(size == 0) {
+		panic("Can't populate with size=0\n");
+	}
+
 	struct populate_info info = {
 		.flags = flags,
 		.base = ROUNDDOWN((uintptr_t)va, PAGE_SIZE),

@@ -207,16 +207,20 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
+		if(!(hdr.p_type & ELF_PROG_LOAD)) {
+			continue;
+		}
 		uint64_t flags = PAGE_PRESENT | PAGE_USER;
 		flags += (hdr.p_flags & ELF_PROG_FLAG_EXEC) ? 0 : PAGE_NO_EXEC;
 		flags += (hdr.p_flags & ELF_PROG_FLAG_WRITE) ? PAGE_WRITE : 0;
 		
 		cprintf("elf_proghdr[%d], flags=%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
-		if(hdr.p_memsz > PAGE_SIZE){
-			panic("Implement mapping bigger sections than 4KB");
-		}
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
 			panic("Implement mapping bigger sections than 4KB");
+		}
+		// skip weird program headers
+		if(hdr.p_va == 0x0 || hdr.p_memsz == 0) {
+			continue;
 		}
 
 		populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, PAGE_PRESENT | PAGE_WRITE);	
