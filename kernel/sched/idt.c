@@ -113,15 +113,15 @@ void idt_init(void)
 	unsigned flags_ring0 = IDT_PRESENT | IDT_PRIVL(0) | IDT_GATE(0) | IDT_INT_GATE32;
 
 	set_idt_entry(&entries[0], isr0, flags_ring0, GDT_KCODE);
-	set_idt_entry(&entries[1], isr1, flags, GDT_KCODE);
-	set_idt_entry(&entries[2], isr2, flags, GDT_KCODE);
+	set_idt_entry(&entries[1], isr1, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[2], isr2, flags_ring0, GDT_KCODE);
 	set_idt_entry(&entries[3], isr3, flags, GDT_KCODE);
-	set_idt_entry(&entries[4], isr4, flags, GDT_KCODE);
-	set_idt_entry(&entries[5], isr5, flags, GDT_KCODE);
-	set_idt_entry(&entries[6], isr6, flags, GDT_KCODE);
-	set_idt_entry(&entries[7], isr7, flags, GDT_KCODE);
-	set_idt_entry(&entries[8], isr8, flags, GDT_KCODE);
-	set_idt_entry(&entries[9], isr9, flags, GDT_KCODE);
+	set_idt_entry(&entries[4], isr4, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[5], isr5, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[6], isr6, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[7], isr7, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[8], isr8, flags_ring0, GDT_KCODE);
+	set_idt_entry(&entries[9], isr9, flags_ring0, GDT_KCODE);
 	set_idt_entry(&entries[10], isr10, flags, GDT_KCODE);
 	set_idt_entry(&entries[11], isr11, flags, GDT_KCODE);
 	set_idt_entry(&entries[12], isr12, flags, GDT_KCODE);

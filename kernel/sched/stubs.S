@@ -69,10 +69,46 @@ isr_common_stub:
 syscall64:
 	/* LAB 3: your code here. */
 	/* Store the userspace stack pointer in the per-cpu struct. */
-
+	swapgs 
+	mov %rsp, %gs:CPU_TSS_RSP3
+	
 	/* Load the kernel stack pointer from the per-cpu struct. */
+	mov %gs:CPU_TSS_RSP0, %rsp
 
 	/* Store the register state into the per-cpu struct. */
+	movq %gs:CPU_TASK, %rax // RAX will contain the result of the syscall, so can be overwritten
+
+	movq %r15, IF_R15(%rax)
+	movq %r14, IF_R14(%rax)
+	movq %r13, IF_R13(%rax)
+	movq %r12, IF_R12(%rax)
+	movq %r10, IF_R10(%rax)
+	movq %r9, IF_R9(%rax)
+	movq %r8, IF_R8(%rax)
+	movq %rsi, IF_RSI(%rax)
+	movq %rbp, IF_RBP(%rax)
+	movq %rbx, IF_RBX(%rax)
+	movq %rdx, IF_RDX(%rax)
+	movq %rcx, IF_RIP(%rax)
+	movq %r11, IF_RFLAGS(%rax)
+	movq %rdi, IF_RDI(%rax)
+
+	movq $0, %rcx // overwritten by syscall instruction
+	movq %rcx, IF_R11(%rax) // IF_R11 used to containt rflags
+	movq %rcx, IF_RCX(%rax) // IF_RCX used to containt %rip
+	
+	movq $0x80, %rcx
+	movq %rcx, IF_INO(%rax)
+
+	mov %gs:CPU_TSS_RSP3, %rcx
+	mov %rcx, IF_RSP(%rax)
+
+	mov %ss, %rcx
+	mov %rcx, IF_SS(%rax)
+
+	mov $GDT_KDATA, %rcx
+	mov %rcx, %ds
+	mov %rcx, %es
 
 	/* Jump to the system call handler. */
 	movq %r10, %rcx
@@ -86,47 +122,46 @@ iret64:
 	/* Return from the interrupt. */
 	/* LAB 3: your code here. */
 
-
 	// Now the stack is misaligned by 8 bytes because 'call' instruction saved %rip on the stack
 	sub $56, %rsp  // alignment 8 + 56 = 64. Which is dividable by 16, thus aligned!
 
-	movq 144(%rdi), %rax // rip at 18 postition
+	// iretq passes %rip, %cs, rflags, %rsp, %ss as values on the stack 
+	movq IF_RIP(%rdi), %rax // push rip
 	movq %rax, (%rsp)
 
-	movq 152(%rdi), %rax // cs at 19 postition
+	movq IF_CS(%rdi), %rax // push cs
 	movq %rax, 8(%rsp)
 
-	movq 160(%rdi), %rax // rflags at 20 postition
+	movq IF_RFLAGS(%rdi), %rax // push rflags
 	movq %rax, 16(%rsp)
 
-	movq 168(%rdi), %rax // rsp at 21 postition
+	movq IF_RSP(%rdi), %rax // push rsp
 	movq %rax, 24(%rsp)
 
-	movq 176(%rdi), %rax // ss at 22 postition
+	movq IF_SS(%rdi), %rax // push ss
 	movq %rax, 32(%rsp)
 
-	
-	movq 8(%rdi), %r15
-	movq 16(%rdi), %r14
-	movq 24(%rdi), %r13
-	movq 32(%rdi), %r12
-	movq 40(%rdi), %r11
-	movq 48(%rdi), %r10
-	movq 56(%rdi), %r9
-	movq 64(%rdi), %r8
-	// %rdi will be later on because it stores the ptr to int_frame
-	movq 80(%rdi), %rsi
-	movq 88(%rdi), %rbp
-	movq 96(%rdi), %rbx
-	movq 104(%rdi), %rdx
-	movq 112(%rdi), %rcx
+	movq IF_R15(%rdi), %r15
+	movq IF_R14(%rdi), %r14
+	movq IF_R13(%rdi), %r13
+	movq IF_R12(%rdi), %r12
+	movq IF_R11(%rdi), %r11
+	movq IF_R10(%rdi), %r10
+	movq IF_R9(%rdi), %r9
+	movq IF_R8(%rdi), %r8
+	movq IF_RSI(%rdi), %rsi
+	movq IF_RBP(%rdi), %rbp
+	movq IF_RBX(%rdi), %rbx
+	movq IF_RDX(%rdi), %rdx
+	movq IF_RCX(%rdi), %rcx
 
-	movq 0(%rdi), %rax
+	movq IF_DS(%rdi), %rax
 	mov %rax, %ds
+	mov %rax, %es
 
-	movq 120(%rdi), %rax
-
-	movq 72(%rdi), %rdi
+	// restore values used for positioning
+	movq IF_RAX(%rdi), %rax
+	movq IF_RDI(%rdi), %rdi
 
 	iretq
 
@@ -135,6 +170,32 @@ sysret64:
 	/* LAB 3: your code here. */
 	/* Recover the register state. */
 
+	movq IF_R15(%rdi), %r15
+	movq IF_R14(%rdi), %r14
+	movq IF_R13(%rdi), %r13
+	movq IF_R12(%rdi), %r12
+	movq IF_R11(%rdi), %r11
+	movq IF_R10(%rdi), %r10
+	movq IF_R9(%rdi), %r9
+	movq IF_R8(%rdi), %r8
+	// %rdi will be later on because it stores the ptr to int_frame
+	movq IF_RSI(%rdi), %rsi
+	movq IF_RBP(%rdi), %rbp
+	movq IF_RBX(%rdi), %rbx
+	movq IF_RDX(%rdi), %rdx
+	movq IF_RSP(%rdi), %rsp
+
+	movq IF_DS(%rdi), %rdx
+	mov %rdx, %ds
+	mov %rdx, %es
+	movq IF_RDX(%rdi), %rdx
+
+	movq IF_RAX(%rdi), %rax
+	movq IF_RIP(%rdi), %rcx // %rip
+	movq IF_RFLAGS(%rdi), %r11 // %flags
+	movq IF_RDI(%rdi), %rdi
+
+	swapgs
 	/* Return from the system call. */
 	sysretq
 
