@@ -106,6 +106,7 @@ BOOT_LDFLAGS := -N -nostdlib -T boot/boot.ld -m32 -static -fno-pie -Wl,-melf_i38
 KERNEL_CFLAGS := $(CFLAGS) -DJOS_KERNEL -gdwarf-2 -mcmodel=large -fno-pie
 KERNEL_CFLAGS += -DKERNEL_LMA=0x100000
 KERNEL_CFLAGS += -DKERNEL_VMA=0xFFFF800000000000
+KERNEL_CFLAGS += -DLAB3_SYSCALL=0x1
 
 KERNEL_LDFLAGS := -Tkernel/kernel.ld -nostdlib -n -fno-pie
 KERNEL_LDFLAGS += -Wl,--defsym,KERNEL_LMA=0x100000
@@ -114,6 +115,7 @@ KERNEL_LDFLAGS += -static
 
 USER_CFLAGS := $(CFLAGS) -DJOS_USER -gdwarf-2 -fPIC
 USER_LDFLAGS := -Tuser/user.ld -nostdlib -n
+USER_CFLAGS += -DLAB3_SYSCALL=0x1
 
 # Update .vars.X if variable X has changed since the last make run.
 #
