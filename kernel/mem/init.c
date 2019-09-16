@@ -135,7 +135,7 @@ void mem_init(struct boot_info *boot_info)
 	pml4_setup(boot_info);
 
 	/* Enable the NX-bit. */
-	write_msr(MSR_EFER, MSR_EFER_NXE);
+	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
 	lab2_check_pml4();
