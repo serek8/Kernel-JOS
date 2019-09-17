@@ -19,7 +19,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(*entry & PAGE_PRESENT) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		*entry = 0;
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 	page = page_alloc(ALLOC_ZERO);
@@ -39,7 +39,7 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		*entry = 0;
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 
