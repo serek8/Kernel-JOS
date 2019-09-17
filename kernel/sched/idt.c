@@ -386,7 +386,7 @@ void int_dispatch(struct int_frame *frame)
 			// x86_64 Linux function calls: RDI, RSI, RDX, RCX, R8, R9, XMM0–7
 			// lib/syscall.c:syscall -> calls lib/stub.S:do_syscall and arguments are just forwarded
 			// therefore the last parameter would be in XMM0 which we don't save in frame
-			frame->rax = syscall(frame->rdi, frame->rsi, frame->rdx, frame->rcx, frame->r8, frame->r9, 0);
+			frame->rax = syscall(frame->rdi, frame->rsi, frame->rdx, frame->rcx, frame->r8, frame->r9, frame->rbp);
 			return;
 		case INT_PAGE_FAULT:
 			page_fault_handler(frame);
