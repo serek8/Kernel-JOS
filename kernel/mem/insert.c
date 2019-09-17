@@ -18,7 +18,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(*entry & PAGE_PRESENT) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		*entry = 0;
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 	page = info->page;
@@ -46,7 +46,7 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		struct page_info *old_page = pa2page(PAGE_ADDR(*entry));
 		page_decref(old_page);
-		*entry = 0;
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 		if(page->pp_order == BUDDY_4K_PAGE) {
 			cprintf("inserting a small page into a huge page range is not supported\n");

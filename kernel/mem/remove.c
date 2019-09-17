@@ -21,7 +21,7 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if(*entry & PAGE_PRESENT){
 		struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
 		page_decref(page);
-		*entry = 0; // set PRESENT flag to 0
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 	return 0;
@@ -43,7 +43,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
 			
 			page_decref(page);
-			*entry = 0; // set PRESENT flag to 0
+			*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 			tlb_invalidate(info->pml4, (void*)base);
 		} else {
 			// split huge page if we are deleting a smaller range
@@ -53,7 +53,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			flags &= ~(PAGE_HUGE);
 			
 			// create page table and set as entry instead of huge page
-			*entry = 0;
+			*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 			tlb_invalidate(info->pml4, (void*)base);
 			ptbl_alloc(entry, base, end, walker);
 			struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));

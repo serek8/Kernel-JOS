@@ -199,6 +199,14 @@ sysret64:
 	/* Return from the system call. */
 	sysretq
 
+.global MDS_buff_overwrite
+MDS_buff_overwrite:
+	sub $8, %rsp
+	mov %ds, (%rsp)
+	verw (%rsp)
+	add $8, %rsp
+	ret
+
 
 ISR_NOERRCODE int_no=0 // INT_DIVIDE
 ISR_NOERRCODE int_no=1 // INT_DEBUG
