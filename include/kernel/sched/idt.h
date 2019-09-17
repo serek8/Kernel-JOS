@@ -9,6 +9,8 @@ void idt_init(void);
 void int_handler(struct int_frame *frame);
 void page_fault_handler(struct int_frame *frame);
 
+void MDS_buff_overwrite();
+
 void isr0();
 void isr1();
 void isr2();
