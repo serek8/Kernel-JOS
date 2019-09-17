@@ -57,7 +57,7 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		uint64_t flags = *entry & PAGE_MASK;
 		flags &= ~PAGE_HUGE;
 		tlb_invalidate(pml4, (void*)base);
-		*entry = 0;
+		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 
 		ptbl_alloc(entry, base, end, walker);
 		struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
@@ -168,6 +168,6 @@ int ptbl_free(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct page_info *page = pa2page(PAGE_ADDR(*entry));
 	page_decref(page);
 
-	*entry = 0; // sets PAGE_PRESENT 
+	*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 	return 0;
 }
