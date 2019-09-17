@@ -82,16 +82,16 @@ syscall64:
 	movq %r14, IF_R14(%rax)
 	movq %r13, IF_R13(%rax)
 	movq %r12, IF_R12(%rax)
-	movq %r10, IF_R10(%rax)
-	movq %r9, IF_R9(%rax)
-	movq %r8, IF_R8(%rax)
-	movq %rsi, IF_RSI(%rax)
-	movq %rbp, IF_RBP(%rax)
+	movq %r10, IF_R10(%rax) // input 4th, will move to %rcx output later on
+	movq %r9, IF_R9(%rax) // input 6th output 6th
+	movq %r8, IF_R8(%rax) // input 5th output 5th
+	movq %rsi, IF_RSI(%rax) // input:2nd output:2nd
+	movq %rbp, IF_RBP(%rax) // input 7th output 7th
 	movq %rbx, IF_RBX(%rax)
-	movq %rdx, IF_RDX(%rax)
+	movq %rdx, IF_RDX(%rax) // input:3rd output:3rd
 	movq %rcx, IF_RIP(%rax)
 	movq %r11, IF_RFLAGS(%rax)
-	movq %rdi, IF_RDI(%rax)
+	movq %rdi, IF_RDI(%rax) // input:1st output:1st
 
 	movq $0, %rcx // overwritten by syscall instruction
 	movq %rcx, IF_R11(%rax) // IF_R11 used to containt rflags
@@ -111,7 +111,7 @@ syscall64:
 	mov %rcx, %es
 
 	/* Jump to the system call handler. */
-	movq %r10, %rcx
+	movq %r10, %rcx // r10 input 4th, rcx output 4th
 	pushq %rbp
 	pushq $0
 	jmp syscall_handler
