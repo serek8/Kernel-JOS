@@ -1,6 +1,8 @@
 #include <kernel/console.h>
 #include <kernel/mem.h>
 #include <kernel/monitor.h>
+#include <kernel/sched.h>
+#include <kernel/tests.h>
 
 #include <boot.h>
 #include <stdio.h>
