@@ -457,15 +457,14 @@ void page_fault_handler(struct int_frame *frame)
 
 	/* Read the CR2 register to find the faulting address. */
 	fault_va = (void *)read_cr2();
-	cprintf("cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
+	cprintf("PAGE FAULT!! cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
 
 	/* Handle kernel-mode page faults. */
-	cprintf("Will try to map\n");
 	if(task_page_fault_handler(cur_task, fault_va, frame->err_code) == 0){
 		task_run(cur_task);
 	} else {
 		// try to pop frame
-		cprintf("MApping failed\n");
+		cprintf("Mapping failed\n");
 
 	}
 	/* LAB 3: your code here. */
