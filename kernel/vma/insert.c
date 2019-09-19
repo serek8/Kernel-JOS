@@ -62,7 +62,24 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	size_t size, int flags, void *src, size_t len)
 {
 	/* LAB 4: your code here. */
-	return NULL;
+	struct vma *vma = kmalloc(sizeof(struct vma));
+	int name_len = strlen(name);
+	vma->vm_name = strcpy(kmalloc(name_len), name);
+	vma->vm_name[name_len] = '\0';
+	vma->vm_base = addr;
+	vma->vm_end = addr+len;
+	vma->vm_src = src;
+	list_init(&vma->vm_mmap);
+	// rb_init(&vma->vm_rb);
+	if((flags & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)){
+		panic("VMA cannot be eecutable and writable at the same time!");
+	}
+	vma->vm_flags = flags;
+	if(insert_vma(task, vma) == -1){
+		cprintf("insert_vma return -1");
+	}
+	// TODO merge
+	return vma;
 }
 
 /* A simplified wrapper to add anonymous VMAs, i.e. VMAs not backed by an
@@ -87,6 +104,11 @@ struct vma *add_vma(struct task *task, char *name, void *addr, size_t size,
 	int flags)
 {
 	/* LAB 4: your code here. */
+	
+
+
+
+
 	return NULL;
 }
 
