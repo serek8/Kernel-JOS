@@ -11,6 +11,7 @@
 #include <kernel/sched/syscall.h>
 
 #include <kernel/sched/task.h>
+#include <kernel/vma.h>
 
 static const char *int_names[256] = {
 	[INT_DIVIDE] = "Divide-by-Zero Error Exception (#DE)",
@@ -456,8 +457,17 @@ void page_fault_handler(struct int_frame *frame)
 
 	/* Read the CR2 register to find the faulting address. */
 	fault_va = (void *)read_cr2();
+	cprintf("cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
 
 	/* Handle kernel-mode page faults. */
+	cprintf("Will try to map\n");
+	if(task_page_fault_handler(cur_task, fault_va, frame->err_code) == 0){
+		task_run(cur_task);
+	} else {
+		// try to pop frame
+		cprintf("MApping failed\n");
+
+	}
 	/* LAB 3: your code here. */
 	if ((frame->cs & 3) == 0) {
 		panic("kernel page fault at rip=%p, faulting address=%p\n", frame->rip, fault_va);
@@ -471,6 +481,10 @@ void page_fault_handler(struct int_frame *frame)
 	cprintf("[PID %5u] user fault va %p ip %p\n",
 		cur_task->task_pid, fault_va, frame->rip);
 	print_int_frame(frame);
+
+	
+	
+
 	task_destroy(cur_task);
 }
 
