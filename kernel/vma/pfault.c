@@ -9,7 +9,8 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 {
 	/* LAB 4: your code here. */
 	//TODO: check access rights
-	return populate_vma_range(task, ROUNDDOWN(va, PAGE_SIZE), PAGE_SIZE, flags); // TODO: what if its HUGEPAGE
+	void *page_start = ROUNDDOWN(va, PAGE_SIZE);
+	return populate_vma_range(task, page_start, PAGE_SIZE, flags); // TODO: what if its HUGEPAGE
 
 	/* LAB 5: your code here. */
 	return -1;

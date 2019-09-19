@@ -161,6 +161,21 @@ struct task *task_alloc(pid_t ppid)
 	return task;
 }
 
+void find_segment_names(char *buffer, int max_bytes, struct elf *elf_hdr, struct elf_proghdr hdr){
+	for(int section_i=0; section_i<elf_hdr->e_shnum; section_i++){
+			struct elf_secthdr *sect_hdr = (struct elf_secthdr *)(((uint64_t)elf_hdr) + elf_hdr->e_shoff + section_i*64);
+			struct elf_secthdr *str_sect_hdr = (struct elf_secthdr *)(((uint64_t)elf_hdr) + elf_hdr->e_shoff + elf_hdr->e_shstrndx*64);
+			char *str_sect = (char *)((uint8_t*)elf_hdr + str_sect_hdr->sh_offset);
+			char *str = str_sect + sect_hdr->sh_name;
+			if(sect_hdr->sh_addr >= hdr.p_va &&  sect_hdr->sh_addr < hdr.p_va + hdr.p_memsz){
+				int saved_bytes = snprintf(buffer, max_bytes, "%s ", str);
+				// cprintf("locl buffer=%s\n", buffer);
+				buffer += saved_bytes;
+				max_bytes -= saved_bytes;
+			}
+		}
+}
+
 /* Sets up the initial program binary, stack and processor flags for a user
  * process.
  * This function is ONLY called during kernel initialization, before running
@@ -205,9 +220,10 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	/* LAB 3: your code here. */
 	struct elf *elf_hdr = (struct elf *)binary;
 	struct elf_proghdr *prog_hdr = (struct elf_proghdr *)((char *)elf_hdr + elf_hdr->e_phoff);
-
-	task->task_frame.rip = elf_hdr->e_entry;
+	char buffer[100];
 	
+	task->task_frame.rip = elf_hdr->e_entry;
+	cprintf("+ - - Program Headers - - +\n");
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
 		if(!(hdr.p_type & ELF_PROG_LOAD)) {
@@ -216,8 +232,12 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		uint64_t flags = VM_READ;
 		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_EXEC-1))) ? VM_EXEC : 0;
 		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_WRITE-1))) ? VM_WRITE : 0;
+		cprintf("| [%d] vma_flags=0x%lx, elf_flags=0x%lx, elf_type=%x\n"
+			"|   va=%p, pa=%p, mem_size=%u file_size=%u\n", 
+			i, flags, hdr.p_flags, hdr.p_type, hdr.p_va, hdr.p_pa, hdr.p_memsz, hdr.p_filesz);
+		find_segment_names(buffer, 100, elf_hdr, hdr);
+		cprintf("|   sections=%s\n+ - - - - \n", buffer);
 		
-		cprintf("elf_proghdr[%d], vma_flags=0x%lx, elf_flags=0x%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
 			panic("Implement mapping bigger sections than 4KB");
 		}
@@ -225,24 +245,14 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		if(hdr.p_va == 0x0 || hdr.p_memsz == 0) {
 			continue;
 		}
-
-		// populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, PAGE_PRESENT | PAGE_WRITE);	
 		load_pml4((void*)PADDR(task->task_pml4));
-		// uint64_t flags_vma = VM_READ;
-		// flags_vma += (flags & PAGE_WRITE) ? VM_WRITE : 0;
-		// flags_vma += (flags & PAGE_NO_EXEC) ? 0 : VM_EXEC;
-		// flags_vma += (flags & PAGE_DIRTY) ? VM_DIRTY : 0;
-		char* name = "TEST  ";
-		name[4] = i + 48;
-		if(flags & VM_EXEC){
-			add_executable_vma(task, name, (void*)hdr.p_va, hdr.p_memsz, flags, (void*)(binary+hdr.p_offset), hdr.p_filesz);
+		
+		if(hdr.p_filesz > 0){
+			add_executable_vma(task, buffer, (void*)hdr.p_va, hdr.p_memsz, flags, (void*)(binary+hdr.p_offset), hdr.p_filesz);
 		}
 		else{
-			add_anonymous_vma(task, name, (void*)hdr.p_va, hdr.p_memsz, flags);
+			add_anonymous_vma(task, buffer, (void*)hdr.p_va, hdr.p_memsz, flags);
 		}
-		
-		// memcpy((void*)hdr.p_va, (void*)binary+hdr.p_offset, hdr.p_filesz);
-		
 	}
 	
 
@@ -253,7 +263,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	/* LAB 3: your code here. */
 	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
-	print_int_frame(&task->task_frame);
 
 }
 
@@ -331,6 +340,7 @@ void task_destroy(struct task *task)
  */
 void task_pop_frame(struct int_frame *frame)
 {
+	// cprintf(">> Will enter user mode\n");
 	#ifdef BONUS_LAB3
 	// BONUS_LAB3: flush CPU buffers before switching to user process
 	MDS_buff_overwrite();
