@@ -9,11 +9,7 @@
  * by an executable, the data is copied over. Then the protection of the
  * physical pages is adjusted to match the permissions of the VMA.
  */
-// #define PF_PRESENT  (1 << 0)
-// #define PF_WRITE    (1 << 1)
-// #define PF_USER     (1 << 2)
-// #define PF_RESERVED (1 << 3)
-// #define PF_IFETCH   (1 << 4)
+
 int do_populate_vma(struct task *task, void *base, size_t size,
 	struct vma *vma, void *udata)
 {
@@ -29,15 +25,15 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	// 	cprintf("int_flags_vma=%p | vma->vm_flags=%p\n", int_flags_vma, vma->vm_flags);
 	// 	return -1;
 	// }
-	cprintf("do_populate_vma\n");
+	
 	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE);		
 	if (vma->vm_src){
-		memcpy(base, vma->vm_src, size);
+		memcpy(vma->vm_base, vma->vm_src, MIN(size, vma->vm_len)); // fix src, index todo
 	}
 	uint64_t pt_flags = PAGE_PRESENT | PAGE_USER;
 	pt_flags += (vma->vm_flags & VM_EXEC) ? 0 : PAGE_NO_EXEC;
 	pt_flags += (vma->vm_flags & VM_WRITE) ? PAGE_WRITE : 0;
-
+	cprintf("do_populate_vma: base=%p, size=%d, page_flags=%x, name=%s\n", base, size, pt_flags, vma->vm_name);
 	protect_region(task->task_pml4, base, size, pt_flags);
 	return 0;
 }
