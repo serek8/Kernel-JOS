@@ -7,6 +7,7 @@
 #include <kernel/monitor.h>
 #include <kernel/mem.h>
 #include <kernel/sched.h>
+#include <kernel/vma/insert.h>
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -141,6 +142,8 @@ struct task *task_alloc(pid_t ppid)
 	task->task_type = TASK_TYPE_USER;
 	task->task_status = TASK_RUNNABLE;
 	task->task_runs = 0;
+	list_init(&task->task_mmap);
+	rb_init(&task->task_rb);
 
 	memset(&task->task_frame, 0, sizeof task->task_frame);
 
@@ -209,11 +212,11 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		if(!(hdr.p_type & ELF_PROG_LOAD)) {
 			continue;
 		}
-		uint64_t flags = PAGE_PRESENT | PAGE_USER;
-		flags += (hdr.p_flags & ELF_PROG_FLAG_EXEC) ? 0 : PAGE_NO_EXEC;
-		flags += (hdr.p_flags & ELF_PROG_FLAG_WRITE) ? PAGE_WRITE : 0;
+		uint64_t flags = VM_READ;
+		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_EXEC-1))) ? VM_EXEC : 0;
+		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_WRITE-1))) ? VM_WRITE : 0;
 		
-		cprintf("elf_proghdr[%d], flags=%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
+		cprintf("elf_proghdr[%d], vma_flags=0x%lx, elf_flags=0x%lx, va=%p, pa=%p, size=%u\n", i, flags, hdr.p_flags, hdr.p_va, hdr.p_pa, hdr.p_filesz);
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
 			panic("Implement mapping bigger sections than 4KB");
 		}
@@ -222,11 +225,23 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 			continue;
 		}
 
-		populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, PAGE_PRESENT | PAGE_WRITE);	
+		// populate_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, PAGE_PRESENT | PAGE_WRITE);	
 		load_pml4((void*)PADDR(task->task_pml4));
-		memcpy((void*)hdr.p_va, (void*)binary+hdr.p_offset, hdr.p_filesz);
-
-		protect_region(task->task_pml4, (void*)hdr.p_va, hdr.p_memsz, flags);
+		// uint64_t flags_vma = VM_READ;
+		// flags_vma += (flags & PAGE_WRITE) ? VM_WRITE : 0;
+		// flags_vma += (flags & PAGE_NO_EXEC) ? 0 : VM_EXEC;
+		// flags_vma += (flags & PAGE_DIRTY) ? VM_DIRTY : 0;
+		char* name = "TEST  ";
+		name[4] = i + 48;
+		if(flags & VM_EXEC){
+			add_executable_vma(task, name, (void*)hdr.p_va, hdr.p_memsz, flags, (void*)(binary+hdr.p_offset), hdr.p_filesz);
+		}
+		else{
+			add_anonymous_vma(task, name, (void*)hdr.p_va, hdr.p_memsz, flags);
+		}
+		
+		// memcpy((void*)hdr.p_va, (void*)binary+hdr.p_offset, hdr.p_filesz);
+		
 	}
 	
 
@@ -237,6 +252,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	/* LAB 3: your code here. */
 	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
+	print_int_frame(&task->task_frame);
 
 }
 
