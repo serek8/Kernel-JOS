@@ -92,7 +92,23 @@ int sys_mquery(struct vma_info *info, void *addr)
 void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 	uintptr_t offset)
 {
+	cprintf("sys_mmap: addr=%p, len=%d, prot=%p, flags=%p, fd=%p, offset=%p\n", addr, len, prot, flags, fd, offset);
 	/* LAB 4: your code here. */
+	if(addr > (void *)USER_LIM) {
+		return NULL;
+	}
+
+	struct vma *vma = add_vma(cur_task, "user", addr, len, prot);
+	if(vma != NULL) {
+		return vma->vm_base;
+	}
+
+	// MAP ANONYMOUS | MAP PRIVATE
+
+	// TODO: check prot flags
+	// TODO: handle MAP_FIXED
+	// TODO: handle MAP_POPULATE
+
 	return NULL;
 }
 
