@@ -460,13 +460,6 @@ void page_fault_handler(struct int_frame *frame)
 	cprintf("PAGE FAULT!! cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
 
 	/* Handle kernel-mode page faults. */
-	if(task_page_fault_handler(cur_task, fault_va, frame->err_code) == 0){
-		task_run(cur_task);
-	} else {
-		// try to pop frame
-		cprintf("Mapping failed\n");
-
-	}
 	/* LAB 3: your code here. */
 	if ((frame->cs & 3) == 0) {
 		panic("kernel page fault at rip=%p, faulting address=%p\n", frame->rip, fault_va);
@@ -475,6 +468,12 @@ void page_fault_handler(struct int_frame *frame)
 	/* We have already handled kernel-mode exceptions, so if we get here, the
 	 * page fault has happened in user mode.
 	 */
+	if(task_page_fault_handler(cur_task, fault_va, frame->err_code) == 0){
+		task_run(cur_task);
+	} else {
+		// try to pop frame
+		cprintf("Mapping failed\n");
+	}
 
 	/* Destroy the task that caused the fault. */
 	cprintf("[PID %5u] user fault va %p ip %p\n",
