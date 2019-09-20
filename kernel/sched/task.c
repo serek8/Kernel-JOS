@@ -175,6 +175,19 @@ void find_segment_names(char *buffer, int max_bytes, struct elf *elf_hdr, struct
 		}
 }
 
+void choose_segment_name(char *buffer, int max_bytes, struct elf *elf_hdr, struct elf_proghdr hdr){
+	if(hdr.p_flags == ELF_PROG_FLAG_EXEC + ELF_PROG_FLAG_READ){
+		snprintf(buffer, max_bytes, ".text");
+	} else if(hdr.p_flags == ELF_PROG_FLAG_READ){
+		snprintf(buffer, max_bytes, ".rodata");
+	} else if(hdr.p_flags == ELF_PROG_FLAG_READ + ELF_PROG_FLAG_WRITE){
+		snprintf(buffer, max_bytes, ".data");
+	} else{
+		panic("ELF FLAG NOT RECOGNISED");
+	}
+
+}
+
 /* Sets up the initial program binary, stack and processor flags for a user
  * process.
  * This function is ONLY called during kernel initialization, before running
@@ -234,7 +247,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		cprintf("| [%d] vma_flags=0x%lx, elf_flags=0x%lx, elf_type=%x\n"
 			"|   va=%p, pa=%p, mem_size=%u file_size=%u\n", 
 			i, flags, hdr.p_flags, hdr.p_type, hdr.p_va, hdr.p_pa, hdr.p_memsz, hdr.p_filesz);
-		find_segment_names(buffer, 100, elf_hdr, hdr);
 		cprintf("|   sections=%s\n+ - - - - \n", buffer);
 		
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
@@ -244,6 +256,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		if(hdr.p_va == 0x0 || hdr.p_memsz == 0) {
 			continue;
 		}
+		choose_segment_name(buffer, 100, elf_hdr, hdr);
 		load_pml4((void*)PADDR(task->task_pml4));
 		
 		if(hdr.p_filesz > 0){
@@ -260,7 +273,8 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
+	add_anonymous_vma(task, "stack", (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, VM_READ | VM_WRITE);
+	// populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
 
 }
