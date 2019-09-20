@@ -98,14 +98,31 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 		return NULL;
 	}
 
-	struct vma *vma = add_vma(cur_task, "user", addr, len, prot);
+	// currently only MAP_ANONYMOUS | MAP_PRIVATE is supported
+	if(!((flags & (MAP_ANONYMOUS | MAP_PRIVATE)) == (MAP_ANONYMOUS | MAP_PRIVATE))) {
+		return NULL;
+	}
+
+	// R--, RW-, R-X TODO: check RWX
+	if(!((prot == PROT_READ) ||
+		(prot == PROT_NONE) ||
+		(prot == (PROT_READ + PROT_WRITE)) ||
+		(prot == (PROT_READ + PROT_EXEC)))
+	) {
+		return NULL;
+	}
+
+	// translate prot flags to vma flags
+	uint64_t vma_flags = 0;
+	vma_flags += (prot & PROT_READ) ? VM_READ : 0;
+	vma_flags += (prot & PROT_EXEC) ? VM_EXEC : 0;
+	vma_flags += (prot & PROT_WRITE) ? VM_WRITE : 0;
+
+	struct vma *vma = add_vma(cur_task, "user", addr, len, vma_flags);
 	if(vma != NULL) {
 		return vma->vm_base;
 	}
 
-	// MAP ANONYMOUS | MAP PRIVATE
-
-	// TODO: check prot flags
 	// TODO: handle MAP_FIXED
 	// TODO: handle MAP_POPULATE
 
