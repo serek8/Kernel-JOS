@@ -8,6 +8,7 @@
 #include <kernel/mem.h>
 #include <kernel/sched.h>
 #include <kernel/vma/insert.h>
+#include <kernel/vma.h>
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -274,6 +275,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
+	// add_anonymous_vma(task, "test", (void*)0x1000, 3*PAGE_SIZE, VM_READ | VM_WRITE);
 	add_anonymous_vma(task, "stack", (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, VM_READ | VM_WRITE);
 	// populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
@@ -318,6 +320,7 @@ void task_free(struct task *task)
 	tasks[task->task_pid] = NULL;
 
 	/* Unmap the user pages. */
+	free_vmas(task);
 	unmap_user_pages(task->task_pml4);
 
 	/* Note the task's demise. */
