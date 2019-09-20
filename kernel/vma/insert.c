@@ -106,10 +106,36 @@ struct vma *add_vma(struct task *task, char *name, void *addr, size_t size,
 	int flags)
 {
 	/* LAB 4: your code here. */
-	
+	struct list *node;
+	struct list *prev;
 
+	if(addr != NULL) {
+		struct vma *vma = find_vma(NULL, NULL, &task->task_rb, addr);
+		if((vma->vm_base - addr) > size) {
+			cprintf("vma->vm_base=%p, addr=%p\n", vma->vm_base, addr);
+			return add_anonymous_vma(task, name, addr, size, flags);
+		}
 
+		// TODO: search starting from vma in loop
+		return NULL;
+	}
 
+	// scan address space from end to beginning
+	list_foreach_safe_rev(&task->task_mmap, node, prev) {
+		struct vma *vma = container_of(node, struct vma, vm_mmap);
+		struct vma *prev_vma = container_of(prev, struct vma, vm_mmap);
+
+		// make sure it's not the first item in the list
+		if(prev != &task->task_mmap) {
+			// check if there is enough space between vma and prev_vma to create new vma
+			if((vma->vm_base - prev_vma->vm_end) > size) {
+				cprintf("adding new vma at base=%p, vma->vm_base=%p, prev_vma->vm_end=%p\n", vma->vm_base-size, vma->vm_base, prev_vma->vm_end);
+				return add_anonymous_vma(task, name, vma->vm_base-size, size, flags);
+			}
+		} else {
+			panic("TODO: support mapping before first page. vm_name=%s\n", vma->vm_name);
+		}
+	}
 
 	return NULL;
 }
