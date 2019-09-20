@@ -248,16 +248,17 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		cprintf("| [%d] vma_flags=0x%lx, elf_flags=0x%lx, elf_type=%x\n"
 			"|   va=%p, pa=%p, mem_size=%u file_size=%u\n", 
 			i, flags, hdr.p_flags, hdr.p_type, hdr.p_va, hdr.p_pa, hdr.p_memsz, hdr.p_filesz);
-		cprintf("|   sections=%s\n+ - - - - \n", buffer);
+		
 		
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
-			panic("Implement mapping bigger sections than 4KB");
+			panic("The binary tries to overwrite KERNEL_VMA!\n");
 		}
 		// skip weird program headers
 		if(hdr.p_va == 0x0 || hdr.p_memsz == 0) {
 			continue;
 		}
 		choose_segment_name(buffer, 100, elf_hdr, hdr);
+		cprintf("|   sections=%s\n+ - - - - \n", buffer);
 		load_pml4((void*)PADDR(task->task_pml4));
 		
 		if(hdr.p_filesz > 0){
