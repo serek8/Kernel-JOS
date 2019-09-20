@@ -117,6 +117,9 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return sys_mquery((struct vma_info*)a1, (void*)a2);
 		case SYS_mmap:
 			return (uintptr_t)sys_mmap((void*)a1, a2, a3, a4, a5, a6);
+		case SYS_munmap:
+			sys_munmap((void*)a1, a2);
+			return 0;
 			
 	default:
 		cprintf("Kernel doesn not support system call=%d\n", syscallno);
