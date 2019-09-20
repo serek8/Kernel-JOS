@@ -25,10 +25,10 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	// 	cprintf("int_flags_vma=%p | vma->vm_flags=%p\n", int_flags_vma, vma->vm_flags);
 	// 	return -1;
 	// }
-	
+	cprintf("will memcopy: vma->base_offset=%d\n", vma->base_offset);
 	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE);		
 	if (vma->vm_src){
-		memcpy(vma->vm_base, vma->vm_src, MIN(size, vma->vm_len)); // fix src, index todo
+		memcpy(base+vma->base_offset, vma->vm_src + (base-vma->vm_base), MIN(size, vma->vm_len)); // fix src, index todo
 	}
 	uint64_t pt_flags = PAGE_PRESENT | PAGE_USER;
 	pt_flags += (vma->vm_flags & VM_EXEC) ? 0 : PAGE_NO_EXEC;
