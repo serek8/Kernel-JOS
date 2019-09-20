@@ -3,6 +3,8 @@
 #include <kernel/mem.h>
 #include <kernel/vma.h>
 
+int pos_abs(int n) { return n > 0 ? n : 0; }
+
 /* Checks the flags in udata against the flags of the VMA to check appropriate
  * permissions. If the permissions are all right, this function populates the
  * address range [base, base + size) with physical pages. If the VMA is backed
@@ -25,10 +27,15 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	// 	cprintf("int_flags_vma=%p | vma->vm_flags=%p\n", int_flags_vma, vma->vm_flags);
 	// 	return -1;
 	// }
-	cprintf("will memcopy: vma->base_offset=%d\n", vma->base_offset);
+	
 	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE);		
 	if (vma->vm_src){
-		memcpy(base+vma->base_offset, vma->vm_src + (base-vma->vm_base), MIN(size, vma->vm_len)); // fix src, index todo
+		void *dst = MAX(vma->vm_base + vma->base_offset, base);
+		void *file_src = vma->vm_src + pos_abs((base - vma->vm_base) - vma->base_offset);
+		uint64_t bytes_left_in_src = vma->vm_len - pos_abs((base - vma->vm_base) - vma->base_offset);
+		uint64_t cpy_count = MIN( MIN(size - (base - vma->vm_base) - vma->base_offset ,size), bytes_left_in_src);
+		cprintf("will memcopy: dst=%p, file_src=%p, file_src_original=%p, count=%d\n", dst, file_src, vma->vm_src, cpy_count);
+		memcpy(dst, file_src, cpy_count);
 	}
 	uint64_t pt_flags = PAGE_PRESENT | PAGE_USER;
 	pt_flags += (vma->vm_flags & VM_EXEC) ? 0 : PAGE_NO_EXEC;
