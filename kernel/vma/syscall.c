@@ -92,22 +92,51 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 {
 	cprintf("sys_mmap: addr=%p, len=%d, prot=%p, flags=%p, fd=%p, offset=%p\n", addr, len, prot, flags, fd, offset);
 	/* LAB 4: your code here. */
-	if(addr > (void *)USER_LIM) {
-		return NULL;
+	if(addr >= (void *)USER_LIM || addr == NULL) {
+		return MAP_FAILED;
 	}
 
-	struct vma *vma = add_vma(cur_task, "user", addr, len, prot);
+	// currently only MAP_ANONYMOUS | MAP_PRIVATE is supported
+	if(!((flags & (MAP_ANONYMOUS | MAP_PRIVATE)) == (MAP_ANONYMOUS | MAP_PRIVATE))) {
+		return MAP_FAILED;
+	}
+
+	// R--, RW-, R-X TODO: check RWX
+	if(!((prot == PROT_READ) ||
+		(prot == PROT_NONE) ||
+		(prot == (PROT_READ + PROT_WRITE)) ||
+		(prot == (PROT_READ + PROT_EXEC)))
+	) {
+		return MAP_FAILED;
+	}
+
+	// translate prot flags to vma flags
+	uint64_t vma_flags = 0;
+	vma_flags += (prot & PROT_READ) ? VM_READ : 0;
+	vma_flags += (prot & PROT_EXEC) ? VM_EXEC : 0;
+	vma_flags += (prot & PROT_WRITE) ? VM_WRITE : 0;
+	
+
+	struct vma *vma;
+	
+	// TODO: handle MAP_FIXED
+	if((flags & MAP_FIXED) == (MAP_FIXED)) {
+		vma = NULL;
+	} else {
+		vma = add_vma(cur_task, "user", addr, len, vma_flags);
+	}
+
 	if(vma != NULL) {
+		if((flags & MAP_POPULATE) == (MAP_POPULATE)) {
+			if(populate_vma_range(cur_task, vma->vm_base, vma->vm_end-vma->vm_base, vma_flags) < 0) {
+				return MAP_FAILED;
+			}
+		}
+
 		return vma->vm_base;
 	}
 
-	// MAP ANONYMOUS | MAP PRIVATE
-
-	// TODO: check prot flags
-	// TODO: handle MAP_FIXED
-	// TODO: handle MAP_POPULATE
-
-	return NULL;
+	return MAP_FAILED;
 }
 
 void sys_munmap(void *addr, size_t len)
