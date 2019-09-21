@@ -102,43 +102,42 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct insert_info *info = walker->udata;
 	struct page_table *pt = (struct page_table*)KADDR((PAGE_ADDR(*entry)));
 	struct page_info *pt_page = pa2page(PAGE_ADDR(*entry));
-	uint64_t flags = 0;
-	physaddr_t pa_start = PAGE_ADDR(pt->entries[0]);
+	uint64_t flags = pt->entries[0] & PAGE_MASK;
+	flags &= ~(PAGE_ACCESSED);
+	flags &= ~(PAGE_DIRTY);
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
 		// check if all entries are present
 		if(!(pt->entries[i] & PAGE_PRESENT)){
 			return 0;
 		}
-		// copy flags from first entry
-		if(!flags) {
-			flags = pt->entries[i] & PAGE_MASK;
-		}
+		uint64_t entry_flags = pt->entries[i] & PAGE_MASK;
+		entry_flags &= ~(PAGE_ACCESSED);
+		entry_flags &= ~(PAGE_DIRTY);
+
 		// check if all flags are the same
-		if(!(pt->entries[i] & flags)) {
-			return 0;
-		}
-		// make sure that pages are contiguous
-		if(PAGE_ADDR(pt->entries[i]) != pa_start + PAGE_SIZE * i){
+		if(entry_flags != flags) {
 			return 0;
 		}
 	}
+
 	// now pages in pt can be merged
 	// copy data to huge page
 	struct page_info *page = page_alloc(ALLOC_HUGE);
-	physaddr_t pa = page2pa(page);
-	void* start_addr = KADDR(PAGE_ADDR(pt->entries[0])); // compare if start_addr == base
-	memcpy(page2kva(page), start_addr, HPAGE_SIZE);
+	void* page_kva = page2kva(page);
+	void* start_addr = (void*)end+1 - HPAGE_SIZE;
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		memcpy(page_kva + PAGE_SIZE*i, start_addr + PAGE_SIZE*i, PAGE_SIZE);
+	}
 
 	// point PDE to newly created huge page
-	flags &= ~(PAGE_ACCESSED);
-	*entry = flags | PAGE_HUGE | PAGE_ADDR(pa);
+	*entry = flags | PAGE_HUGE | PAGE_ADDR(page2pa(page));
 	page->pp_ref++;
 
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
 		page_decref(pte_page);
-		tlb_invalidate(info->pml4, (void*)(base + PAGE_SIZE * i));
+		tlb_invalidate(info->pml4, (void*)(start_addr + PAGE_SIZE * i));
 	}
 	page_decref(pt_page);
 	return 0;
