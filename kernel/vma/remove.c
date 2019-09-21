@@ -38,25 +38,17 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	/* LAB 4: your code here. */
 	cprintf("Removing vma_name=%s, base=%p, size=%d\n", vma->vm_name, base, size);
 	if(base == vma->vm_base && base+size == vma->vm_end){  //  [ vma ]
-		// cprintf("[ vma ]\n");
-		remove_vma(task, vma);
-		page_remove(task->task_pml4, base);
-	} else if(base == vma->vm_base){  //  [ vma |   |   ]
-		// cprintf("[ vma |    |   ]\n");
+	} else if(base == vma->vm_base){                       //  [ vma |   |   ]
 		split_vma(task, vma, base+size);
-		remove_vma(task, vma);
-		page_remove(task->task_pml4, base);
-	} else if(base + size == vma->vm_end){  //  [   |   |  vma ]
-		// cprintf("[   |   | vma ]\n");
-		struct vma *rm_vma = split_vmas(task, vma, base, size);
-		remove_vma(task, rm_vma);
-		page_remove(task->task_pml4, rm_vma);
-	} else{  //  [   | vma  |   ]
-		// cprintf("[   | vma |   ]\n");
-		struct vma *rm_vma = split_vmas(task, vma, base, size);
-		remove_vma(task, rm_vma);
-		page_remove(task->task_pml4, rm_vma);
+	} else if(base + size == vma->vm_end){                 //  [   |   |  vma ]
+		vma = split_vmas(task, vma, base, size);
+	} else{                                                //  [   | vma  |   ]
+		vma = split_vmas(task, vma, base, size);
 	}
+	unmap_page_range(task->task_pml4, base, size);
+	remove_vma(task, vma);
+
+	cprintf("Removed\n");
 	kfree(vma);
 	return 0;
 }
@@ -83,7 +75,7 @@ int do_unmap_vma(struct task *task, void *base, size_t size, struct vma *vma, //
 	if((vma->vm_flags & VM_DIRTY) == VM_DIRTY){
 		return 0;
 	}
-	do_remove_vma(task, base, size, vma, udata);
+	unmap_page_range(task->task_pml4, base, size);
 	return 0;
 }
 
