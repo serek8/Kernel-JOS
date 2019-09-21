@@ -70,6 +70,7 @@ void protect_region(struct page_table *pml4, void *va, size_t size,
 	struct page_walker walker = {
 		.get_pte = protect_pte,
 		.get_pde = protect_pde,
+		.unmap_pde = ptbl_merge,
 		.udata = &info,
 	};
 
