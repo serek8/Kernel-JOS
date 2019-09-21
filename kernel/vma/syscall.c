@@ -121,10 +121,11 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 	
 	// TODO: handle MAP_FIXED
 	if((flags & MAP_FIXED) == (MAP_FIXED)) {
-		vma = NULL;
-	} else {
-		vma = add_vma(cur_task, "user", addr, len, vma_flags);
+		sys_munmap(addr, len);
 	}
+	
+	vma = add_vma(cur_task, "user", addr, len, vma_flags);
+	
 
 	if(vma != NULL) {
 		if((flags & MAP_POPULATE) == (MAP_POPULATE)) {
