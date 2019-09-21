@@ -38,17 +38,15 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	/* LAB 4: your code here. */
 	cprintf("Removing vma_name=%s, base=%p, size=%d\n", vma->vm_name, base, size);
 	if(base == vma->vm_base && base+size == vma->vm_end){  //  [ vma ]
-	} else if(base == vma->vm_base){                       //  [ vma |   |   ]
+	} else if(base == vma->vm_base){                       //  [ vma |     ]
 		split_vma(task, vma, base+size);
-	} else if(base + size == vma->vm_end){                 //  [   |   |  vma ]
-		vma = split_vmas(task, vma, base, size);
+	} else if(base + size == vma->vm_end){                 //  [    |  vma ]
+		vma = split_vma(task, vma, base);
 	} else{                                                //  [   | vma  |   ]
 		vma = split_vmas(task, vma, base, size);
 	}
 	unmap_page_range(task->task_pml4, base, size);
 	remove_vma(task, vma);
-
-	cprintf("Removed\n");
 	kfree(vma);
 	return 0;
 }
