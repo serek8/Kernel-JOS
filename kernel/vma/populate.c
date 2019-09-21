@@ -40,7 +40,7 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	uint64_t pt_flags = PAGE_PRESENT | PAGE_USER;
 	pt_flags += (vma->vm_flags & VM_EXEC) ? 0 : PAGE_NO_EXEC;
 	pt_flags += (vma->vm_flags & VM_WRITE) ? PAGE_WRITE : 0;
-	cprintf("do_populate_vma: base=%p, size=%d, page_flags=%x, name=%s\n", base, size, pt_flags, vma->vm_name);
+	cprintf("do_populate_vma: base=%p, size=%d, page_flags=%p, name=%s\n", base, size, pt_flags, vma->vm_name);
 	protect_region(task->task_pml4, base, size, pt_flags);
 	return 0;
 }
