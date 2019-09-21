@@ -54,12 +54,10 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	vma_flags |= (new_flags & PROT_EXEC) ? VM_EXEC : 0;
 	vma->vm_flags = vma_flags;
 
-	uint64_t page_flags = PAGE_USER | PAGE_PRESENT;
-	page_flags |= (new_flags & PROT_NONE) ? 0 : PAGE_PRESENT;
-	page_flags |= (new_flags & PROT_READ) ? PAGE_PRESENT : 0;
+	uint64_t page_flags = 0;
+	page_flags |= (new_flags == PROT_NONE) ? 0 : (PAGE_PRESENT | PAGE_USER);
 	page_flags |= (new_flags & PROT_WRITE) ? PAGE_WRITE : 0;
 	page_flags |= (new_flags & PROT_EXEC) ? 0 : PAGE_NO_EXEC;
-	
 	cprintf("vma->vm_base=%p, vma->vm_end=%p, vma->name=%s, page_flags=%x\n", vma->vm_base, vma->vm_end, vma->vm_name, page_flags);
 	protect_region(task->task_pml4, base, size, page_flags);
 	return 0;
