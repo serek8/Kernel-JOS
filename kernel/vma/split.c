@@ -35,6 +35,3 @@ struct vma *split_vmas(struct task *task, struct vma *vma, void *base, size_t si
 	struct vma *rhs = split_vma(task, middle_vma, base+size);
 	return middle_vma;
 }
-
-
-// cprintf("remove_vma: vma->vm_base=%p, vma->vm_end=%p, vma->flags=%p, name=%s\n", vma->vm_base, vma->vm_end, vma->vm_flags, vma->vm_name);

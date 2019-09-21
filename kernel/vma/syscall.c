@@ -151,7 +151,7 @@ void sys_munmap(void *addr, size_t len)
 int sys_mprotect(void *addr, size_t len, int prot)
 {
 	/* LAB 4 (bonus): your code here. */
-	return -ENOSYS;
+	return protect_vma_range(cur_task, addr, len, prot);
 }
 
 int sys_madvise(void *addr, size_t len, int advise)
