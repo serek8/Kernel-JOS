@@ -40,22 +40,24 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	if(base == vma->vm_base && base+size == vma->vm_end){  //  [ vma ]
 		// cprintf("[ vma ]\n");
 		remove_vma(task, vma);
+		page_remove(task->task_pml4, base);
 	} else if(base == vma->vm_base){  //  [ vma |   |   ]
 		// cprintf("[ vma |    |   ]\n");
 		split_vma(task, vma, base+size);
 		remove_vma(task, vma);
+		page_remove(task->task_pml4, base);
 	} else if(base + size == vma->vm_end){  //  [   |   |  vma ]
 		// cprintf("[   |   | vma ]\n");
 		struct vma *rm_vma = split_vmas(task, vma, base, size);
 		remove_vma(task, rm_vma);
+		page_remove(task->task_pml4, rm_vma);
 	} else{  //  [   | vma  |   ]
 		// cprintf("[   | vma |   ]\n");
 		struct vma *rm_vma = split_vmas(task, vma, base, size);
 		remove_vma(task, rm_vma);
+		page_remove(task->task_pml4, rm_vma);
 	}
-	// TODO remove physical pages
-	// protect_region(task->task_pml4, base, size, 0);
-	// kfree(vma);
+	kfree(vma);
 	return 0;
 }
 
@@ -82,7 +84,6 @@ int do_unmap_vma(struct task *task, void *base, size_t size, struct vma *vma, //
 		return 0;
 	}
 	do_remove_vma(task, base, size, vma, udata);
-	// protect_region(task->task_pml4, base, size, 0);
 	return 0;
 }
 
