@@ -235,7 +235,6 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	struct elf *elf_hdr = (struct elf *)binary;
 	struct elf_proghdr *prog_hdr = (struct elf_proghdr *)((char *)elf_hdr + elf_hdr->e_phoff);
 	char buffer[100];
-	
 	task->task_frame.rip = elf_hdr->e_entry;
 	cprintf("+ - - Program Headers - - +\n");
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
@@ -260,7 +259,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 		}
 		choose_segment_name(buffer, 100, elf_hdr, hdr);
 		cprintf("|   sections=%s\n+ - - - - \n", buffer);
-		load_pml4((void*)PADDR(task->task_pml4));
+		
 		
 		if(hdr.p_filesz > 0){
 			add_executable_vma(task, buffer, (void*)hdr.p_va, hdr.p_memsz, flags, (void*)(binary+hdr.p_offset), hdr.p_filesz);
@@ -276,9 +275,7 @@ static void task_load_elf(struct task *task, uint8_t *binary)
 	 */
 
 	/* LAB 3: your code here. */
-	// add_anonymous_vma(task, "test", (void*)0x1000, 3*PAGE_SIZE, VM_READ | VM_WRITE);
 	add_anonymous_vma(task, "stack", (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, VM_READ | VM_WRITE);
-	// populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE*2, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
 
 }
@@ -296,6 +293,7 @@ void task_create(uint8_t *binary, enum task_type type)
 	struct task *task = task_alloc(0);
 
 	// TODO: load ELF binary
+	load_pml4((void*)PADDR(task->task_pml4));
 	task_load_elf(task, binary);
 
 	task->task_type = type;
