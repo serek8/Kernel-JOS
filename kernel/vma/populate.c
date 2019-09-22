@@ -15,19 +15,7 @@ int pos_abs(int n) { return n > 0 ? n : 0; }
 int do_populate_vma(struct task *task, void *base, size_t size,
 	struct vma *vma, void *udata)
 {
-	/* LAB 4: your code here. */
-	// TODO: uint64_t int_flags = *(uint8_t*)udata;
-	// uint64_t int_flags_vma = VM_READ;
-	// int_flags_vma += (int_flags & PF_IFETCH) ? VM_EXEC : 0;
-	// int_flags_vma += (int_flags & PF_WRITE) ? VM_WRITE : 0;
-	// if(vma->vm_flags & VM_DIRTY){
-	// 	cprintf("VM_DIRTY !!!\n");
-	// }
-	// if(int_flags_vma != vma->vm_flags){
-	// 	cprintf("int_flags_vma=%p | vma->vm_flags=%p\n", int_flags_vma, vma->vm_flags);
-	// 	return -1;
-	// }
-	
+	/* LAB 4: your code here. */	
 	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE);		
 	if (vma->vm_src){
 		void *dst = MAX(vma->vm_base + vma->base_offset, base);
