@@ -72,10 +72,6 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	vma->vm_src = src;
 	vma->vm_len = len;
 	list_init(&vma->vm_mmap);
-	// rb_init(&vma->vm_rb);
-	if((flags & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)){
-		panic("VMA cannot be eecutable and writable at the same time!");
-	}
 	vma->vm_flags = flags;
 	if(insert_vma(task, vma) == -1){
 		cprintf("insert_vma return -1");
