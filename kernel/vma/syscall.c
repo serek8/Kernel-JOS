@@ -157,6 +157,19 @@ int sys_mprotect(void *addr, size_t len, int prot)
 int sys_madvise(void *addr, size_t len, int advise)
 {
 	/* LAB 4 (bonus): your code here. */
+	if(addr+len >= (void *)USER_LIM || addr == NULL) {
+		return -1;
+	}
+
+	if(advise & MADV_DONTNEED) {
+		return unmap_vma_range(cur_task, addr, len);
+	} 
+	if(advise & MADV_WILLNEED) {
+		struct vma *vma = find_vma(NULL, NULL, &cur_task->task_rb, addr);
+		if(vma->vm_base <= addr && vma->vm_end >= addr) {
+			return populate_vma_range(cur_task, addr, len, vma->vm_flags);
+		}
+	}
 	return -ENOSYS;
 }
 
