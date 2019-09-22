@@ -103,11 +103,12 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 		return MAP_FAILED;
 	}
 
-	// R--, RW-, R-X TODO: check RWX
+	// R--, RW-, R-X, RWX
 	if(!((prot == PROT_READ) ||
 		(prot == PROT_NONE) ||
 		(prot == (PROT_READ + PROT_WRITE)) ||
-		(prot == (PROT_READ + PROT_EXEC)))
+		(prot == (PROT_READ + PROT_EXEC)) ||
+		(prot == (PROT_READ + PROT_WRITE + PROT_EXEC)))
 	) {
 		return MAP_FAILED;
 	}
