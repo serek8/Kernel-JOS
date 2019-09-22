@@ -17,20 +17,14 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	cprintf("do_protect_vma\n");
 	int new_flags = *(int*)udata;
 
-	if((new_flags & (PROT_WRITE | PROT_EXEC)) == (PROT_WRITE | PROT_EXEC)){
-		cprintf("prot constrains avalable: RO/RW/RX/RWX but found  WX!\n");
-		return -1;
-	} else if((new_flags & (PROT_READ | PROT_WRITE | PROT_EXEC)) == (PROT_WRITE)){
-		cprintf("prot constrains avalable: RO/RW/RX/RWX but found  W!\n");
-		return -1;
-	} else if((new_flags & (PROT_READ | PROT_WRITE | PROT_EXEC)) == (PROT_EXEC)){
-		cprintf("prot constrains avalable: RO/RW/RX/RWX but found  X!\n");
-		return -1;
-	} else if((new_flags & (PROT_READ | PROT_WRITE | PROT_EXEC)) == (PROT_EXEC | PROT_WRITE)){
-		cprintf("prot constrains avalable: RO/RW/RX/RWX but found  WX!\n");
+	if(!((new_flags == PROT_READ) ||
+		(new_flags == PROT_NONE) ||
+		(new_flags == (PROT_READ + PROT_WRITE)) ||
+		(new_flags == (PROT_READ + PROT_EXEC)))
+	) {
 		return -1;
 	}
-	if((uint64_t)base+size >= USER_LIM){
+	if((uint64_t)base+size >= USER_LIM || base == NULL){
 		cprintf("!!! do_protect_vma: Managmenent of addresses above %p is not allowed!\n", USER_LIM);
 		return -1;
 	}
@@ -60,6 +54,7 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	page_flags |= (new_flags & PROT_EXEC) ? 0 : PAGE_NO_EXEC;
 	cprintf("vma->vm_base=%p, vma->vm_end=%p, vma->name=%s, page_flags=%x\n", vma->vm_base, vma->vm_end, vma->vm_name, page_flags);
 	protect_region(task->task_pml4, base, size, page_flags);
+	merge_vmas(task, vma);
 	return 0;
 }
 
