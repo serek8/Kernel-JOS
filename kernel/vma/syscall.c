@@ -92,7 +92,7 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 {
 	cprintf("sys_mmap: addr=%p, len=%d, prot=%p, flags=%p, fd=%p, offset=%p\n", addr, len, prot, flags, fd, offset);
 	/* LAB 4: your code here. */
-	if(addr >= (void *)USER_LIM || addr == NULL) {
+	if(addr+len >= (void *)USER_LIM || addr == NULL) {
 		return MAP_FAILED;
 	}
 
@@ -119,7 +119,6 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 
 	struct vma *vma;
 	
-	// TODO: handle MAP_FIXED
 	if((flags & MAP_FIXED) == (MAP_FIXED)) {
 		sys_munmap(addr, len);
 	}
