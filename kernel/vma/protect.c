@@ -14,13 +14,14 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	void *udata)
 {
 	/* LAB 4 (bonus): your code here. */
-	cprintf("do_protect_vma\n");
 	int new_flags = *(int*)udata;
 
+	// R--, RW-, R-X, RWX
 	if(!((new_flags == PROT_READ) ||
 		(new_flags == PROT_NONE) ||
 		(new_flags == (PROT_READ + PROT_WRITE)) ||
-		(new_flags == (PROT_READ + PROT_EXEC)))
+		(new_flags == (PROT_READ + PROT_EXEC)) ||
+		(new_flags == (PROT_READ + PROT_WRITE + PROT_EXEC)))
 	) {
 		return -1;
 	}
@@ -52,7 +53,7 @@ int do_protect_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	page_flags |= (new_flags == PROT_NONE) ? 0 : (PAGE_PRESENT | PAGE_USER);
 	page_flags |= (new_flags & PROT_WRITE) ? PAGE_WRITE : 0;
 	page_flags |= (new_flags & PROT_EXEC) ? 0 : PAGE_NO_EXEC;
-	cprintf("vma->vm_base=%p, vma->vm_end=%p, vma->name=%s, page_flags=%x\n", vma->vm_base, vma->vm_end, vma->vm_name, page_flags);
+	// cprintf("vma->vm_base=%p, vma->vm_end=%p, vma->name=%s, page_flags=%x\n", vma->vm_base, vma->vm_end, vma->vm_name, page_flags);
 	protect_region(task->task_pml4, base, size, page_flags);
 	merge_vmas(task, vma);
 	return 0;
