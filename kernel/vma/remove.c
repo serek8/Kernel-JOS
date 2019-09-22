@@ -69,11 +69,11 @@ int do_unmap_vma(struct task *task, void *base, size_t size, struct vma *vma, //
 	/* LAB 4: your code here. */
 	cprintf("Unmapping VMA_name=%s, base=%p, size=%d, vma->vm_end=%p\n", vma->vm_name, base, size, vma->vm_end);
 	
-	cprintf(((vma->vm_flags & VM_DIRTY) == VM_DIRTY) ? "VM_DIRTY\n" : "NOT VM_DIRTY\n" );
-	if((vma->vm_flags & VM_DIRTY) == VM_DIRTY){
-		return 0;
+	physaddr_t *entry;
+	page_lookup(task->task_pml4, base, &entry);
+	if(!(*entry & PAGE_DIRTY)) {
+		unmap_page_range(task->task_pml4, base, size);
 	}
-	unmap_page_range(task->task_pml4, base, size);
 	return 0;
 }
 
