@@ -22,6 +22,12 @@ void sched_init(void)
 void sched_yield(void)
 {
 	/* LAB 5: your code here. */
+	if(list_is_empty(&runq)){
+		cprintf("SCHEDULER: No more tasks to do!\n");
+		sched_halt();
+	}
+	struct task *next_task = container_of(list_pop(&runq), struct task, task_node);
+	task_run(next_task);
 }
 
 /* For now jump into the kernel monitor. */

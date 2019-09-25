@@ -117,6 +117,9 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return sys_mprotect((void*)a1, a2, (int)a3);
 		case SYS_madvise:
 			return sys_madvise((void*)a1, a2, (int) a3);
+		case SYS_yield:
+			sched_yield();
+			return 0;
 			
 	default:
 		cprintf("Kernel doesn not support system call=%d\n", syscallno);
