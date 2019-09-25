@@ -4,7 +4,7 @@
 #include <assert.h>
 
 #include <kernel/console.h>
-#include <kernel/picirq.h>
+#include <kernel/pic.h>
 
 static void cons_intr(int (*proc)(void));
 static void cons_putc(int c);
@@ -358,7 +358,7 @@ static void kbd_init(void)
 {
     /* Drain the kbd buffer so that Bochs generates interrupts. */
     kbd_intr();
-    irq_setmask_8259A(irq_mask_8259A & ~(1<<1));
+    pic_enable_irq(1);
 }
 
 
