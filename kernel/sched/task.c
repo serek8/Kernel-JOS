@@ -11,6 +11,8 @@
 #include <kernel/vma/insert.h>
 #include <kernel/vma.h>
 
+extern struct list runq;
+
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
 size_t nuser_tasks = 0;
@@ -301,6 +303,8 @@ void task_create(uint8_t *binary, enum task_type type)
 		nuser_tasks++;
 	}
 	/* LAB 5: your code here. */
+	list_push(&runq, &task->task_node);
+	
 }
 
 /* Free the task and all of the memory that is used by it.
@@ -337,14 +341,10 @@ void task_free(struct task *task)
  */
 void task_destroy(struct task *task)
 {
-	task_free(task);
-
 	/* LAB 5: your code here. */
-	cprintf("Destroyed the only task - nothing more to do!\n");
-
-	while (1) {
-		monitor(NULL);
-	}
+	list_remove(&task->task_node);
+	task_free(task);
+	sched_yield();
 }
 
 /*
@@ -401,6 +401,10 @@ void task_run(struct task *task)
 	if(cur_task == NULL){
 		cur_task = task;
 	}
+	if(list_is_empty(&cur_task->task_node)){ // check if the task is already in a queue. Otherwiese, we would push the task to the list even during normal syscalls.
+		list_push(&runq, &cur_task->task_node);
+	}
+	
 	if(cur_task->task_status == TASK_RUNNING){
 		cur_task->task_status = TASK_RUNNABLE;
 	}
@@ -409,8 +413,5 @@ void task_run(struct task *task)
 	task->task_runs += 1;
 	load_pml4((void*)PADDR(task->task_pml4));
 	task_pop_frame(&task->task_frame);
-
-
-	// panic("task_run() not yet implemented");
 }
 
