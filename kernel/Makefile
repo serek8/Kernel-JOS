@@ -13,7 +13,7 @@ KERNEL_SRCFILES := \
 	kernel/console.c \
 	kernel/main.c \
 	kernel/monitor.c \
-	kernel/picirq.c \
+	kernel/pic.c \
 	kernel/printf.c \
 	kernel/mem/boot.c \
 	kernel/mem/buddy.c \
