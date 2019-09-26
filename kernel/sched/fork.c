@@ -11,6 +11,121 @@ extern struct list runq;
 extern pid_t pid_max;
 extern struct task **tasks;
 
+struct page_info *copy_ptbl(physaddr_t *entry)
+{
+	struct page_table *orig_ptbl = (struct page_table*)KADDR(PAGE_ADDR(*entry));
+	struct page_info *page = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
+	++page->pp_ref;
+	struct page_table *clone_ptbl = page2kva(page);
+
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		if(orig_ptbl->entries[i]) {
+			clone_ptbl->entries[i] = orig_ptbl->entries[i];
+
+			// increase refcount
+			struct page_info *entry_page = pa2page(PAGE_ADDR(orig_ptbl->entries[i]));
+			++entry_page->pp_ref;
+
+			// TODO: set to read only if writable for COW
+
+			// cprintf("ptbl - i=%d, orig_entry=%p, orig_flags=%p\n", 
+			// i, 
+			// orig_ptbl->entries[i], 
+			// orig_ptbl->entries[i] & PAGE_MASK);
+		}
+	}
+
+	return page;
+}
+
+struct page_info *copy_pdir(physaddr_t *entry)
+{
+	struct page_table *orig_pdir = (struct page_table*)KADDR(PAGE_ADDR(*entry));
+	struct page_info *page = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
+	++page->pp_ref;
+	struct page_table *clone_pdir = page2kva(page);
+
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		if(orig_pdir->entries[i]) {
+			if(orig_pdir->entries[i] & PAGE_HUGE) {
+				clone_pdir->entries[i] = orig_pdir->entries[i];
+
+				// increase refcount
+				struct page_info *entry_page = pa2page(PAGE_ADDR(orig_pdir->entries[i]));
+				++entry_page->pp_ref;
+
+				// TODO: set to read only if writable for COW
+
+			} else {
+				struct page_info *ptbl_page = copy_ptbl(&orig_pdir->entries[i]);
+				clone_pdir->entries[i] = PAGE_ADDR(page2pa(ptbl_page)) | (orig_pdir->entries[i] & PAGE_MASK);
+			}
+
+			// cprintf("pdir - i=%d, orig_entry=%p, clone_entry=%p, orig_flags=%p, clone_flags=%p\n", 
+			// i, 
+			// orig_pdir->entries[i], 
+			// clone_pdir->entries[i],
+			// orig_pdir->entries[i] & PAGE_MASK,
+			// clone_pdir->entries[i] & PAGE_MASK);
+		}
+	}
+
+	return page;
+}
+
+struct page_info *copy_pdpt(physaddr_t *entry) 
+{
+	struct page_table *orig_pdpt = (struct page_table*)KADDR(PAGE_ADDR(*entry));
+	struct page_info *page = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
+	++page->pp_ref;
+	struct page_table *clone_pdpt = page2kva(page);
+
+	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		if(orig_pdpt->entries[i]) {
+			struct page_info *pdir_page = copy_pdir(&orig_pdpt->entries[i]);
+			clone_pdpt->entries[i] = PAGE_ADDR(page2pa(pdir_page)) | (orig_pdpt->entries[i] & PAGE_MASK);
+
+			// cprintf("pdpt - i=%d, orig_entry=%p, clone_entry=%p, orig_flags=%p, clone_flags=%p\n", 
+			// i, 
+			// orig_pdpt->entries[i], 
+			// clone_pdpt->entries[i],
+			// orig_pdpt->entries[i] & PAGE_MASK,
+			// clone_pdpt->entries[i] & PAGE_MASK);
+		}
+	}
+
+	return page;
+}
+
+struct page_table *copy_pml4(struct page_table *orig_pml4) 
+{
+	struct page_info *page = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
+	++page->pp_ref;
+	struct page_table *clone_pml4 = page2kva(page);
+
+	// deep copy entries recursively
+	for(int i=0; i<PML4_INDEX(USER_LIM); i++) {
+		if(orig_pml4->entries[i]) {
+			struct page_info *pdpt_page = copy_pdpt(&orig_pml4->entries[i]);
+			clone_pml4->entries[i] = PAGE_ADDR(page2pa(pdpt_page)) | (orig_pml4->entries[i] & PAGE_MASK);
+
+			// cprintf("pml4 - i=%d, orig_entry=%p, clone_entry=%p, orig_flags=%p, clone_flags=%p\n", 
+			// i, 
+			// orig_pml4->entries[i], 
+			// clone_pml4->entries[i],
+			// orig_pml4->entries[i] & PAGE_MASK,
+			// clone_pml4->entries[i] & PAGE_MASK);
+		}
+	}
+
+	// copy kernel entries
+	for(int i=PML4_INDEX(KERNEL_VMA); i<PAGE_TABLE_ENTRIES; i++) {
+		clone_pml4->entries[i] = orig_pml4->entries[i];
+	}
+
+	return clone_pml4;
+}
+
 /* Allocates a task struct for the child process and copies the register state,
  * the VMAs and the page tables. Once the child task has been set up, it is
  * added to the run queue.
@@ -53,6 +168,7 @@ struct task *task_clone(struct task *task)
 	clone->task_frame.rax = 0;
 
 	// TODO: Copy page tables
+	clone->task_pml4 = copy_pml4(task->task_pml4);
 
 	// TODO: Copy VMAs
 	list_init(&clone->task_mmap);
