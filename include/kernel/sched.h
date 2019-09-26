@@ -8,4 +8,4 @@
 #include <kernel/sched/task.h>
 #include <kernel/sched/wait.h>
 
-
+void sched_yield(void);
