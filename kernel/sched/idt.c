@@ -9,6 +9,8 @@
 #include <kernel/sched/idt.h>
 #include <kernel/monitor.h>
 #include <kernel/sched/syscall.h>
+#include <kernel/sched/sched.h>
+#include <kernel/acpi/lapic.h>
 
 #include <kernel/sched/task.h>
 #include <kernel/vma.h>
@@ -400,6 +402,10 @@ void int_dispatch(struct int_frame *frame)
 			panic("we should never reach this");
 		case INT_BREAK:
 			while(1) monitor(NULL);
+		case IRQ_TIMER:
+			cprintf("timer\n");
+			lapic_eoi();
+			sched_yield();
 			
 	default: break;
 	}
