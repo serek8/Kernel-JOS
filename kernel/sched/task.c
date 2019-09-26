@@ -147,6 +147,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_status = TASK_RUNNABLE;
 	task->task_runs = 0;
 	list_init(&task->task_mmap);
+	list_init(&task->task_node);
 	rb_init(&task->task_rb);
 
 	memset(&task->task_frame, 0, sizeof task->task_frame);
@@ -155,6 +156,9 @@ struct task *task_alloc(pid_t ppid)
 	task->task_frame.ss = GDT_UDATA | 3;
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.cs = GDT_UCODE | 3;
+
+	// set IF flag to enable hardware interrupts
+	task->task_frame.rflags |= FLAGS_IF;
 
 	/* You will set task->task_frame.rip later. */
 
