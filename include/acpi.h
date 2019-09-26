@@ -31,6 +31,28 @@ struct acpi_hdr {
 	uint32_t creator_revision;
 } __attribute__ ((packed));
 
+struct acpi_addr {
+	uint8_t  asid ;
+	uint8_t  bit_width;
+	uint8_t  bit_off;
+	uint8_t  access_size;
+	uint64_t addr;
+} __attribute__ ((packed));
+
+struct hpet {
+	struct acpi_hdr  hdr;
+	uint8_t          hw_rev_id;
+	uint8_t          cmp_cnt : 5;
+	uint8_t          cnt_size : 1;
+	uint8_t          _1 : 1;
+	uint8_t          legacy : 1;
+	uint16_t         pci_ven_id;
+	struct acpi_addr addr;
+	uint8_t          hpet_no;
+	uint16_t         min_tick;
+	uint8_t          page_prot;
+} __attribute__ ((packed));
+
 /* The ACPI Multiple APIC Description Table (MADT) */
 struct madt {
 	struct acpi_hdr hdr;

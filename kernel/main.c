@@ -42,6 +42,7 @@ void kmain(struct boot_info *boot_info)
 	rsdp = rsdp_find();
 	madt_init(rsdp);
 	lapic_init();
+	hpet_init(rsdp);
 
 	/* Set up the tasks. */
 	task_init();
