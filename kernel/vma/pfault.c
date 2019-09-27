@@ -13,6 +13,32 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 		return -1;
 	}
 
+	physaddr_t *entry;
+	struct page_info *page = page_lookup(task->task_pml4, va, &entry);
+	// COW
+	if(entry != 0x0 && 
+	(*entry & PAGE_WRITE) != (PAGE_WRITE) && 
+	(vma->vm_flags & VM_WRITE) == (VM_WRITE)) {
+		if(page->pp_ref == 1) {
+			*entry |= PAGE_WRITE;
+		} else {
+			struct page_info *new_page;
+			if(*entry & PAGE_HUGE) {
+				new_page = page_alloc(BUDDY_2M_PAGE);
+				memcpy(page2kva(new_page), page2kva(page), HPAGE_SIZE);
+			} else {
+				new_page = page_alloc(BUDDY_4K_PAGE);
+				memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
+			}
+
+			*entry = PAGE_ADDR(page2pa(new_page)) | (*entry & PAGE_MASK);
+			*entry |= PAGE_WRITE;
+			page_decref(page);
+			tlb_invalidate(task->task_pml4, va);
+		}
+		return 0;
+	}
+
 	// When set, the page fault was caused by a page-protection violation. 
 	// When not set, it was caused by a non-present page.
 	if(flags & PF_PRESENT){

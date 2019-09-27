@@ -23,16 +23,20 @@ struct page_info *copy_ptbl(physaddr_t *entry)
 		if(orig_ptbl->entries[i]) {
 			clone_ptbl->entries[i] = orig_ptbl->entries[i];
 
+			// set to read only for COW
+			orig_ptbl->entries[i] &= ~(PAGE_WRITE);
+			clone_ptbl->entries[i] &= ~(PAGE_WRITE);
+
 			// increase refcount
 			struct page_info *entry_page = pa2page(PAGE_ADDR(orig_ptbl->entries[i]));
 			++entry_page->pp_ref;
 
-			// TODO: set to read only if writable for COW
-
-			// cprintf("ptbl - i=%d, orig_entry=%p, orig_flags=%p\n", 
+			// cprintf("ptbl - i=%d, orig_entry=%p, clone_entry=%p, orig_flags=%p, clone_flags=%p\n", 
 			// i, 
 			// orig_ptbl->entries[i], 
-			// orig_ptbl->entries[i] & PAGE_MASK);
+			// clone_ptbl->entries[i],
+			// orig_ptbl->entries[i] & PAGE_MASK,
+			// clone_ptbl->entries[i] & PAGE_MASK);
 		}
 	}
 
@@ -51,12 +55,13 @@ struct page_info *copy_pdir(physaddr_t *entry)
 			if(orig_pdir->entries[i] & PAGE_HUGE) {
 				clone_pdir->entries[i] = orig_pdir->entries[i];
 
+				// set to read only for COW
+				orig_pdir->entries[i] &= ~(PAGE_WRITE);
+				clone_pdir->entries[i] &= ~(PAGE_WRITE);
+				
 				// increase refcount
 				struct page_info *entry_page = pa2page(PAGE_ADDR(orig_pdir->entries[i]));
 				++entry_page->pp_ref;
-
-				// TODO: set to read only if writable for COW
-
 			} else {
 				struct page_info *ptbl_page = copy_ptbl(&orig_pdir->entries[i]);
 				clone_pdir->entries[i] = PAGE_ADDR(page2pa(ptbl_page)) | (orig_pdir->entries[i] & PAGE_MASK);
@@ -168,12 +173,33 @@ struct task *task_clone(struct task *task)
 	clone->task_frame = task->task_frame;
 	clone->task_frame.rax = 0;
 
-	// TODO: Copy page tables
+	// Copy page tables
 	clone->task_pml4 = copy_pml4(task->task_pml4);
 
-	// TODO: Copy VMAs
+	// Copy VMAs
 	list_init(&clone->task_mmap);
 	rb_init(&clone->task_rb);
+
+	struct list *node;
+	struct vma *orig_vma, *clone_vma;
+	list_foreach(&task->task_mmap, node) {
+		orig_vma = container_of(node, struct vma, vm_mmap);
+		clone_vma = kmalloc(sizeof(struct vma));
+		
+		list_init(&clone_vma->vm_mmap);
+		rb_node_init(&clone_vma->vm_rb);
+
+		int name_len = strlen(orig_vma->vm_name);
+		clone_vma->vm_name = strcpy(kmalloc(name_len), orig_vma->vm_name);
+		clone_vma->vm_name[name_len] = '\0';
+		clone_vma->base_offset = orig_vma->base_offset;
+		clone_vma->vm_base = orig_vma->vm_base;
+		clone_vma->vm_end = orig_vma->vm_end;
+		clone_vma->vm_src = orig_vma->vm_src;
+		clone_vma->vm_len = orig_vma->vm_len;
+		clone_vma->vm_flags = orig_vma->vm_flags;
+		insert_vma(clone, clone_vma);
+	}
 
 	// Init lists
 	list_init(&clone->task_children);
@@ -183,6 +209,9 @@ struct task *task_clone(struct task *task)
 	// Add to the run queue
 	list_init(&clone->task_node);
 	list_push(&runq, &clone->task_node);
+
+	// TODO: add child to parent's list
+	// What is the difference between children and child?
 
 	return clone;
 }
@@ -194,7 +223,7 @@ pid_t sys_fork(void)
 	if(clone == NULL) {
 		panic("Could not clone task!");
 	}
-	
+	cprintf("child task pid=%d\n", clone->task_pid);
 	return clone->task_pid;
 }
 
