@@ -9,6 +9,9 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 {
 	/* LAB 4: your code here. */
 	struct vma *vma = find_vma(NULL, NULL, &task->task_rb, va);
+
+	cprintf("vma=%p, vm_base=%p\n", vma, vma->vm_base);
+
 	if(!(vma->vm_base <= va && vma->vm_end >= va) || vma->vm_flags == 0) {
 		return -1;
 	}
@@ -17,6 +20,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	struct page_info *page = page_lookup(task->task_pml4, va, &entry);
 	// COW
 	if(entry != 0x0 && 
+	page != NULL &&
 	(*entry & PAGE_WRITE) != (PAGE_WRITE) && 
 	(vma->vm_flags & VM_WRITE) == (VM_WRITE)) {
 		if(page->pp_ref == 1) {
