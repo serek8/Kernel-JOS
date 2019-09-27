@@ -30,6 +30,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 				new_page = page_alloc(BUDDY_4K_PAGE);
 				memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
 			}
+			++new_page->pp_ref;
 
 			*entry = PAGE_ADDR(page2pa(new_page)) | (*entry & PAGE_MASK);
 			*entry |= PAGE_WRITE;

@@ -222,7 +222,6 @@ pid_t sys_fork(void)
 	if(clone == NULL) {
 		panic("Could not clone task!");
 	}
-	cprintf("child task pid=%d\n", clone->task_pid);
 	return clone->task_pid;
 }
 
