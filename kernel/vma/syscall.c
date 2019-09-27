@@ -92,7 +92,7 @@ void *sys_mmap(void *addr, size_t len, int prot, int flags, int fd,
 {
 	cprintf("sys_mmap: addr=%p, len=%d, prot=%p, flags=%p, fd=%p, offset=%p\n", addr, len, prot, flags, fd, offset);
 	/* LAB 4: your code here. */
-	if(addr+len >= (void *)USER_LIM || addr == NULL) {
+	if(addr+len >= (void *)USER_LIM) {
 		return MAP_FAILED;
 	}
 

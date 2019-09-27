@@ -16,7 +16,10 @@ struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 	cprintf("lhs: vm_name=%s, base=%p, end=%p\n", lhs->vm_name, lhs->vm_base, lhs->vm_end);
 	cprintf("rhs: vm_name=%s, base=%p, end=%p\n", rhs->vm_name, rhs->vm_base, rhs->vm_end);
 
-	if(lhs->vm_end == rhs->vm_base && lhs->vm_flags == rhs->vm_flags) {
+	if(lhs->vm_end == rhs->vm_base && 
+	lhs->vm_flags == rhs->vm_flags &&
+	strcmp(lhs->vm_name, rhs->vm_name) == 0) {
+	// TODO: check if both file backed?
 		cprintf("---- adjacent and compatible\n");
 		lhs->vm_end = rhs->vm_end;
 		remove_vma(task, rhs);
