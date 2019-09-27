@@ -72,6 +72,7 @@ struct vma *add_executable_vma(struct task *task, char *name, void *addr,
 	vma->vm_src = src;
 	vma->vm_len = len;
 	list_init(&vma->vm_mmap);
+	rb_node_init(&vma->vm_rb);
 	vma->vm_flags = flags;
 	if(insert_vma(task, vma) == -1){
 		cprintf("insert_vma return -1");

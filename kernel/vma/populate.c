@@ -22,13 +22,13 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 		void *file_src = vma->vm_src + pos_abs((base - vma->vm_base) - vma->base_offset);
 		uint64_t bytes_left_in_src = vma->vm_len - pos_abs((base - vma->vm_base) - vma->base_offset);
 		uint64_t cpy_count = MIN( MIN(size - (base - vma->vm_base) - vma->base_offset ,size), bytes_left_in_src);
-		cprintf("will memcopy: dst=%p, file_src=%p, file_src_original=%p, count=%d\n", dst, file_src, vma->vm_src, cpy_count);
+		// cprintf("will memcopy: dst=%p, file_src=%p, file_src_original=%p, count=%d\n", dst, file_src, vma->vm_src, cpy_count);
 		memcpy(dst, file_src, cpy_count);
 	}
 	uint64_t pt_flags = PAGE_PRESENT | PAGE_USER;
 	pt_flags += (vma->vm_flags & VM_EXEC) ? 0 : PAGE_NO_EXEC;
 	pt_flags += (vma->vm_flags & VM_WRITE) ? PAGE_WRITE : 0;
-	cprintf("do_populate_vma: base=%p, size=%d, page_flags=%p, name=%s\n", base, size, pt_flags, vma->vm_name);
+	// cprintf("do_populate_vma: base=%p, size=%d, page_flags=%p, name=%s\n", base, size, pt_flags, vma->vm_name);
 	protect_region(task->task_pml4, base, size, pt_flags);
 	return 0;
 }
