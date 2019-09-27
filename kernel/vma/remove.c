@@ -36,7 +36,7 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
 	void *udata)
 {
 	/* LAB 4: your code here. */
-	cprintf("Removing vma_name=%s, base=%p, size=%d\n", vma->vm_name, base, size);
+	// cprintf("Removing vma_name=%s, base=%p, size=%d\n", vma->vm_name, base, size);
 	if(base == vma->vm_base && base+size == vma->vm_end){  //  [ vma ]
 	} else if(base == vma->vm_base){                       //  [ vma |     ]
 		split_vma(task, vma, base+size);
