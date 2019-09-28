@@ -361,6 +361,7 @@ void task_destroy(struct task *task)
 	// TODO: what to do if it has children as well?
 	if(task->task_ppid != 0) {
 		struct task *parent =  pid2task(task->task_ppid, 0);
+		task->task_status = TASK_DYING;
 		// add to zombies list of parent
 		list_remove(&task->task_node);
 		list_push(&parent->task_zombies, &task->task_node);
