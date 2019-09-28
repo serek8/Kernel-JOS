@@ -362,13 +362,20 @@ void task_destroy(struct task *task)
 	}
 
 	// check if child process -> becomes zombie if parent is still running
-	// TODO: what to do if it has children as well?
 	if(task->task_ppid != 0) {
 		struct task *parent =  pid2task(task->task_ppid, 0);
 		task->task_status = TASK_DYING;
 		// add to zombies list of parent
 		list_remove(&task->task_node);
 		list_push(&parent->task_zombies, &task->task_node);
+		// remove from children list
+		list_remove(&task->task_child);
+
+		if(parent && parent->task_status == TASK_NOT_RUNNABLE) {
+			parent->task_status = TASK_RUNNABLE;
+			list_push_left(&runq, &parent->task_node);
+			task_remove_child(task);
+		}
 	} else {
 		// a parent task is exiting
 		cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
@@ -377,8 +384,7 @@ void task_destroy(struct task *task)
 		struct list *node, *next;
 		list_foreach_safe(&task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
-			list_remove(&zombie->task_node);
-			task_free(zombie);
+			task_remove_child(zombie);
 		}
 
 		// detach children from the parent list, change their parent to PID #0
@@ -390,12 +396,22 @@ void task_destroy(struct task *task)
 
 		// remove task
 		list_remove(&task->task_node);
+		list_remove(&task->task_child);
 		task_free(task);
 	}
 
 	if(current) {
 		sched_yield();
 	}
+}
+
+void task_remove_child(struct task *task) 
+{
+	list_remove(&task->task_node);
+	list_remove(&task->task_child);
+	task_free(task);
+
+	// TODO: check if there are still running children -> make to orphans?
 }
 
 /*

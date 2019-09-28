@@ -22,7 +22,7 @@ void sched_init(void)
 void sched_yield(void)
 {
 	/* LAB 5: your code here. */
-	if(cur_task != NULL){ // check if the task is already in a queue. Otherwiese, we would push the task to the list even during normal syscalls.
+	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ // check if the task is already in a queue. Otherwiese, we would push the task to the list even during normal syscalls.
 		list_push_left(&runq, &cur_task->task_node);
 		// cprintf("# pushed cur_task->task_pid=%d\n", cur_task->task_pid);
 	}
