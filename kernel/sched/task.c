@@ -313,7 +313,8 @@ void task_create(uint8_t *binary, enum task_type type)
 		nuser_tasks++;
 	}
 	/* LAB 5: your code here. */
-	list_push(&runq, &task->task_node);
+	list_push_left(&runq, &task->task_node);
+	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
 
@@ -341,6 +342,10 @@ void task_free(struct task *task)
 	/* Note the task's demise. */
 	cprintf("[PID %5u] Freed task with PID %u\n", cur_task ? cur_task->task_pid : 0,
 	    task->task_pid);
+
+	if (task == cur_task) {
+		cur_task = NULL;
+	}
 
 	/* Free the task. */
 	kfree(task);
@@ -377,7 +382,12 @@ void task_destroy(struct task *task)
 			task_free(zombie);
 		}
 
-		// TODO: check if there are still running children -> make to orphans?
+		// detach children from the parent list, change their parent to PID #0
+		list_foreach_safe(&task->task_children, node, next) {
+			struct task *child = container_of(node, struct task, task_child);
+			list_remove(&child->task_child);
+			child->task_ppid = 0;
+		}
 
 		// remove task
 		list_remove(&task->task_node);
@@ -442,9 +452,6 @@ void task_run(struct task *task)
 	/* LAB 3: Your code here. */
 	if(cur_task == NULL){
 		cur_task = task;
-	}
-	if(list_is_empty(&cur_task->task_node)){ // check if the task is already in a queue. Otherwiese, we would push the task to the list even during normal syscalls.
-		list_push(&runq, &cur_task->task_node);
 	}
 	
 	if(cur_task->task_status == TASK_RUNNING){
