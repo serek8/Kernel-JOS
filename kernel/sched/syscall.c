@@ -88,7 +88,6 @@ static int sys_kill(pid_t pid)
 		return -1;
 	}
 
-	cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
 	task_destroy(task);
 
 	return 0;
