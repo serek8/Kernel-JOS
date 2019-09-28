@@ -13,8 +13,8 @@
 struct vma *merge_vma(struct task *task, struct vma *lhs, struct vma *rhs)
 {
 	/* LAB 4: your code here. */
-	cprintf("lhs: vm_name=%s, base=%p, end=%p\n", lhs->vm_name, lhs->vm_base, lhs->vm_end);
-	cprintf("rhs: vm_name=%s, base=%p, end=%p\n", rhs->vm_name, rhs->vm_base, rhs->vm_end);
+	// cprintf("lhs: vm_name=%s, base=%p, end=%p\n", lhs->vm_name, lhs->vm_base, lhs->vm_end);
+	// cprintf("rhs: vm_name=%s, base=%p, end=%p\n", rhs->vm_name, rhs->vm_base, rhs->vm_end);
 
 	if(lhs->vm_end == rhs->vm_base && 
 	lhs->vm_flags == rhs->vm_flags &&
