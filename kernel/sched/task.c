@@ -351,9 +351,40 @@ void task_free(struct task *task)
 void task_destroy(struct task *task)
 {
 	/* LAB 5: your code here. */
-	list_remove(&task->task_node);
-	task_free(task);
-	sched_yield();
+	int current = 0;
+	if(task == cur_task) {
+		current = 1;
+	}
+
+	// check if child process -> becomes zombie if parent is still running
+	// TODO: what to do if it has children as well?
+	if(task->task_ppid != 0) {
+		struct task *parent =  pid2task(task->task_ppid, 0);
+		// add to zombies list of parent
+		list_remove(&task->task_node);
+		list_push(&parent->task_zombies, &task->task_node);
+	} else {
+		// a parent task is exiting
+		cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
+		
+		// remove all zombies
+		struct list *node, *next;
+		list_foreach_safe(&task->task_zombies, node, next) {
+			struct task *zombie = container_of(node, struct task, task_node);
+			list_remove(&zombie->task_node);
+			task_free(zombie);
+		}
+
+		// TODO: check if there are still running children -> make to orphans?
+
+		// remove task
+		list_remove(&task->task_node);
+		task_free(task);
+	}
+
+	if(current) {
+		sched_yield();
+	}
 }
 
 /*
