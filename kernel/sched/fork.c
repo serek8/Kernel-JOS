@@ -162,7 +162,8 @@ struct task *task_clone(struct task *task)
 
 	// Add to the run queue
 	list_init(&clone->task_node);
-	list_push(&runq, &clone->task_node);
+	list_push_left(&runq, &clone->task_node);
+	cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
 
 	// Add child to parent's list
 	list_push(&task->task_children, &clone->task_child);
