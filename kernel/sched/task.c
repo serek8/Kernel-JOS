@@ -33,7 +33,7 @@ struct task *pid2task(pid_t pid, int check_perm)
 	}
 
 	/* Limit the PID. */
-	if (pid >= pid_max) {
+	if ((uint64_t)pid >= (uint64_t)pid_max) {
 		return NULL;
 	}
 
