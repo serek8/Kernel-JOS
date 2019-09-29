@@ -12,6 +12,8 @@
 
 extern void syscall64(void);
 
+uint64_t gsbase_in_msr = 0; // if '1' then MSR register has value of %gs base, leaving %gs empty. If '0', base is loaded to %gs.
+
 void syscall_init(void)
 {
 	/* LAB 3: your code here. */
@@ -35,6 +37,7 @@ void syscall_init(void)
 
 
 	write_msr(MSR_KERNEL_GS_BASE, (uint64_t)this_cpu);
+	gsbase_in_msr = 1;
 	
 }
 
@@ -104,7 +107,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_getpid:
 			return sys_getpid();
 		case SYS_kill:
-			return sys_kill(a2);
+			cprintf("SYS_kill a1=%d, a2=%d\n", a1, a2);
+			return sys_kill(a1);
 		case SYS_mquery:
 			return sys_mquery((struct vma_info*)a1, (void*)a2);
 		case SYS_mmap:
@@ -137,6 +141,7 @@ void syscall_handler(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 {
 	struct int_frame *frame;
 
+	gsbase_in_msr = 0;
 	/* Syscall from user mode. */
 	assert(cur_task);
 
