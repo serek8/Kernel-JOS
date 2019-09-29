@@ -385,6 +385,7 @@ void task_destroy(struct task *task)
 		struct list *node, *next;
 		list_foreach_safe(&task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
+			cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, zombie->task_pid);
 			task_remove_child(zombie);
 		}
 

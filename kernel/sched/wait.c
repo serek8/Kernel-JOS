@@ -17,6 +17,7 @@ pid_t sys_wait(int *rstatus)
 		list_foreach_safe(&cur_task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
 			task_pid = zombie->task_pid;
+			cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, task_pid);
 			task_remove_child(zombie);
 		}
 		return task_pid;
@@ -40,6 +41,7 @@ pid_t sys_waitpid(pid_t pid, int *rstatus, int opts)
 
 	if(task->task_status == TASK_DYING) {
 		int task_pid = task->task_pid;
+		cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, task_pid);
 		task_remove_child(task);
 		return task_pid;
 	}
