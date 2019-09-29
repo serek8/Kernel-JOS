@@ -12,6 +12,7 @@
 #include <kernel/vma.h>
 
 extern struct list runq;
+extern uint64_t gsbase_in_msr;
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -164,7 +165,7 @@ struct task *task_alloc(pid_t ppid)
 
 	// set IF flag to enable hardware interrupts
 	// TODO: fix timer issue
-	// task->task_frame.rflags |= FLAGS_IF;
+	task->task_frame.rflags |= FLAGS_IF;
 
 	/* You will set task->task_frame.rip later. */
 
@@ -431,9 +432,20 @@ void task_pop_frame(struct int_frame *frame)
 	#endif
 	switch (frame->int_no) {
 #ifdef LAB3_SYSCALL
-	case 0x80: sysret64(frame); break;
+	case 0x80: 
+	if(gsbase_in_msr == 1){
+		asm volatile("swapgs"); // gsbase_in_msr = 0;
+	}
+	gsbase_in_msr = 1;
+	sysret64(frame); break;
 #endif
-	default: iret64(frame); break;
+	default: 
+		if(gsbase_in_msr == 0){
+			asm volatile("swapgs");
+			gsbase_in_msr = 1;
+		}
+		iret64(frame); 
+		break;
 	}
 
 	panic("We should have gone back to userspace!");
