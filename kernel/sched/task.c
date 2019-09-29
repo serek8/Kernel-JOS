@@ -372,7 +372,9 @@ void task_destroy(struct task *task)
 		// remove from children list
 		list_remove(&task->task_child);
 
+		// notify parent if waiting and not scheduled
 		if(parent && parent->task_status == TASK_NOT_RUNNABLE) {
+			parent->task_frame.rax = task->task_pid; // set proper return value for wait syscall
 			parent->task_status = TASK_RUNNABLE;
 			list_push_left(&runq, &parent->task_node);
 			task_remove_child(task);
