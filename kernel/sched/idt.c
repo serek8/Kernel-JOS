@@ -403,7 +403,6 @@ void int_dispatch(struct int_frame *frame)
 		case INT_BREAK:
 			while(1) monitor(NULL);
 		case IRQ_TIMER:
-			cprintf("timer\n");
 			lapic_eoi();
 			sched_yield();
 			
