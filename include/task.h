@@ -73,5 +73,6 @@ struct task {
 	/* Per-task lock */
 	struct spinlock task_lock;
 #endif
+	uint64_t schedule_ts;
 };
 
