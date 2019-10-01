@@ -121,6 +121,7 @@ KERNEL_BINFILES += \
 # LAB 5 code
 KERNEL_SRCFILES += \
 	kernel/acpi/acpi.c \
+	kernel/ipc/message.c \
 	kernel/acpi/lapic.c \
 	kernel/acpi/madt.c \
 	kernel/sched/fork.c \

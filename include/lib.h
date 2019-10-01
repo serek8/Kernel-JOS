@@ -90,3 +90,8 @@ pid_t wait(int *rstatus);
 pid_t waitpid(pid_t pid, int *rstatus, int opts);
 pid_t fork(void);
 
+/* ipc */
+pid_t port_open(pid_t pid);
+int close(int fd);
+int read(int fd, void *buf, int nbyte);
+int write(int fd, const void *buf, int nbyte);
