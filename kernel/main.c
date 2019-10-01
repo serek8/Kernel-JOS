@@ -15,6 +15,9 @@
 #include <kernel/sched/syscall.h>
 
 extern struct page_table *kernel_pml4;
+#ifdef BONUS_LAB5
+struct page_info *zero_dedup;
+#endif
 
 void kmain(struct boot_info *boot_info)
 {
@@ -54,6 +57,11 @@ void kmain(struct boot_info *boot_info)
 	sched_init();
 
 	lab3_check_populate_protect(kernel_pml4);
+
+	#ifdef BONUS_LAB5
+	// Set up zero-page for dedup
+	zero_dedup = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
+	#endif
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
