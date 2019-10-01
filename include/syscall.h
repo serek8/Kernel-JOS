@@ -16,6 +16,10 @@ enum {
 	SYS_fork,
 	SYS_getcpuid,
 	SYS_exec,
+	SYS_port_open,
+	SYS_close,
+	SYS_read,
+	SYS_write,
 	NSYSCALLS,
 };
 

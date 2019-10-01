@@ -110,3 +110,8 @@ pid_t fork(void);
 /* time.c */
 time_t tm_to_time(struct tm *tm);
 
+/* ipc */
+pid_t port_open(pid_t pid);
+int close(int fd);
+int read(int fd, void *buf, int nbyte);
+int write(int fd, const void *buf, int nbyte);
