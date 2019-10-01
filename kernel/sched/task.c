@@ -222,7 +222,7 @@ void choose_segment_name(char *buffer, int max_bytes, struct elf *elf_hdr, struc
  *
  * Finally, this function maps one page for the program's initial stack.
  */
-static void task_load_elf(struct task *task, uint8_t *binary)
+void task_load_elf(struct task *task, uint8_t *binary)
 {
 	/* Hints:
 	 * - Load each program segment into virtual memory at the address

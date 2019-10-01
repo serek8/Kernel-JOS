@@ -56,7 +56,7 @@ int do_remove_vma(struct task *task, void *base, size_t size, struct vma *vma,
  */
 int remove_vma_range(struct task *task, void *base, size_t size)
 {
-	cprintf("remove_vma_range base=%p, size=%d\n", base, size);
+	cprintf("remove_vma_range base=%p, size=%p\n", base, size);
 	return walk_vma_range(task, base, size, do_remove_vma, NULL);
 }
 
