@@ -67,5 +67,6 @@ struct task {
 
 	/* The anchor node (for zombies or the run queue) */
 	struct list task_node;
+	uint64_t schedule_ts;
 };
 

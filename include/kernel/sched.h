@@ -9,3 +9,4 @@
 #include <kernel/sched/wait.h>
 
 void sched_yield(void);
+void sched_set_expired(void);
