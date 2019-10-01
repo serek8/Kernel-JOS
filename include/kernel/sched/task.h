@@ -14,7 +14,9 @@ void task_pop_frame(struct int_frame *frame);
 void task_run(struct task *task);
 struct task *task_alloc(pid_t ppid);
 void task_remove_child(struct task *task);
-
+#ifdef BONUS_LAB5
+void task_load_elf(struct task *task, uint8_t *binary);
+#endif
 /* Without this extra macro, we couldn't pass macros like TEST to TASK_CREATE()
  * because of the C preprocessor's argument prescan rule.
  */
@@ -25,4 +27,14 @@ void task_remove_child(struct task *task);
 		extern uint8_t TASK_PASTE3(_binary_obj_, x, _start)[];   \
 		task_create(TASK_PASTE3(_binary_obj_, x, _start), type); \
 	} while (0)
+
+#ifdef BONUS_LAB5
+#define RETURN_TASK_BINARY(binary, x) 										\
+	do {															\
+		if(strcmp(binary, #x) == 0) {								\
+			extern uint8_t TASK_PASTE3(_binary_obj_user_, x, _start)[];	\
+			return TASK_PASTE3(_binary_obj_user_, x, _start);			\
+		}															\
+	} while (0)
+#endif
 

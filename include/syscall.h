@@ -18,6 +18,7 @@ enum {
 	SYS_close,
 	SYS_read,
 	SYS_write,
+	SYS_exec,
 	NSYSCALLS,
 };
 

@@ -99,16 +99,29 @@ pid_t fork(void)
 	return syscall(SYS_fork, 0, 0, 0, 0, 0, 0, 0);
 }
 
-pid_t port_open(pid_t pid){
+pid_t port_open(pid_t pid)
+{
 	return syscall(SYS_port_open, 0, (uint64_t)pid, 0, 0, 0, 0, 0);
 }
-int close(int fd){
+
+int close(int fd)
+{
 	return syscall(SYS_close, 0, (uint64_t)fd, 0, 0, 0, 0, 0);
 }
-int read(int fd, void *buf, int nbyte){
+
+int read(int fd, void *buf, int nbyte)
+{
 	return syscall(SYS_read, 0, (uint64_t)fd, (uint64_t)buf, (uint64_t)nbyte, 0, 0, 0);
 }
-int write(int fd, const void *buf, int nbyte){
+
+int write(int fd, const void *buf, int nbyte)
+{
 	return syscall(SYS_write, 0, (uint64_t)fd, (uint64_t)buf, (uint64_t)nbyte, 0, 0, 0);
 }
 
+#ifdef BONUS_LAB5
+int exec(char *binary)
+{
+	return syscall(SYS_exec, 0, (uint64_t)binary, 0, 0, 0, 0, 0);
+}
+#endif
