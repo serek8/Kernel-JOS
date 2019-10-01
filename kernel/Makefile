@@ -123,6 +123,7 @@ KERNEL_SRCFILES += \
 	kernel/rtc.c \
 	kernel/acpi/acpi.c \
 	kernel/acpi/hpet.c \
+	kernel/ipc/message.c \
 	kernel/acpi/lapic.c \
 	kernel/acpi/madt.c \
 	kernel/sched/fork.c \

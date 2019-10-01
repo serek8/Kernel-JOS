@@ -10,6 +10,13 @@
 
 typedef int32_t pid_t;
 
+#define FILE_DESCRIPTION_TABLE_SIZE 2
+#define FD_OPEN (1 << 0)
+#define FD_READY (1 << 1) // the reader or writer is already waiting for copying data 
+#define FD_DONE (1 << 2) 
+#define FD_ERROR (1 << 3) 
+
+
 /* Values of task_status in struct task. */
 enum {
 	TASK_DYING = 0,
@@ -27,6 +34,13 @@ enum {
 /* Special task types. */
 enum task_type {
 	TASK_TYPE_USER = 0,
+};
+
+struct fd {
+	pid_t pid; // writer PID
+	uint64_t flags;
+	void *bytes;
+	uint64_t nbytes;
 };
 
 struct task {
@@ -74,5 +88,6 @@ struct task {
 	struct spinlock task_lock;
 #endif
 	uint64_t schedule_ts;
+	struct fd fd_table[FILE_DESCRIPTION_TABLE_SIZE];
 };
 

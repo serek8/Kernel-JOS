@@ -148,6 +148,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_status = TASK_RUNNABLE;
 	task->task_runs = 0;
 	task->schedule_ts = 0;
+	memset(&task->fd_table, 0, sizeof task->fd_table);
 	
 	// Init lists
 	list_init(&task->task_mmap);
