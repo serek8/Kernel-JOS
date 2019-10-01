@@ -104,3 +104,9 @@ unsigned int getcpuid(void)
 	return syscall(SYS_getcpuid, 0, 0, 0, 0, 0, 0, 0);
 }
 
+#ifdef BONUS_LAB5
+int exec(char *binary)
+{
+	return syscall(SYS_exec, 0, (uint64_t)binary, 0, 0, 0, 0, 0);
+}
+#endif
