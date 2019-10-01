@@ -105,11 +105,14 @@ unsigned int getcpuid(void)
 }
 
 #ifdef BONUS_LAB5
+pid_t port_open(pid_t pid)
+{
+	return syscall(SYS_getcpuid, 0, 0, 0, 0, 0, 0, 0);
+}
 int exec(char *binary)
 {
 	return syscall(SYS_exec, 0, (uint64_t)binary, 0, 0, 0, 0, 0);
 }
-#endif
 pid_t port_open(pid_t pid){
 	return syscall(SYS_port_open, 0, (uint64_t)pid, 0, 0, 0, 0, 0);
 }
@@ -123,3 +126,4 @@ int write(int fd, const void *buf, int nbyte){
 	return syscall(SYS_write, 0, (uint64_t)fd, (uint64_t)buf, (uint64_t)nbyte, 0, 0, 0);
 }
 
+#endif
