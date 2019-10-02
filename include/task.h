@@ -88,6 +88,8 @@ struct task {
 	struct spinlock task_lock;
 #endif
 	uint64_t schedule_ts;
+#ifdef BONUS_LAB5
 	struct fd fd_table[FILE_DESCRIPTION_TABLE_SIZE];
+#endif
 };
 

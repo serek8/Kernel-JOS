@@ -14,7 +14,7 @@
 
 #include <x86-64/gdt.h>
 #include <x86-64/memory.h>
-
+#include <kernel/acpi/lapic.h>
 #include <kernel/mem/slab.h>
 
 /* Values of status in struct cpuinfo */
