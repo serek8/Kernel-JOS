@@ -1,3 +1,5 @@
+#ifdef BONUS_LAB5
+
 #include <kernel/message.h>
 #include <kernel/sched/task.h>
 #include <kernel/monitor.h>
@@ -118,6 +120,7 @@ int sys_write(int fd, const void *buf, int nbyte){
     return -1;
 }
 
+#endif
 
 /* Sample program
 int main(void)

@@ -237,7 +237,6 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		#ifdef BONUS_LAB5
 		case SYS_exec:
 			return sys_exec((char*)a1);
-		#endif
 		case SYS_port_open:
 			return sys_port_open((int)a1);
 		case SYS_close:
@@ -246,6 +245,7 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 			return sys_read((int)a1, (void*)a2, (int)a3);
 		case SYS_write:
 			return sys_write((int)a1, (void*)a2, (int)a3);
+		#endif
 			
 	default:
 		cprintf("Kernel does not support system call=%d\n", syscallno);

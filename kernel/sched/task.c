@@ -148,7 +148,9 @@ struct task *task_alloc(pid_t ppid)
 	task->task_status = TASK_RUNNABLE;
 	task->task_runs = 0;
 	task->schedule_ts = 0;
+#ifdef BONUS_LAB5
 	memset(&task->fd_table, 0, sizeof task->fd_table);
+#endif
 	
 	// Init lists
 	list_init(&task->task_mmap);
