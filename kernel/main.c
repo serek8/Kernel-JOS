@@ -76,6 +76,10 @@ void kmain(struct boot_info *boot_info)
 	zero_dedup = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
 	#endif
 
+	mem_init_mp();
+	cprintf("will run boot_cpus\n");
+	boot_cpus();
+
 	task_kernel_create(kernel_task_entry);
 	sched_yield();
 	panic("---- END\n");

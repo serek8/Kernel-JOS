@@ -43,10 +43,10 @@ void mp_main(void)
 {
 	/* Eable the NX-bit. */
 	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_NXE);
-
+	
 	/* Load the kernel PML4. */
 	asm volatile("movq %0, %%cr3\n" :: "r" (PADDR(kernel_pml4)));
-
+	
 	/* Load the per-CPU kernel stack. */
 	asm volatile("movq %0, %%rsp\n" :: "r" (mpentry_kstack));
 
