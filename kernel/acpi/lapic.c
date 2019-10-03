@@ -30,7 +30,9 @@ void lapic_init(void)
 	}
 
 	/* Map in the 4K MMIO region of the local APIC. */
-	lapic_base = mmio_map_region(lapic_addr, PAGE_SIZE);
+	if (!lapic_base) {
+		lapic_base = mmio_map_region(lapic_addr, PAGE_SIZE);
+	}
 
 	/* Enable the local APIC. */
 	lapic_write(LAPIC_SIVR, LAPIC_ENABLE | IRQ_SPURIOUS);
