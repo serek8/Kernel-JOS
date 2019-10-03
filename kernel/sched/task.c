@@ -179,6 +179,73 @@ struct task *task_alloc(pid_t ppid)
 	return task;
 }
 
+struct task *task_kernel_alloc(pid_t ppid)
+{
+	struct task *task;
+	pid_t pid;
+
+	/* Allocate a new task struct. */
+	task = kmalloc(sizeof *task);
+
+	if (!task) {
+		return NULL;
+	}
+
+	/* Set up the virtual address space for the task. */
+	if (task_setup_vas(task) < 0) {
+		kfree(task);
+		return NULL;
+	}
+
+	/* Find a free PID for the task in the PID mapping and associate the
+	 * task with that PID.
+	 */
+	for (pid = 1; pid < pid_max; ++pid) {
+		if (!tasks[pid]) {
+			tasks[pid] = task;
+			task->task_pid = pid;
+			break;
+		}
+	}
+
+	/* We are out of PIDs. */
+	if (pid == pid_max) {
+		kfree(task);
+		return NULL;
+	}
+
+	/* Set up the task. */
+	task->task_ppid = ppid;
+	task->task_type = TASK_TYPE_KERNEL;
+	task->task_status = TASK_RUNNABLE;
+	task->task_runs = 0;
+	task->schedule_ts = 0;
+	
+	// Init lists
+	list_init(&task->task_mmap);
+	list_init(&task->task_node);
+	rb_init(&task->task_rb);
+	list_init(&task->task_children);
+	list_init(&task->task_child);
+	list_init(&task->task_zombies);
+
+	memset(&task->task_frame, 0, sizeof task->task_frame);
+
+	task->task_frame.ds = GDT_KDATA | 0;
+	task->task_frame.ss = GDT_KDATA | 0;
+	task->task_frame.cs = GDT_KCODE | 0;
+
+	// set IF flag to enable hardware interrupts
+	// TODO: fix timer issue
+	task->task_frame.rflags |= FLAGS_IF;
+
+	/* You will set task->task_frame.rip later. */
+	cprintf("[PID %5u] New kernel task with PID %u\n",
+	        cur_task ? cur_task->task_pid : 0, task->task_pid);
+
+	return task;
+}
+
 void find_segment_names(char *buffer, int max_bytes, struct elf *elf_hdr, struct elf_proghdr hdr){
 	for(int section_i=0; section_i<elf_hdr->e_shnum; section_i++){
 			struct elf_secthdr *sect_hdr = (struct elf_secthdr *)(((uint64_t)elf_hdr) + elf_hdr->e_shoff + section_i*64);
@@ -308,6 +375,9 @@ void task_create(uint8_t *binary, enum task_type type)
 {
 	/* LAB 3: your code here. */
 	struct task *task = task_alloc(0);
+	if(!task){
+		panic("Could not create task!\n");
+	}
 
 	// TODO: load ELF binary
 	load_pml4((void*)PADDR(task->task_pml4));
@@ -322,6 +392,17 @@ void task_create(uint8_t *binary, enum task_type type)
 	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
+
+void task_kernel_create(void *entry_point)
+{
+	struct task *task = task_kernel_alloc(0);
+	load_pml4((void*)PADDR(task->task_pml4));
+	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+	task->task_frame.rsp = USTACK_TOP;
+	task->task_frame.rip = (uint64_t)entry_point;
+	list_push_left(&runq, &task->task_node);
+}
+
 
 /* Free the task and all of the memory that is used by it.
  */

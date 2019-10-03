@@ -8,6 +8,7 @@
 struct task *pid2task(pid_t pid, int check_perm);
 void task_init(void);
 void task_create(uint8_t *binary, enum task_type type);
+void task_kernel_create(void *entry_point);
 void task_free(struct task *task);
 void task_destroy(struct task *task);
 void task_pop_frame(struct int_frame *frame);
