@@ -12,6 +12,12 @@ struct spinlock {
 
 	/* The CPU that is holding the lock. */
 	struct cpuinfo *cpu;
+
+	/* The filename and line at which the last successful lock took
+	 * place.
+	 */
+	const char *file;
+	int line;
 };
 
 #define spin_lock(lock) __spin_lock(lock, __FILE__, __LINE__)

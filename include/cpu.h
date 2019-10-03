@@ -25,8 +25,8 @@ enum {
 };
 
 struct kmem_cache {
-	struct slab slabs[32];
-	size_t nslabs;
+	struct slab _slabs[32];
+	size_t _nslabs;
 };
 
 /* Per-CPU state */

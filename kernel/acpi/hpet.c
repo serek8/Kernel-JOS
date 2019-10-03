@@ -21,7 +21,9 @@ int hpet_init(struct rsdp *rsdp)
 		return -1;
 	}
 
-	hpet_regs = mmio_map_region(hpet->addr.addr, PAGE_SIZE);
+	if (!hpet_regs) {
+		hpet_regs = mmio_map_region(hpet->addr.addr, PAGE_SIZE);
+	}
 
 	if (!hpet_regs) {
 		return -1;
