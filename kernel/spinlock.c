@@ -38,7 +38,7 @@ void __spin_lock(struct spinlock *lock, const char *file, int line)
 	 */
 	if (holding(lock)) {
 		panic("\n"
-		      "%s:%d: cpu %2d: attempt to lock %s twice\n",
+		      "%s:%d: cpu %2d: attempt to lock %s twice\n"
 		      "%s:%d: cpu %2d: currently locked here\n",
 		      file, line,
 		      lapic_cpunum(),
@@ -67,7 +67,7 @@ int __spin_trylock(struct spinlock *lock, const char *file, int line)
 	 */
 	if (holding(lock)) {
 		panic("\n"
-		      "%s:%d: cpu %2d: attempt to lock %s twice\n",
+		      "%s:%d: cpu %2d: attempt to lock %s twice\n"
 		      "%s:%d: cpu %2d: currently locked here\n",
 		      file, line,
 		      lapic_cpunum(),
@@ -100,7 +100,8 @@ void __spin_unlock(struct spinlock *lock, const char *file, int line)
 		panic("\n"
 		      "%s:%d: cpu %2d:%s not locked\n",
 		      file, line,
-		      lapic_cpunum());
+		      lapic_cpunum(),
+		      lock->name ? lock->name : "anonymous");
 	}
 
 	/* Check if the lock that we are about to unlock is actually owned by
