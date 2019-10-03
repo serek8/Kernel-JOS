@@ -434,7 +434,7 @@ void int_handler(struct int_frame *frame)
 
 	cprintf("Incoming INT frame at %p\n", frame);
 
-	if ((frame->cs & 3) == 3) {
+	if ((frame->cs & 3) == 3 || cur_task->task_type==TASK_TYPE_KERNEL) {
 		/* Interrupt from user mode. */
 		assert(cur_task);
 
