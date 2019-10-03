@@ -4,8 +4,8 @@
 
 #include <kernel/mem/slab.h>
 
-#define slabs (this_cpu->kmem.slabs)
-#define nslabs (this_cpu->kmem.nslabs)
+#define slabs (this_cpu->kmem._slabs)
+#define nslabs (this_cpu->kmem._nslabs)
 
 int kmem_init(void);
 int kmem_init_mp(void);
