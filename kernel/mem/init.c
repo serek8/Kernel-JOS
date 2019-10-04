@@ -262,6 +262,14 @@ void page_init(struct boot_info *boot_info)
 				page->pp_free = 0;
 				continue;
 			}
+
+			// Condition #4
+			if (pa == MPENTRY_PADDR){
+				page->pp_ref +=1; // TODO: maybe set page->pp_free=0
+				page->pp_free = 0;
+				continue;
+			}
+
 			page_free(page);
 		}
 	}
@@ -323,6 +331,12 @@ void page_init_ext(struct boot_info *boot_info)
 
 			// Condition #3
 			if (KERNEL_LMA <= pa && pa < end) {
+				page->pp_free = 0;
+				continue;
+			}
+
+			// Condition #4
+			if (pa == MPENTRY_PADDR){
 				page->pp_free = 0;
 				continue;
 			}
