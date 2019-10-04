@@ -64,8 +64,16 @@ void sched_set_expired(void){
 /* For now jump into the kernel monitor. */
 void sched_halt()
 {
-	while (1) {
-		monitor(NULL);
-	}
+	#ifdef USE_BIG_KERNEL_LOCK
+	cprintf("CPU #%d halted.\n", this_cpu->cpu_id);
+	spin_unlock(&kernel_lock);
+	asm volatile(
+		"cli\n"
+		"hlt\n");
+	#endif
+
+	// while(1){
+	// 	monitor(NULL);
+	// }	
 }
 

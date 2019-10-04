@@ -14,6 +14,7 @@
 
 #include <kernel/sched/task.h>
 #include <kernel/vma.h>
+#include <spinlock.h>
 
 static const char *int_names[256] = {
 	[INT_DIVIDE] = "Divide-by-Zero Error Exception (#DE)",
@@ -380,6 +381,7 @@ void idt_init(void)
 void idt_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	idt_init();
 }
 
 void int_dispatch(struct int_frame *frame)
@@ -403,6 +405,7 @@ void int_dispatch(struct int_frame *frame)
 		case INT_BREAK:
 			while(1) monitor(NULL);
 		case IRQ_TIMER:
+			// cprintf("timer: cpu=%d\n", this_cpu->cpu_id);
 			lapic_eoi();
 			sched_yield();
 			
@@ -422,6 +425,10 @@ void int_dispatch(struct int_frame *frame)
 
 void int_handler(struct int_frame *frame)
 {
+	#ifdef USE_BIG_KERNEL_LOCK
+	spin_lock(&kernel_lock);
+	#endif
+
 	/* The task may have set DF and some versions of GCC rely on DF being
 	 * clear. */
 	asm volatile("cld" ::: "cc");
@@ -432,7 +439,7 @@ void int_handler(struct int_frame *frame)
 	 */
 	assert(!(read_rflags() & FLAGS_IF));
 
-	cprintf("Incoming INT frame at %p\n", frame);
+	// cprintf("Incoming INT frame at %p\n", frame);
 
 	if ((frame->cs & 3) == 3 || cur_task->task_type==TASK_TYPE_KERNEL) {
 		/* Interrupt from user mode. */

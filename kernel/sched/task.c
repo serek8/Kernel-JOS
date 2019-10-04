@@ -3,6 +3,7 @@
 #include <paging.h>
 #include <task.h>
 #include <cpu.h>
+#include <spinlock.h>
 
 #include <kernel/acpi.h>
 #include <kernel/monitor.h>
@@ -577,6 +578,9 @@ void task_run(struct task *task)
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;
 	load_pml4((void*)PADDR(task->task_pml4));
+	#ifdef USE_BIG_KERNEL_LOCK
+	spin_unlock(&kernel_lock);
+	#endif
 	task_pop_frame(&task->task_frame);
 }
 

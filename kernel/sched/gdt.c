@@ -34,5 +34,9 @@ void gdt_init(void)
 void gdt_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	set_tss_entry((struct tss_entry *)(gdt_entries + (GDT_TSS0 >> 3)),
+	    &this_cpu->cpu_tss);
+	load_gdt(&gdtr, GDT_KCODE, GDT_KDATA);
+	load_task_sel(GDT_TSS0);
 }
 

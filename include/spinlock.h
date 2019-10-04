@@ -29,3 +29,6 @@ void __spin_lock(struct spinlock *lock, const char *file, int line);
 int __spin_trylock(struct spinlock *lock, const char *file, int line);
 void __spin_unlock(struct spinlock *lock, const char *file, int line);
 
+#ifdef USE_BIG_KERNEL_LOCK
+extern struct spinlock kernel_lock;
+#endif

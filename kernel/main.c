@@ -16,6 +16,7 @@
 #include <kernel/sched/gdt.h>
 #include <kernel/sched/idt.h>
 #include <kernel/sched/syscall.h>
+#include <spinlock.h>
 
 extern struct page_table *kernel_pml4;
 #ifdef BONUS_LAB5
@@ -26,7 +27,7 @@ void kernel_task_entry(){
 	cprintf("Hello in kernel task\n");
 	while(1){
 		cprintf("Hello in while loop in func\n");
-		cur_task->task_status = TASK_NOT_RUNNABLE;
+		// cur_task->task_status = TASK_NOT_RUNNABLE;
 	}
 	panic("We should never exit the loop\n");
 }
@@ -76,13 +77,18 @@ void kmain(struct boot_info *boot_info)
 	zero_dedup = page_alloc(BUDDY_4K_PAGE | ALLOC_ZERO);
 	#endif
 
+	#ifdef USE_BIG_KERNEL_LOCK
+	spin_init(&kernel_lock, "kernel_lock");
+	spin_lock(&kernel_lock);
+	#endif
+
 	mem_init_mp();
 	cprintf("will run boot_cpus\n");
 	boot_cpus();
 
-	task_kernel_create(kernel_task_entry);
-	sched_yield();
-	panic("---- END\n");
+	// task_kernel_create(kernel_task_entry);
+	// sched_yield();
+	// panic("---- END\n");
 
 
 #if defined(TEST)
