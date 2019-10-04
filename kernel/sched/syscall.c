@@ -15,7 +15,6 @@
 
 extern void syscall64(void);
 
-uint64_t gsbase_in_msr = 0; // if '1' then MSR register has value of %gs base, leaving %gs empty. If '0', base is loaded to %gs.
 
 void syscall_init(void)
 {
@@ -40,13 +39,14 @@ void syscall_init(void)
 
 
 	write_msr(MSR_KERNEL_GS_BASE, (uint64_t)this_cpu);
-	gsbase_in_msr = 1;
+	this_cpu->gsbase_in_msr = 1;
 	
 }
 
 void syscall_init_mp(void)
 {
 	/* LAB 6: your code here. */
+	syscall_init();
 }
 
 /*
@@ -257,8 +257,11 @@ void syscall_handler(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
     uint64_t a4, uint64_t a5, uint64_t a6)
 {
 	struct int_frame *frame;
+	#ifdef USE_BIG_KERNEL_LOCK
+	spin_lock(&kernel_lock);
+	#endif
 
-	gsbase_in_msr = 0;
+	this_cpu->gsbase_in_msr = 0;
 	/* Syscall from user mode. */
 	assert(cur_task);
 

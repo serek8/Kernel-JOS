@@ -49,6 +49,9 @@ struct cpuinfo {
 	/* Per-CPU run queue */
 	struct list runq, nextq;
 	size_t runq_len;
+
+	/* Per-CPU state of %gs register */
+	uint64_t gsbase_in_msr;
 };
 
 #define NCPUS 64

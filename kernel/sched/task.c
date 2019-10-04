@@ -522,16 +522,16 @@ void task_pop_frame(struct int_frame *frame)
 	switch (frame->int_no) {
 #ifdef LAB3_SYSCALL
 	case 0x80: 
-	if(gsbase_in_msr == 1){
+	if(this_cpu->gsbase_in_msr == 1){
 		asm volatile("swapgs"); // gsbase_in_msr = 0;
 	}
-	gsbase_in_msr = 1;
+	this_cpu->gsbase_in_msr = 1;
 	sysret64(frame); break;
 #endif
 	default: 
-		if(gsbase_in_msr == 0){
+		if(this_cpu->gsbase_in_msr == 0){
 			asm volatile("swapgs");
-			gsbase_in_msr = 1;
+			this_cpu->gsbase_in_msr = 1;
 		}
 		iret64(frame); 
 		break;
