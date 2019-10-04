@@ -200,6 +200,10 @@ struct page_info *buddy_find(size_t req_order)
  */
 struct page_info *page_alloc(int alloc_flags)
 {
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&buddy_lock);
+	#endif
+
 	/* LAB 1: your code here. */
 	uint64_t order = (alloc_flags & ALLOC_HUGE) ? BUDDY_2M_PAGE : BUDDY_4K_PAGE; 
 	struct page_info *page = buddy_find(order);
@@ -234,6 +238,11 @@ struct page_info *page_alloc(int alloc_flags)
 		void *page_ka = page2kva(page);
 		memset(page_ka, '\0', ORDER_TO_SIZE(order));
 	}
+
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&buddy_lock);
+	#endif
+
 	return page;
 }
 
@@ -280,6 +289,10 @@ void page_free(struct page_info *pp)
  */
 void page_decref(struct page_info *pp)
 {
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&buddy_lock);
+	#endif
+
 	if(pp->pp_ref == 0) {
 		panic("Trying to decrement ref when already 0.\n");
 	}
@@ -287,6 +300,10 @@ void page_decref(struct page_info *pp)
 	if (--pp->pp_ref == 0) {
 		page_free(pp);
 	}
+
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&buddy_lock);
+	#endif
 }
 
 static int in_page_range(void *p)
