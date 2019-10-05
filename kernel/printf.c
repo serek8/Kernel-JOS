@@ -25,9 +25,18 @@ static void putch(int ch, int *cnt)
 
 int vcprintf(const char *fmt, va_list ap)
 {
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&console_lock);
+	#endif
+
 	int cnt = 0;
 
 	vprintfmt((void*)putch, &cnt, fmt, ap);
+
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&console_lock);
+	#endif
+
 	return cnt;
 }
 
