@@ -1,6 +1,7 @@
 #include <cpu.h>
 #include <error.h>
 #include <list.h>
+#include <atomic.h>
 
 #include <kernel/console.h>
 #include <kernel/mem.h>
@@ -27,7 +28,7 @@ struct page_info *copy_ptbl(physaddr_t *entry)
 
 			// increase refcount
 			struct page_info *entry_page = pa2page(PAGE_ADDR(orig_ptbl->entries[i]));
-			++entry_page->pp_ref;
+			atomic_inc(&entry_page->pp_ref);
 
 			// cprintf("ptbl - i=%d, orig_entry=%p, clone_entry=%p, orig_flags=%p, clone_flags=%p\n", 
 			// i, 
@@ -59,7 +60,7 @@ struct page_info *copy_pdir(physaddr_t *entry)
 				
 				// increase refcount
 				struct page_info *entry_page = pa2page(PAGE_ADDR(orig_pdir->entries[i]));
-				++entry_page->pp_ref;
+				atomic_inc(&entry_page->pp_ref);
 			} else {
 				struct page_info *ptbl_page = copy_ptbl(&orig_pdir->entries[i]);
 				clone_pdir->entries[i] = PAGE_ADDR(page2pa(ptbl_page)) | (orig_pdir->entries[i] & PAGE_MASK);
@@ -161,12 +162,13 @@ struct task *task_clone(struct task *task)
 	}
 
 	// Add to the run queue
-	list_init(&clone->task_node);
 	list_push_left(&runq, &clone->task_node);
 	cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
 
+	LOCK_TASK(task);
 	// Add child to parent's list
 	list_push(&task->task_children, &clone->task_child);
+	UNLOCK_TASK(task);
 
 	return clone;
 }

@@ -2,6 +2,7 @@
 
 #include <task.h>
 #include <cpu.h>
+#include <spinlock.h>
 
 #define cur_task (this_cpu->cpu_task)
 
@@ -39,3 +40,10 @@ void task_load_elf(struct task *task, uint8_t *binary);
 	} while (0)
 #endif
 
+#ifdef USE_BIG_KERNEL_LOCK
+	#define LOCK_TASK(task) do { } while(0)
+	#define UNLOCK_TASK(task) do { } while(0)
+#else
+	#define LOCK_TASK(task) do { spin_lock(&task->task_lock); } while(0)
+	#define UNLOCK_TASK(task) do { spin_unlock(&task->task_lock); } while(0)
+#endif

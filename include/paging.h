@@ -27,7 +27,7 @@ struct page_info {
 	 * to this page, for pages allocated using page_alloc.
 	 * Pages allocated at boot time using pmap.c's
 	 * boot_alloc do not have valid reference count fields. */
-	uint16_t pp_ref;
+	volatile uint16_t pp_ref;
 
 	/* The order of the page. */
 	uint8_t pp_order : 7;

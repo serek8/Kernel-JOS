@@ -1,5 +1,6 @@
 #include <types.h>
 #include <paging.h>
+#include <atomic.h>
 
 #include <kernel/mem.h>
 
@@ -22,7 +23,7 @@ static int insert_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		tlb_invalidate(info->pml4, (void*)base);
 	}
 	page = info->page;
-	page->pp_ref++;
+	atomic_inc(&page->pp_ref);
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
 	// cprintf("insert_pte entry=%p, base=%p, end=%p\n", *entry, base, end);
 
@@ -59,7 +60,7 @@ static int insert_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		ptbl_alloc(entry, base, end, walker);
 	} else {
 		// huge page
-		page->pp_ref++;
+		atomic_inc(&page->pp_ref);
 		*entry = info->flags | PAGE_ADDR(page2pa(page));
 	}
 
