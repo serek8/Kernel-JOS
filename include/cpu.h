@@ -61,4 +61,8 @@ extern struct cpuinfo *boot_cpu;
 #define this_cpu (cpus + lapic_cpunum())
 extern size_t ncpus;
 
+#define lrunq (this_cpu->runq)
+#define lnextq (this_cpu->nextq)
+#define lrunq_len (this_cpu->runq_len)
+
 #endif /* !defined(__ASSEMBLER__) */

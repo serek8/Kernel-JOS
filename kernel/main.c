@@ -87,8 +87,8 @@ void kmain(struct boot_info *boot_info)
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	task_kernel_create(kernel_task_entry);
-	sched_yield();
+	// task_kernel_create(kernel_task_entry);
+	// sched_yield();
 	// panic("---- END\n");
 
 

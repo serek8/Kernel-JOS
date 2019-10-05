@@ -68,7 +68,7 @@ void mp_main(void)
 	kmem_init_mp();
 
 	/* Set up the per-CPU scheduler. */
-	// sched_init_mp();
+	sched_init_mp();
 
 	/* Notify the main CPU that we started up. */
 	xchg(&this_cpu->cpu_status, CPU_STARTED);
@@ -82,10 +82,10 @@ void mp_main(void)
 	#ifdef USE_BIG_KERNEL_LOCK
 	spin_lock(&kernel_lock);
 	#endif
-	TASK_CREATE(user_evilchild, TASK_TYPE_USER);
-	TASK_CREATE(user_yield, TASK_TYPE_USER);
-	TASK_CREATE(user_yield, TASK_TYPE_USER);
-	TASK_CREATE(user_evilchild, TASK_TYPE_USER);
+	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
 	sched_yield();
 }
 

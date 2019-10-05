@@ -4,6 +4,7 @@
 #include <task.h>
 #include <cpu.h>
 #include <spinlock.h>
+#include <atomic.h>
 
 #include <kernel/acpi.h>
 #include <kernel/monitor.h>
@@ -12,7 +13,6 @@
 #include <kernel/vma/insert.h>
 #include <kernel/vma.h>
 
-extern struct list runq;
 extern uint64_t gsbase_in_msr;
 extern char bootstack[];
 
@@ -387,10 +387,10 @@ void task_create(uint8_t *binary, enum task_type type)
 
 	task->task_type = type;
 	if(task->task_type == TASK_TYPE_USER) {
-		nuser_tasks++;
+		atomic_inc(&nuser_tasks);
 	}
 	/* LAB 5: your code here. */
-	list_push_left(&runq, &task->task_node);
+	list_push_left(&lrunq, &task->task_node);
 	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
@@ -399,7 +399,7 @@ void task_kernel_create(void *entry_point)
 {
 	struct task *task = task_kernel_alloc(0);
 	task->task_frame.rip = (uint64_t)entry_point;
-	list_push_left(&runq, &task->task_node);
+	list_push_left(&lrunq, &task->task_node);
 }
 
 
@@ -464,7 +464,7 @@ void task_destroy(struct task *task)
 			LOCK_TASK(parent);
 			parent->task_frame.rax = task->task_pid; // set proper return value for wait syscall
 			parent->task_status = TASK_RUNNABLE;
-			list_push_left(&runq, &parent->task_node);
+			list_push_left(&lrunq, &parent->task_node);
 			task_remove_child(task);
 			UNLOCK_TASK(parent);
 		}
@@ -596,7 +596,9 @@ void task_run(struct task *task)
 			panic("Kernel task smashes the stack\n");
 		}
 		((void (*)(void))cur_task->task_frame.rip)(); // TODO: it leads stack overflow as we keep going down
+		#ifdef USE_BIG_KERNEL_LOCK
 		spin_lock(&kernel_lock);
+		#endif
 		sched_set_expired();
 		sched_yield();
 	}else{

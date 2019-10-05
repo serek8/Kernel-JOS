@@ -9,7 +9,7 @@
 #include <kernel/sched.h>
 #include <kernel/vma.h>
 
-extern struct list runq;
+extern size_t nuser_tasks;
 
 struct page_info *copy_ptbl(physaddr_t *entry)
 {
@@ -161,14 +161,18 @@ struct task *task_clone(struct task *task)
 		insert_vma(clone, clone_vma);
 	}
 
-	// Add to the run queue
-	list_push_left(&runq, &clone->task_node);
+	// Add to the local run queue
+	list_push_left(&lrunq, &clone->task_node);
 	cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
 
 	LOCK_TASK(task);
 	// Add child to parent's list
 	list_push(&task->task_children, &clone->task_child);
 	UNLOCK_TASK(task);
+
+	if(clone->task_type == TASK_TYPE_USER) {
+		atomic_inc(&nuser_tasks);
+	}
 
 	return clone;
 }
