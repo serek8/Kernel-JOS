@@ -29,15 +29,24 @@ void ksched_yield(){
 	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
 }
 
-void kernel_task_entry(){
+void ktask_exit(){ // kills the kernel task
+	cur_task->task_status = TASK_NOT_RUNNABLE;
+	ksched_yield();
+}
+
+void kernel_task_example(){
 	cprintf("Hello in kernel task\n");
-	while(1){
-		cprintf("Hello in while loop in func\n");
+	int loop_limit = 100;
+	for(int i=1; i<loop_limit; i++){
+		cprintf("kernel task loop (%d/%d)\n", i, loop_limit);
+		
+		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away CPU
 		ksched_yield();
 	}
-	// To kill the task, set its status to TASK_NOT_RUNNABLE
-	cur_task->task_status = TASK_NOT_RUNNABLE;
-	return;
+	ktask_exit();
+	/* We should never use 'return' in a kernel task. 
+	 * Use 'ktask_exit' to exit and kill the kernel task.
+	 */ 
 }
 
 void kmain(struct boot_info *boot_info)
@@ -100,7 +109,7 @@ void kmain(struct boot_info *boot_info)
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	TASK_CREATE(user_yield, TASK_TYPE_USER);
-	task_kernel_create(kernel_task_entry);
+	task_kernel_create(kernel_task_example);
 	TASK_CREATE(user_yield, TASK_TYPE_USER);
 	sched_yield();
 	// panic("---- END\n");
