@@ -14,6 +14,7 @@
 
 extern struct list runq;
 extern uint64_t gsbase_in_msr;
+extern char bootstack[];
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -579,9 +580,14 @@ void task_run(struct task *task)
 	// cprintf("task_pop_frame, task_type=%d\n", cur_task->task_type);
 	spin_unlock(&kernel_lock);
 	#endif
-	// cprintf("stack this_cpu->cpu_tss.rsp=%p, rsp=%p\n", this_cpu->cpu_tss.rsp, read_rsp());
+	
 	if(cur_task->task_type == TASK_TYPE_KERNEL){
-		if((uint64_t)read_rsp() <= (uint64_t)this_cpu->cpu_tss.rsp[0]-KSTACK_SIZE+PAGE_SIZE){
+		uint64_t bootstack_top = (uint64_t)bootstack + KERNEL_VMA + KSTACK_SIZE;
+		// cprintf("stack KSTACK_TOP=%p, bootstack=%p, this_cpu->cpu_tss.rsp=%p, rsp=%p\n", KSTACK_TOP, bootstack + KERNEL_VMA, this_cpu->cpu_tss.rsp, read_rsp());
+		if((uint64_t)read_rsp() < (uint64_t)bootstack_top-KSTACK_SIZE+(2*PAGE_SIZE)){
+			panic("Kernel task smashes the bootstack\n");
+		}
+		if((uint64_t)read_rsp() > (uint64_t)KSTACK_TOP-(2*KSTACK_SIZE) && (uint64_t)read_rsp() < (uint64_t)this_cpu->cpu_tss.rsp[0]-KSTACK_SIZE+PAGE_SIZE){
 			panic("Kernel task smashes the stack\n");
 		}
 		((void (*)(void))cur_task->task_frame.rip)(); // TODO: it leads stack overflow as we keep going down
