@@ -454,17 +454,21 @@ void task_destroy(struct task *task)
 		struct task *parent =  pid2task(task->task_ppid, 0);
 		task->task_status = TASK_DYING;
 		// add to zombies list of parent
-		list_remove(&task->task_node);
+		list_remove(&task->task_node); // remove from local runq
+		LOCK_TASK(parent);
 		list_push(&parent->task_zombies, &task->task_node);
 		// remove from children list
 		list_remove(&task->task_child);
+		UNLOCK_TASK(parent);
 
 		// notify parent if waiting and not scheduled
 		if(parent && parent->task_status == TASK_NOT_RUNNABLE) {
+			LOCK_TASK(parent);
 			parent->task_frame.rax = task->task_pid; // set proper return value for wait syscall
 			parent->task_status = TASK_RUNNABLE;
 			list_push_left(&runq, &parent->task_node);
 			task_remove_child(task);
+			UNLOCK_TASK(parent);
 		}
 	} else {
 		// a parent task is exiting
@@ -472,6 +476,7 @@ void task_destroy(struct task *task)
 		
 		// remove all zombies
 		struct list *node, *next;
+		LOCK_TASK(task);
 		list_foreach_safe(&task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
 			cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, zombie->task_pid);
@@ -484,10 +489,10 @@ void task_destroy(struct task *task)
 			list_remove(&child->task_child);
 			child->task_ppid = 0;
 		}
+		UNLOCK_TASK(task);
 
 		// remove task
-		list_remove(&task->task_node);
-		list_remove(&task->task_child);
+		list_remove(&task->task_node); // remove from local runq
 		task_free(task);
 	}
 
