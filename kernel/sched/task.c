@@ -398,6 +398,9 @@ void task_create(uint8_t *binary, enum task_type type)
 void task_kernel_create(void *entry_point)
 {
 	struct task *task = task_kernel_alloc(0);
+	load_pml4((void*)PADDR(task->task_pml4));
+	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.rip = (uint64_t)entry_point;
 	list_push_left(&runq, &task->task_node);
 }
@@ -581,21 +584,8 @@ void task_run(struct task *task)
 	spin_unlock(&kernel_lock);
 	#endif
 	
-	if(cur_task->task_type == TASK_TYPE_KERNEL){
-		uint64_t bootstack_top = (uint64_t)bootstack + KERNEL_VMA + KSTACK_SIZE;
-		// cprintf("stack KSTACK_TOP=%p, bootstack=%p, this_cpu->cpu_tss.rsp=%p, rsp=%p\n", KSTACK_TOP, bootstack + KERNEL_VMA, this_cpu->cpu_tss.rsp, read_rsp());
-		if((uint64_t)read_rsp() < (uint64_t)bootstack_top-KSTACK_SIZE+(2*PAGE_SIZE)){
-			panic("Kernel task smashes the bootstack\n");
-		}
-		if((uint64_t)read_rsp() > (uint64_t)KSTACK_TOP-(2*KSTACK_SIZE) && (uint64_t)read_rsp() < (uint64_t)this_cpu->cpu_tss.rsp[0]-KSTACK_SIZE+PAGE_SIZE){
-			panic("Kernel task smashes the stack\n");
-		}
-		((void (*)(void))cur_task->task_frame.rip)(); // TODO: it leads stack overflow as we keep going down
-		spin_lock(&kernel_lock);
-		sched_set_expired();
-		sched_yield();
-	}else{
-		task_pop_frame(&task->task_frame);
-	}	
+
+	task_pop_frame(&task->task_frame);
+	
 }
 

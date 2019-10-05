@@ -23,10 +23,23 @@ extern struct page_table *kernel_pml4;
 struct page_info *zero_dedup;
 #endif
 
+void isr_kernel_task_stub(uint64_t kstack_top);
+
+void ksched_yield(){
+	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
+}
+
 void kernel_task_entry(){
 	cprintf("Hello in kernel task\n");
+	while(1){
+		cprintf("Hello in while loop in func\n");
+		ksched_yield();
+	}
+	// To kill the task, set its status to TASK_NOT_RUNNABLE
+	cur_task->task_status = TASK_NOT_RUNNABLE;
 	return;
 }
+
 void kmain(struct boot_info *boot_info)
 {
 	extern char edata[], end[];
@@ -86,8 +99,9 @@ void kmain(struct boot_info *boot_info)
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	TASK_CREATE(user_yield, TASK_TYPE_USER);
 	task_kernel_create(kernel_task_entry);
+	TASK_CREATE(user_yield, TASK_TYPE_USER);
 	sched_yield();
 	// panic("---- END\n");
 
