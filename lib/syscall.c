@@ -105,12 +105,7 @@ unsigned int getcpuid(void)
 }
 
 #ifdef BONUS_LAB5
-pid_t port_open(pid_t pid)
-{
-	return syscall(SYS_getcpuid, 0, 0, 0, 0, 0, 0, 0);
-}
-int exec(char *binary)
-{
+int exec(char *binary){
 	return syscall(SYS_exec, 0, (uint64_t)binary, 0, 0, 0, 0, 0);
 }
 pid_t port_open(pid_t pid){
