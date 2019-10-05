@@ -374,8 +374,6 @@ void idt_init(void)
 	set_idt_entry(&entries[255], isr255, flags_ring0, GDT_KCODE);
 	
 	load_idt(&idtr);
-	cprintf("idt_init: flags=%p\n", flags);
-	
 }
 
 void idt_init_mp(void)

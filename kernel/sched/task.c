@@ -394,6 +394,16 @@ void task_create(uint8_t *binary, enum task_type type)
 	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
+void isr_kernel_task_stub(uint64_t kstack_top);
+void ktask_base(void *kernel_task_entry){ 
+	((void(*)())kernel_task_entry)();
+	cur_task->task_status = TASK_NOT_RUNNABLE;
+	ksched_yield();
+}
+
+void ksched_yield(){
+	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
+}
 
 void task_kernel_create(void *entry_point)
 {
@@ -401,7 +411,8 @@ void task_kernel_create(void *entry_point)
 	load_pml4((void*)PADDR(task->task_pml4));
 	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
 	task->task_frame.rsp = USTACK_TOP;
-	task->task_frame.rip = (uint64_t)entry_point;
+	task->task_frame.rdi = (uint64_t)entry_point;
+	task->task_frame.rip = (uint64_t)ktask_base;
 	list_push_left(&runq, &task->task_node);
 }
 

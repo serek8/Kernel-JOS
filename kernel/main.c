@@ -23,30 +23,16 @@ extern struct page_table *kernel_pml4;
 struct page_info *zero_dedup;
 #endif
 
-void isr_kernel_task_stub(uint64_t kstack_top);
-
-void ksched_yield(){
-	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
-}
-
-void ktask_exit(){ // kills the kernel task
-	cur_task->task_status = TASK_NOT_RUNNABLE;
-	ksched_yield();
-}
 
 void kernel_task_example(){
 	cprintf("Hello in kernel task\n");
 	int loop_limit = 100;
-	for(int i=1; i<loop_limit; i++){
-		cprintf("kernel task loop (%d/%d)\n", i, loop_limit);
+	for(int i=0; i<loop_limit; i++){
+		cprintf("kernel task loop (%d/%d) | CPU=%d\n", i, loop_limit, sys_getcpuid());
 		
-		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away CPU
+		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away the CPU
 		ksched_yield();
 	}
-	ktask_exit();
-	/* We should never use 'return' in a kernel task. 
-	 * Use 'ktask_exit' to exit and kill the kernel task.
-	 */ 
 }
 
 void kmain(struct boot_info *boot_info)
