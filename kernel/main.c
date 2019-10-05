@@ -25,13 +25,8 @@ struct page_info *zero_dedup;
 
 void kernel_task_entry(){
 	cprintf("Hello in kernel task\n");
-	while(1){
-		cprintf("Hello in while loop in func\n");
-		// cur_task->task_status = TASK_NOT_RUNNABLE;
-	}
-	panic("We should never exit the loop\n");
+	return;
 }
-
 void kmain(struct boot_info *boot_info)
 {
 	extern char edata[], end[];
@@ -86,8 +81,14 @@ void kmain(struct boot_info *boot_info)
 	cprintf("will run boot_cpus\n");
 	boot_cpus();
 
-	// task_kernel_create(kernel_task_entry);
-	// sched_yield();
+	
+	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	task_kernel_create(kernel_task_entry);
+	sched_yield();
 	// panic("---- END\n");
 
 
