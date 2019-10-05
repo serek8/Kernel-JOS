@@ -193,6 +193,12 @@ static int sys_exec(char *binary)
 }
 #endif
 
+unsigned sys_getcpuid(){
+	uint32_t rax, rbx, rcx, rdx;
+	cpuid(1, &rax, &rbx, &rcx, &rdx);
+	return rbx >> 24;
+}
+
 /* Dispatches to the correct kernel function, passing the arguments. */
 int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
         uint64_t a4, uint64_t a5, uint64_t a6)
@@ -246,6 +252,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_write:
 			return sys_write((int)a1, (void*)a2, (int)a3);
 		#endif
+		case SYS_getcpuid:
+			return sys_getcpuid();
 			
 	default:
 		cprintf("Kernel does not support system call=%d\n", syscallno);
