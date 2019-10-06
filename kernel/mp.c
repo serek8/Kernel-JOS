@@ -12,6 +12,7 @@
  * pointer that should be loaded by boot_ap().
  */
 void *mpentry_kstack;
+extern volatile int startup_completed;
 
 void boot_cpus(void)
 {
@@ -82,10 +83,10 @@ void mp_main(void)
 	#ifdef USE_BIG_KERNEL_LOCK
 	spin_lock(&kernel_lock);
 	#endif
-	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
-	TASK_CREATE(user_yield, TASK_TYPE_USER);
-	TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
+
+	// busy wait until CPU 0 created the task to run
+	while(!startup_completed);
+
 	sched_yield();
 }
 

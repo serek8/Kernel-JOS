@@ -19,6 +19,7 @@
 #include <spinlock.h>
 
 extern struct page_table *kernel_pml4;
+volatile int startup_completed = 0;
 #ifdef BONUS_LAB5
 struct page_info *zero_dedup;
 #endif
@@ -99,15 +100,7 @@ void kmain(struct boot_info *boot_info)
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
-	TASK_CREATE(TEST, TASK_TYPE_USER);
+	startup_completed = 1;
 	sched_yield();
 #else
 	lab3_check_kmem();
