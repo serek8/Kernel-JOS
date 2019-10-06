@@ -121,10 +121,25 @@ void sched_halt()
 		"hlt\n");
 	#endif
 
-	cprintf("Destroyed the only task - nothing more to do!\n");
+	this_cpu->cpu_status = CPU_HALTED;
 
-	while(1){
-		monitor(NULL);
-	}	
+	int last = 1;
+	for(struct cpuinfo *cpu = cpus; cpu < cpus + ncpus; ++cpu) {
+		if(cpu->cpu_status != CPU_HALTED) {
+			last = 0;
+			break;
+		}
+	}
+
+	if(last) {
+		cprintf("Destroyed the only task - nothing more to do!\n");
+		while(1){
+			monitor(NULL);
+		}
+	}
+
+	// halt CPU
+	asm volatile(
+		"cli\n"
+		"hlt\n");
 }
-
