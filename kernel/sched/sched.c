@@ -14,6 +14,7 @@
 #define SCHEDULE_TIME_EXPIRED (uint64_t)-1
 
 struct list runq;
+volatile int runq_len = 0;
 
 #ifndef USE_BIG_KERNEL_LOCK
 struct spinlock runq_lock = {
@@ -58,40 +59,50 @@ void sched_yield(void)
 		if(nuser_tasks == 0) {
 			sched_halt();
 		}
+		// calculate how many tasks this CPU should have
+		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
+		
+		// take tasks from global runq
+		if(task_share > lrunq_len) {
+			if(lrunq_len == 0) {
+				// CPU doesn't have any task
+				// busy wait until there is a task on the runq and only then try to get the lock for it
+				if(!runq_len && nuser_tasks) cprintf("++++ cpu=%d, wait for tasks to appear on global runq\n", this_cpu->cpu_id);
+				while(!runq_len && nuser_tasks);
+			}
 
-		// try to get lock for global runq -> if successful migrate tasks
-		if(spin_trylock(&runq_lock)) {
-			// cprintf("cpu=%d, nuser_tasks=%d, lrunq_len=%d\n", this_cpu->cpu_id, nuser_tasks, lrunq_len);
-			
-			int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
-			// take tasks from global runq
-			if(task_share > lrunq_len) {
+			if(spin_trylock(&runq_lock)) {
 				// cprintf("+++ take tasks %d, cpu=%d, \n", task_share-lrunq_len, this_cpu->cpu_id);
 				for(int i=0; i<task_share-lrunq_len; i++) {
 					// make sure that runq actually has that many tasks
 					// there still could be many tasks at another CPU and less on the global runq
 					if(!list_is_empty(&runq)) {
 						struct task *task = container_of(list_pop_left(&runq), struct task, task_node);
+						runq_len--;
 						// cprintf("cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
 						LOCK_TASK(task);
 						ADD_NEXTQ(task);
 						UNLOCK_TASK(task);
 					}
 				}
-			} else if(task_share < lrunq_len) {
-				// put tasks from local runq to global runq
+				spin_unlock(&runq_lock);
+			}
+		} else if(task_share < lrunq_len) {
+			// put tasks from local runq to global runq
+
+			if(spin_trylock(&runq_lock)) {
 				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
 				for(int i=0; i<lrunq_len-task_share; i++) {
 					struct task *task = container_of(list_pop_left(&lnextq), struct task, task_node);
+					runq_len++;
 					LOCK_TASK(task);
 					list_push_left(&runq, &task->task_node);
 					UNLOCK_TASK(task);
 				}
+				spin_unlock(&runq_lock);
 			}
-
-			spin_unlock(&runq_lock);
 		}
-
+		
 		if(!list_is_empty(&lnextq)) {
 			// swap lrunq and lnextq
 			struct list *head_nextq = list_head(&lnextq);

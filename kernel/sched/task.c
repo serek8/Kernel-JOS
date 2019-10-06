@@ -453,8 +453,14 @@ void task_free(struct task *task)
 
 	atomic_dec(&nuser_tasks);
 
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&tasks_lock);
+	#endif
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&tasks_lock);
+	#endif
 
 	/* Unmap the user pages. */
 	free_vmas(task);

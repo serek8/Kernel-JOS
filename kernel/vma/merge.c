@@ -40,7 +40,7 @@ struct vma *merge_vmas(struct task *task, struct vma *vma)
 	struct vma *prev = container_of(vma->vm_mmap.prev, struct vma, vm_mmap);
 	struct vma *next = container_of(vma->vm_mmap.next, struct vma, vm_mmap);
 	struct vma *merged = NULL;
-	cprintf("vm_name=%s, base=%p, list_start=%p, node=%p, prev=%p, next=%p\n", vma->vm_name, vma->vm_base, &task->task_mmap, vma->vm_mmap, prev->vm_mmap, next->vm_mmap);
+	// cprintf("vm_name=%s, base=%p, list_start=%p, node=%p, prev=%p, next=%p\n", vma->vm_name, vma->vm_base, &task->task_mmap, vma->vm_mmap, prev->vm_mmap, next->vm_mmap);
 
 	if(&task->task_mmap != &prev->vm_mmap) {
 		merged = merge_vma(task, prev, vma);

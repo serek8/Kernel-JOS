@@ -163,7 +163,7 @@ struct task *task_clone(struct task *task)
 
 	// Add to the local run queue
 	ADD_NEXTQ(clone);
-	cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
+	// cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
 
 	LOCK_TASK(task);
 	// Add child to parent's list
