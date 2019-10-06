@@ -23,10 +23,18 @@ extern struct page_table *kernel_pml4;
 struct page_info *zero_dedup;
 #endif
 
-void kernel_task_entry(){
+
+void kernel_task_example(){
 	cprintf("Hello in kernel task\n");
-	return;
+	int loop_limit = 100;
+	for(int i=0; i<loop_limit; i++){
+		cprintf("kernel task loop (%d/%d) | CPU=%d\n", i, loop_limit, sys_getcpuid());
+		
+		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away the CPU
+		ksched_yield();
+	}
 }
+
 void kmain(struct boot_info *boot_info)
 {
 	extern char edata[], end[];
@@ -82,12 +90,9 @@ void kmain(struct boot_info *boot_info)
 	boot_cpus();
 
 	
-	// TASK_CREATE(user_evilchild, TASK_TYPE_USER);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
+	// task_kernel_create(kernel_task_example);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// task_kernel_create(kernel_task_entry);
 	// sched_yield();
 	// panic("---- END\n");
 

@@ -16,6 +16,7 @@ void task_pop_frame(struct int_frame *frame);
 void task_run(struct task *task);
 struct task *task_alloc(pid_t ppid);
 void task_remove_child(struct task *task);
+void ksched_yield();
 #ifdef BONUS_LAB5
 void task_load_elf(struct task *task, uint8_t *binary);
 #endif

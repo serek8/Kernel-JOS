@@ -20,8 +20,6 @@ void syscall_init(void)
 {
 	/* LAB 3: your code here. */
 	// set segment selector to use for kernel and user when calling syscall
-	cprintf("syscall_init syscall_init syscall_init \n");
-
 
 	union star_reg reg = {
 		.kern_sel = GDT_KCODE,
@@ -34,9 +32,6 @@ void syscall_init(void)
 	write_msr(MSR_SFMASK, FLAGS_IF);
 	
 	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_SCE);
-	cprintf("read_msr(MSR_EFER)=%p\n", read_msr(MSR_EFER));
-
-
 
 	write_msr(MSR_KERNEL_GS_BASE, (uint64_t)this_cpu);
 	this_cpu->gsbase_in_msr = 1;
@@ -193,6 +188,12 @@ static int sys_exec(char *binary)
 }
 #endif
 
+unsigned sys_getcpuid(){
+	uint32_t rax, rbx, rcx, rdx;
+	cpuid(1, &rax, &rbx, &rcx, &rdx);
+	return rbx >> 24;
+}
+
 /* Dispatches to the correct kernel function, passing the arguments. */
 int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
         uint64_t a4, uint64_t a5, uint64_t a6)
@@ -246,6 +247,8 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_write:
 			return sys_write((int)a1, (void*)a2, (int)a3);
 		#endif
+		case SYS_getcpuid:
+			return sys_getcpuid();
 			
 	default:
 		cprintf("Kernel does not support system call=%d\n", syscallno);
