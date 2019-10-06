@@ -162,6 +162,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_ppid = ppid;
 	task->task_type = TASK_TYPE_USER;
 	task->task_status = TASK_RUNNABLE;
+	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
 #ifdef BONUS_LAB5
@@ -240,6 +241,7 @@ struct task *task_kernel_alloc(pid_t ppid)
 	task->task_ppid = ppid;
 	task->task_type = TASK_TYPE_KERNEL;
 	task->task_status = TASK_RUNNABLE;
+	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
 	
@@ -626,4 +628,3 @@ void task_run(struct task *task)
 	task_pop_frame(&task->task_frame);
 	
 }
-

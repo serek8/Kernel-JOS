@@ -92,7 +92,11 @@ void kmain(struct boot_info *boot_info)
 
 	
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// task_kernel_create(kernel_task_example);
+	task_kernel_create(kernel_task_example);
+	cpu_set_t mask;
+	CPU_ZERO(mask);
+	CPU_SET(mask, 1);
+	sched_setaffinity(1, sizeof(cpu_set_t), &mask);
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
 	// sched_yield();
 	// panic("---- END\n");
