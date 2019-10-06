@@ -9,7 +9,7 @@
 #include <kernel/sched.h>
 #include <kernel/vma.h>
 
-extern size_t nuser_tasks;
+extern volatile size_t nuser_tasks;
 
 struct page_info *copy_ptbl(physaddr_t *entry)
 {
@@ -162,7 +162,7 @@ struct task *task_clone(struct task *task)
 	}
 
 	// Add to the local run queue
-	list_push_left(&lrunq, &clone->task_node);
+	ADD_NEXTQ(clone);
 	cprintf("# fork/pushed task->task_pid=%d\n", clone->task_pid);
 
 	LOCK_TASK(task);

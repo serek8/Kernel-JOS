@@ -211,7 +211,7 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_getpid:
 			return sys_getpid();
 		case SYS_kill:
-			cprintf("SYS_kill a1=%d, a2=%d\n", a1, a2);
+			// cprintf("SYS_kill a1=%d, a2=%d\n", a1, a2);
 			return sys_kill(a1);
 		case SYS_mquery:
 			return sys_mquery((struct vma_info*)a1, (void*)a2);

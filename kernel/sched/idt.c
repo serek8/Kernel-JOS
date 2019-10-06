@@ -469,7 +469,7 @@ void page_fault_handler(struct int_frame *frame)
 
 	/* Read the CR2 register to find the faulting address. */
 	fault_va = (void *)read_cr2();
-	cprintf("PAGE FAULT!! cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
+	// cprintf("PAGE FAULT!! cr2=%p, errorCode=%p\n", fault_va, frame->err_code);
 
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */

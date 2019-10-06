@@ -18,7 +18,15 @@ extern char bootstack[];
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
-size_t nuser_tasks = 0;
+volatile size_t nuser_tasks = 0;
+
+#ifndef USE_BIG_KERNEL_LOCK
+struct spinlock tasks_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "tasks_lock",
+#endif
+};
+#endif
 
 /* Looks up the respective task for a given PID.
  * If check_perm is non-zero, this function checks if the PID maps to the
@@ -130,6 +138,9 @@ struct task *task_alloc(pid_t ppid)
 	/* Find a free PID for the task in the PID mapping and associate the
 	 * task with that PID.
 	 */
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&tasks_lock);
+	#endif
 	for (pid = 1; pid < pid_max; ++pid) {
 		if (!tasks[pid]) {
 			tasks[pid] = task;
@@ -137,6 +148,9 @@ struct task *task_alloc(pid_t ppid)
 			break;
 		}
 	}
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&tasks_lock);
+	#endif
 
 	/* We are out of PIDs. */
 	if (pid == pid_max) {
@@ -202,6 +216,9 @@ struct task *task_kernel_alloc(pid_t ppid)
 	/* Find a free PID for the task in the PID mapping and associate the
 	 * task with that PID.
 	 */
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_lock(&tasks_lock);
+	#endif
 	for (pid = 1; pid < pid_max; ++pid) {
 		if (!tasks[pid]) {
 			tasks[pid] = task;
@@ -209,6 +226,9 @@ struct task *task_kernel_alloc(pid_t ppid)
 			break;
 		}
 	}
+	#ifndef USE_BIG_KERNEL_LOCK
+	spin_unlock(&tasks_lock);
+	#endif
 
 	/* We are out of PIDs. */
 	if (pid == pid_max) {
@@ -322,7 +342,7 @@ void task_load_elf(struct task *task, uint8_t *binary)
 	struct elf_proghdr *prog_hdr = (struct elf_proghdr *)((char *)elf_hdr + elf_hdr->e_phoff);
 	char buffer[100];
 	task->task_frame.rip = elf_hdr->e_entry;
-	cprintf("+ - - Program Headers - - +\n");
+	// cprintf("+ - - Program Headers - - +\n");
 	for(uint64_t i = 0; i<elf_hdr->e_phnum; i++){
 		struct elf_proghdr hdr = prog_hdr[i];
 		if(!(hdr.p_type & ELF_PROG_LOAD)) {
@@ -331,9 +351,9 @@ void task_load_elf(struct task *task, uint8_t *binary)
 		uint64_t flags = VM_READ;
 		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_EXEC-1))) ? VM_EXEC : 0;
 		flags += (hdr.p_flags & (1<<(ELF_PROG_FLAG_WRITE-1))) ? VM_WRITE : 0;
-		cprintf("| [%d] vma_flags=0x%lx, elf_flags=0x%lx, elf_type=%x\n"
-			"|   va=%p, pa=%p, mem_size=%u file_size=%u\n", 
-			i, flags, hdr.p_flags, hdr.p_type, hdr.p_va, hdr.p_pa, hdr.p_memsz, hdr.p_filesz);
+		// cprintf("| [%d] vma_flags=0x%lx, elf_flags=0x%lx, elf_type=%x\n"
+		// 	"|   va=%p, pa=%p, mem_size=%u file_size=%u\n", 
+		// 	i, flags, hdr.p_flags, hdr.p_type, hdr.p_va, hdr.p_pa, hdr.p_memsz, hdr.p_filesz);
 		
 		
 		if(hdr.p_va+hdr.p_memsz >= KERNEL_VMA){
@@ -344,7 +364,7 @@ void task_load_elf(struct task *task, uint8_t *binary)
 			continue;
 		}
 		choose_segment_name(buffer, 100, elf_hdr, hdr);
-		cprintf("|   sections=%s\n+ - - - - \n", buffer);
+		// cprintf("|   sections=%s\n+ - - - - \n", buffer);
 		
 		
 		if(hdr.p_filesz > 0){
@@ -390,7 +410,7 @@ void task_create(uint8_t *binary, enum task_type type)
 		atomic_inc(&nuser_tasks);
 	}
 	/* LAB 5: your code here. */
-	list_push_left(&lrunq, &task->task_node);
+	ADD_NEXTQ(task);
 	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
@@ -416,6 +436,8 @@ void task_free(struct task *task)
 	if (task == cur_task) {
 		load_pml4((struct page_table *)PADDR(kernel_pml4));
 	}
+
+	atomic_dec(&nuser_tasks);
 
 	/* Unmap the task from the PID map. */
 	tasks[task->task_pid] = NULL;
@@ -464,7 +486,7 @@ void task_destroy(struct task *task)
 			LOCK_TASK(parent);
 			parent->task_frame.rax = task->task_pid; // set proper return value for wait syscall
 			parent->task_status = TASK_RUNNABLE;
-			list_push_left(&lrunq, &parent->task_node);
+			ADD_NEXTQ(parent);
 			task_remove_child(task);
 			UNLOCK_TASK(parent);
 		}
