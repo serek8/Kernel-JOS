@@ -189,8 +189,8 @@ struct task *task_alloc(pid_t ppid)
 
 	/* You will set task->task_frame.rip later. */
 
-	cprintf("[PID %5u] New task with PID %u\n",
-	        cur_task ? cur_task->task_pid : 0, task->task_pid);
+	cprintf("[PID %5u] New task with PID %u, CPU=%d\n",
+	        cur_task ? cur_task->task_pid : 0, task->task_pid, this_cpu->cpu_id);
 
 	return task;
 }
@@ -560,6 +560,7 @@ void task_remove_child(struct task *task)
 void task_pop_frame(struct int_frame *frame)
 {
 	// cprintf(">> Will enter user mode\n");
+	// cprintf("CPU %d, runq_len=%d\n", this_cpu->cpu_id, lrunq_len);
 	#ifdef BONUS_LAB3
 	// BONUS_LAB3: flush CPU buffers before switching to user process
 	MDS_buff_overwrite();
@@ -578,6 +579,7 @@ void task_pop_frame(struct int_frame *frame)
 			asm volatile("swapgs");
 			this_cpu->gsbase_in_msr = 1;
 		}
+		lapic_eoi();
 		iret64(frame); 
 		break;
 	}

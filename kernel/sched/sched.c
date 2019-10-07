@@ -10,7 +10,7 @@
 #include <kernel/monitor.h>
 #include <kernel/sched.h>
 
-#define SCHEDULE_TIME_BLOCK 1000*1000*1000
+#define SCHEDULE_TIME_BLOCK 2*1000*1000*1000
 #define SCHEDULE_TIME_EXPIRED (uint64_t)-1
 
 struct list runq;
@@ -31,6 +31,7 @@ void sched_init(void)
 	list_init(&runq);
 	list_init(&lrunq);
 	list_init(&lnextq);
+	sched_i = 0;
 	lrunq_len = 0;
 }
 
@@ -39,21 +40,54 @@ void sched_init_mp(void)
 	/* LAB 6: your code here. */
 	list_init(&lrunq);
 	list_init(&lnextq);
+	sched_i = 0;
 	lrunq_len = 0;
 }
 
 /* Runs the next runnable task. */
 void sched_yield(void)
 {
+	sched_i++;
+	if(sched_i == 20) {
+		sched_i = 0;
+		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
+		if(task_share < lrunq_len) {
+			// put tasks from local runq to global runq
+			if(spin_trylock(&runq_lock)) {
+				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
+				int tasks_to_migrate = lrunq_len-task_share;
+				for(int i=0; i<tasks_to_migrate; i++) {
+					struct task *task = NULL;
+					// cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
+					if(!list_is_empty(&lnextq)) {
+						task = container_of(list_pop(&lnextq), struct task, task_node);
+					} else if(!list_is_empty(&lrunq)) {
+						task = container_of(list_pop(&lrunq), struct task, task_node);
+					}else{
+						panic("no more tasks to migrate");
+					}
+					lrunq_len--;
+					runq_len++;
+					LOCK_TASK(task);
+					list_push_left(&runq, &task->task_node);
+					UNLOCK_TASK(task);
+				}
+				spin_unlock(&runq_lock);
+			}
+		}
+	}
+
+
 	/* LAB 5: your code here. */
 	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ 
 		if(cur_task->schedule_ts != SCHEDULE_TIME_EXPIRED && read_tsc() - cur_task->schedule_ts < SCHEDULE_TIME_BLOCK){
 			task_run(cur_task);
 		} else{ // allocated time for a task expires
+			// cprintf("task switch CPU %d\n", this_cpu->cpu_id);
 			ADD_NEXTQ(cur_task);
 		}
 	}
-	
+
 	while(list_is_empty(&lrunq)){
 		// halt execution if there are no user tasks anymore
 		if(nuser_tasks == 0) {
@@ -72,7 +106,8 @@ void sched_yield(void)
 			}
 
 			if(spin_trylock(&runq_lock)) {
-				// cprintf("+++ take tasks %d, cpu=%d, \n", task_share-lrunq_len, this_cpu->cpu_id);
+				// cprintf("CPU %d won the locker\n", this_cpu->cpu_id);
+				// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share);
 				for(int i=0; i<task_share-lrunq_len; i++) {
 					// make sure that runq actually has that many tasks
 					// there still could be many tasks at another CPU and less on the global runq
@@ -89,11 +124,20 @@ void sched_yield(void)
 			}
 		} else if(task_share < lrunq_len) {
 			// put tasks from local runq to global runq
-
 			if(spin_trylock(&runq_lock)) {
 				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
-				for(int i=0; i<lrunq_len-task_share; i++) {
-					struct task *task = container_of(list_pop_left(&lnextq), struct task, task_node);
+				int tasks_to_migrate = lrunq_len-task_share;
+				for(int i=0; i<tasks_to_migrate; i++) {
+					// cprintf("Tasks exported old, currently=%d to_migrate=%d\n", lrunq_len, lrunq_len-task_share);
+					struct task *task = NULL;
+					if(!list_is_empty(&lnextq)) {
+						task = container_of(list_pop(&lnextq), struct task, task_node);
+					} else if(!list_is_empty(&lrunq)) {
+						task = container_of(list_pop(&lrunq), struct task, task_node);
+					}else{
+						panic("no more tasks to migrate");
+					}
+					lrunq_len--;
 					runq_len++;
 					LOCK_TASK(task);
 					list_push_left(&runq, &task->task_node);
@@ -108,11 +152,11 @@ void sched_yield(void)
 			struct list *head_nextq = list_head(&lnextq);
 			list_remove(&lnextq);
 			list_push_left(head_nextq, &lrunq);
-			lrunq_len = 0;
 		}
 	}
 
 	struct task *next_task = container_of(list_pop_left(&lrunq), struct task, task_node);
+	lrunq_len--;
 	next_task->schedule_ts = read_tsc();
 	task_run(next_task);
 }

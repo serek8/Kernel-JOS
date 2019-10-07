@@ -49,6 +49,7 @@ struct cpuinfo {
 	/* Per-CPU run queue */
 	struct list runq, nextq;
 	size_t runq_len;
+	uint64_t sched_i;
 
 	/* Per-CPU state of %gs register */
 	uint64_t gsbase_in_msr;
@@ -62,6 +63,7 @@ extern struct cpuinfo *boot_cpu;
 extern size_t ncpus;
 
 #define lrunq (this_cpu->runq)
+#define sched_i (this_cpu->sched_i)
 #define lnextq (this_cpu->nextq)
 #define lrunq_len (this_cpu->runq_len)
 

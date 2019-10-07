@@ -404,7 +404,6 @@ void int_dispatch(struct int_frame *frame)
 			while(1) monitor(NULL);
 		case IRQ_TIMER:
 			// cprintf("timer: cpu=%d\n", this_cpu->cpu_id);
-			lapic_eoi();
 			sched_yield();
 			
 	default: break;
