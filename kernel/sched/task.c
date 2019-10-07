@@ -411,6 +411,7 @@ void task_create(uint8_t *binary, enum task_type type)
 	}
 	/* LAB 5: your code here. */
 	ADD_NEXTQ(task);
+	cprintf("task_create: lrunq_len=%d\n", lrunq_len);
 	// cprintf("# create/pushed task->task_pid=%d\n", task->task_pid);
 	
 }
@@ -488,11 +489,11 @@ void task_destroy(struct task *task)
 	if(task == cur_task) {
 		current = 1;
 	}
-
+	task->task_status = TASK_DYING;
 	// check if child process -> becomes zombie if parent is still running
 	if(task->task_ppid != 0) {
 		struct task *parent =  pid2task(task->task_ppid, 0);
-		task->task_status = TASK_DYING;
+		
 		// add to zombies list of parent
 		list_remove(&task->task_node); // remove from local runq
 		LOCK_TASK(parent);
@@ -515,7 +516,7 @@ void task_destroy(struct task *task)
 		cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
 		
 		// remove all zombies
-		struct list *node, *next;
+		struct list *node = NULL, *next = NULL;
 		LOCK_TASK(task);
 		list_foreach_safe(&task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
@@ -543,9 +544,24 @@ void task_destroy(struct task *task)
 
 void task_remove_child(struct task *task) 
 {
-	list_remove(&task->task_node);
-	list_remove(&task->task_child);
-	task_free(task);
+	if(task->task_status == TASK_DYING){ // if child is also dying
+		struct list *node = NULL, *next = NULL;
+		list_foreach_safe(&task->task_children, node, next) {
+			struct task *child = container_of(node, struct task, task_child);
+			list_remove(&child->task_child);
+			child->task_ppid = 0;
+			task_remove_child(child);
+		}
+		node = NULL;
+		next = NULL;
+		list_foreach_safe(&task->task_zombies, node, next) {
+			struct task *zombie = container_of(node, struct task, task_node);
+			task_remove_child(zombie);
+		}
+		list_remove(&task->task_node);
+		list_remove(&task->task_child);
+		task_free(task);
+	}
 
 	// TODO: check if there are still running children -> make to orphans?
 }
