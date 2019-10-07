@@ -52,7 +52,6 @@ void sched_yield(void)
 		if(cur_task->schedule_ts != SCHEDULE_TIME_EXPIRED && read_tsc() - cur_task->schedule_ts < SCHEDULE_TIME_BLOCK){
 			task_run(cur_task);
 		} else{ // allocated time for a task expires
-			cprintf("task switch CPU %d\n", this_cpu->cpu_id);
 			ADD_NEXTQ(cur_task);
 		}
 	}
@@ -62,15 +61,11 @@ void sched_yield(void)
 		sched_i = 0;
 		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
 		
-		cprintf("task_share=%d, nuser_tasks=%d, runq_len=%d [0]=%d, [1]=%d, [2]=%d, [3]=%d, cpuid=%d\n", task_share, nuser_tasks, runq_len, cpus[0].runq_len, cpus[1].runq_len, cpus[2].runq_len, cpus[3].runq_len, this_cpu->cpu_id);
-		
 		if(task_share < lrunq_len) {
 			// put tasks from local runq to global runq
-			cprintf("should Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
 			if(spin_trylock(&runq_lock)) {
-				// cprintf("locked Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
 				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
-				cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
+				// cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
 				int tasks_to_migrate = lrunq_len-task_share;
 				for(int i=0; i<tasks_to_migrate; i++) {
 					struct task *task = NULL;
@@ -87,13 +82,13 @@ void sched_yield(void)
 					list_push_left(&runq, &task->task_node);
 					UNLOCK_TASK(task);
 				}
+				// cprintf("task_share=%d, nuser_tasks=%d, runq_len=%d [0]=%d, [1]=%d, [2]=%d, [3]=%d, cpuid=%d\n", task_share, nuser_tasks, runq_len, cpus[0].runq_len, cpus[1].runq_len, cpus[2].runq_len, cpus[3].runq_len, this_cpu->cpu_id);
 				spin_unlock(&runq_lock);
 			}
 		}
 	}
 
 	while(list_is_empty(&lrunq)){
-		// cprintf("lrunq_len=%d\n", lrunq_len);
 		// halt execution if there are no user tasks anymore
 		if(nuser_tasks == 0) {
 			sched_halt();
@@ -108,12 +103,10 @@ void sched_yield(void)
 				// busy wait until there is a task on the runq and only then try to get the lock for it
 				while(!runq_len && nuser_tasks);
 			}
-			cprintf("CPU %d will try lock\n", this_cpu->cpu_id);
 			if(spin_trylock(&runq_lock)) {
-				cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
+				// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
 				int tasks_to_take = task_share-lrunq_len;
 				for(int i=0; i<tasks_to_take; i++) {
-					// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
 					// make sure that runq actually has that many tasks
 					// there still could be many tasks at another CPU and less on the global runq
 					if(!list_is_empty(&runq)) {
@@ -125,19 +118,17 @@ void sched_yield(void)
 						UNLOCK_TASK(task);
 					}
 					else{
-						cprintf("was empty\n");
+						// cprintf("was empty\n");
 						break;
 					}
 				}
-				// cprintf("CPU %d released the locker\n", this_cpu->cpu_id);
 				spin_unlock(&runq_lock);
-			} else{
-				// cprintf("cant trylock to add to local, CPU=%d\n", this_cpu->cpu_id);
-			}
+			} 
 		} else if(task_share < lrunq_len) {
 			// put tasks from local runq to global runq
 			if(spin_trylock(&runq_lock)) {
 				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
+				// cprintf("Tasks exported old, currently=%d to_migrate=%d, pid=%d\n", lrunq_len, lrunq_len-task_share, task->task_pid);
 				int tasks_to_migrate = lrunq_len-task_share;
 				for(int i=0; i<tasks_to_migrate; i++) {
 					struct task *task = NULL;
@@ -148,7 +139,6 @@ void sched_yield(void)
 					}else{
 						panic("no more tasks to migrate");
 					}
-					cprintf("Tasks exported old, currently=%d to_migrate=%d, pid=%d\n", lrunq_len, lrunq_len-task_share, task->task_pid);
 					lrunq_len--;
 					runq_len++;
 					LOCK_TASK(task);
@@ -203,8 +193,6 @@ void sched_halt()
 		while(1){
 			monitor(NULL);
 		}
-	}else{
-		cprintf("CPU #%d halted.\n", this_cpu->cpu_id);
 	}
 
 	// halt CPU

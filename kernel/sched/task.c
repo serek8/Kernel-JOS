@@ -452,7 +452,7 @@ void task_free(struct task *task)
 		load_pml4((struct page_table *)PADDR(kernel_pml4));
 	}
 
-	atomic_dec(&nuser_tasks);
+	
 
 	#ifndef USE_BIG_KERNEL_LOCK
 	spin_lock(&tasks_lock);
@@ -490,6 +490,7 @@ void task_destroy(struct task *task)
 		current = 1;
 	}
 	task->task_status = TASK_DYING;
+	atomic_dec(&nuser_tasks);
 	// check if child process -> becomes zombie if parent is still running
 	if(task->task_ppid != 0) {
 		struct task *parent =  pid2task(task->task_ppid, 0);
