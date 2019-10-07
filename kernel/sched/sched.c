@@ -10,7 +10,7 @@
 #include <kernel/monitor.h>
 #include <kernel/sched.h>
 
-#define SCHEDULE_TIME_BLOCK 2*1000*1000*1000
+#define SCHEDULE_TIME_BLOCK 1*1000*1000*1000
 #define SCHEDULE_TIME_EXPIRED (uint64_t)-1
 
 struct list runq;
@@ -47,48 +47,48 @@ void sched_init_mp(void)
 /* Runs the next runnable task. */
 void sched_yield(void)
 {
-	// sched_i++;
-	// if(sched_i == 5) {
-		
-	// 	sched_i = 0;
-	
-	// 	int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
-	// 	if(task_share < lrunq_len) {
-	// 		// put tasks from local runq to global runq
-	// 		cprintf("should Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
-	// 		if(spin_trylock(&runq_lock)) {
-	// 			cprintf("locked Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
-	// 			// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
-	// 			int tasks_to_migrate = lrunq_len-task_share;
-	// 			for(int i=0; i<tasks_to_migrate; i++) {
-	// 				struct task *task = NULL;
-	// 				cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
-	// 				if(!list_is_empty(&lnextq)) {
-	// 					task = container_of(list_pop(&lnextq), struct task, task_node);
-	// 				} else if(!list_is_empty(&lrunq)) {
-	// 					task = container_of(list_pop(&lrunq), struct task, task_node);
-	// 				}else{
-	// 					panic("no more tasks to migrate");
-	// 				}
-	// 				lrunq_len--;
-	// 				runq_len++;
-	// 				LOCK_TASK(task);
-	// 				list_push_left(&runq, &task->task_node);
-	// 				UNLOCK_TASK(task);
-	// 			}
-	// 			spin_unlock(&runq_lock);
-	// 		}
-	// 	}
-	// }
-
-
 	/* LAB 5: your code here. */
 	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ 
 		if(cur_task->schedule_ts != SCHEDULE_TIME_EXPIRED && read_tsc() - cur_task->schedule_ts < SCHEDULE_TIME_BLOCK){
 			task_run(cur_task);
 		} else{ // allocated time for a task expires
-			// cprintf("task switch CPU %d\n", this_cpu->cpu_id);
+			cprintf("task switch CPU %d\n", this_cpu->cpu_id);
 			ADD_NEXTQ(cur_task);
+		}
+	}
+
+	sched_i++;
+	if(sched_i == 5) {
+		sched_i = 0;
+		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
+		
+		cprintf("task_share=%d, nuser_tasks=%d, runq_len=%d [0]=%d, [1]=%d, [2]=%d, [3]=%d, cpuid=%d\n", task_share, nuser_tasks, runq_len, cpus[0].runq_len, cpus[1].runq_len, cpus[2].runq_len, cpus[3].runq_len, this_cpu->cpu_id);
+		
+		if(task_share < lrunq_len) {
+			// put tasks from local runq to global runq
+			cprintf("should Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
+			if(spin_trylock(&runq_lock)) {
+				// cprintf("locked Tasks exported periodicaly, cpuid=%d\n", this_cpu->cpu_id);
+				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
+				cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
+				int tasks_to_migrate = lrunq_len-task_share;
+				for(int i=0; i<tasks_to_migrate; i++) {
+					struct task *task = NULL;
+					if(!list_is_empty(&lnextq)) {
+						task = container_of(list_pop(&lnextq), struct task, task_node);
+					} else if(!list_is_empty(&lrunq)) {
+						task = container_of(list_pop(&lrunq), struct task, task_node);
+					}else{
+						panic("no more tasks to migrate");
+					}
+					lrunq_len--;
+					runq_len++;
+					LOCK_TASK(task);
+					list_push_left(&runq, &task->task_node);
+					UNLOCK_TASK(task);
+				}
+				spin_unlock(&runq_lock);
+			}
 		}
 	}
 
@@ -108,11 +108,11 @@ void sched_yield(void)
 				// busy wait until there is a task on the runq and only then try to get the lock for it
 				while(!runq_len && nuser_tasks);
 			}
-
+			cprintf("CPU %d will try lock\n", this_cpu->cpu_id);
 			if(spin_trylock(&runq_lock)) {
-				// cprintf("CPU %d won the locker\n", this_cpu->cpu_id);
-				// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
-				for(int i=0; i<task_share-lrunq_len; i++) {
+				cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
+				int tasks_to_take = task_share-lrunq_len;
+				for(int i=0; i<tasks_to_take; i++) {
 					// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
 					// make sure that runq actually has that many tasks
 					// there still could be many tasks at another CPU and less on the global runq
