@@ -8,7 +8,9 @@ int main(int argc, char **argv)
 
 	/* Fork a bunch of processes. */
 	for (i = 0; i < 16; ++i) {
-		fork();
+		if (fork() == 0) {
+			break;
+		}
 	}
 
 	pid = getpid();
