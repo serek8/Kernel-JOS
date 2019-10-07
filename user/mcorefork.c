@@ -7,7 +7,8 @@ int main(int argc, char **argv)
 	size_t i;
 
 	/* Fork a bunch of processes. */
-	for (i = 0; i < 16; ++i) {
+	for (i = 0; i < 3; ++i) {
+		printf("fork %d/2, pid=%d, cpu=%d\n", i, getpid(), getcpuid());
 		fork();
 	}
 

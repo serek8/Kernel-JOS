@@ -47,35 +47,35 @@ void sched_init_mp(void)
 /* Runs the next runnable task. */
 void sched_yield(void)
 {
-	sched_i++;
-	if(sched_i == 20) {
-		sched_i = 0;
-		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
-		if(task_share < lrunq_len) {
-			// put tasks from local runq to global runq
-			if(spin_trylock(&runq_lock)) {
-				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
-				int tasks_to_migrate = lrunq_len-task_share;
-				for(int i=0; i<tasks_to_migrate; i++) {
-					struct task *task = NULL;
-					// cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
-					if(!list_is_empty(&lnextq)) {
-						task = container_of(list_pop(&lnextq), struct task, task_node);
-					} else if(!list_is_empty(&lrunq)) {
-						task = container_of(list_pop(&lrunq), struct task, task_node);
-					}else{
-						panic("no more tasks to migrate");
-					}
-					lrunq_len--;
-					runq_len++;
-					LOCK_TASK(task);
-					list_push_left(&runq, &task->task_node);
-					UNLOCK_TASK(task);
-				}
-				spin_unlock(&runq_lock);
-			}
-		}
-	}
+	// sched_i++;
+	// if(sched_i == 20) {
+	// 	sched_i = 0;
+	// 	int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
+	// 	if(task_share < lrunq_len) {
+	// 		// put tasks from local runq to global runq
+	// 		if(spin_trylock(&runq_lock)) {
+	// 			// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
+	// 			int tasks_to_migrate = lrunq_len-task_share;
+	// 			for(int i=0; i<tasks_to_migrate; i++) {
+	// 				struct task *task = NULL;
+	// 				// cprintf("Tasks exported periodicaly, currently=%d to_migrate=%d, cpu=%d\n", lrunq_len, lrunq_len-task_share, this_cpu->cpu_id);
+	// 				if(!list_is_empty(&lnextq)) {
+	// 					task = container_of(list_pop(&lnextq), struct task, task_node);
+	// 				} else if(!list_is_empty(&lrunq)) {
+	// 					task = container_of(list_pop(&lrunq), struct task, task_node);
+	// 				}else{
+	// 					panic("no more tasks to migrate");
+	// 				}
+	// 				lrunq_len--;
+	// 				runq_len++;
+	// 				LOCK_TASK(task);
+	// 				list_push_left(&runq, &task->task_node);
+	// 				UNLOCK_TASK(task);
+	// 			}
+	// 			spin_unlock(&runq_lock);
+	// 		}
+	// 	}
+	// }
 
 
 	/* LAB 5: your code here. */
@@ -94,7 +94,9 @@ void sched_yield(void)
 			sched_halt();
 		}
 		// calculate how many tasks this CPU should have
+		
 		int task_share = ROUNDUP(nuser_tasks, ncpus) / ncpus;
+		cprintf("nuser_tasks=%d, task_share = %d, cpu=%d, lques_empty=%d, lrunq_len=%d, runq_len=%d\n", nuser_tasks, task_share, this_cpu->cpu_id, list_is_empty(&lrunq)+ list_is_empty(&lnextq), lrunq_len, runq_len);
 		
 		// take tasks from global runq
 		if(task_share > lrunq_len) {
@@ -103,32 +105,38 @@ void sched_yield(void)
 				// busy wait until there is a task on the runq and only then try to get the lock for it
 				if(!runq_len && nuser_tasks) cprintf("++++ cpu=%d, wait for tasks to appear on global runq\n", this_cpu->cpu_id);
 				while(!runq_len && nuser_tasks);
+				cprintf("exit while loop waiting, cpu=%d\n", this_cpu->cpu_id);
 			}
 
 			if(spin_trylock(&runq_lock)) {
-				// cprintf("CPU %d won the locker\n", this_cpu->cpu_id);
-				// cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share);
+				cprintf("CPU %d won the locker\n", this_cpu->cpu_id);
+				cprintf("+++ take tasks %d, cpu=%d, lrunq_len=%d, task_share=%d, nuser_tasks=%d\n", task_share-lrunq_len, this_cpu->cpu_id, lrunq_len, task_share, nuser_tasks);
 				for(int i=0; i<task_share-lrunq_len; i++) {
 					// make sure that runq actually has that many tasks
 					// there still could be many tasks at another CPU and less on the global runq
 					if(!list_is_empty(&runq)) {
 						struct task *task = container_of(list_pop_left(&runq), struct task, task_node);
 						runq_len--;
-						// cprintf("cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
+						cprintf("add to local queue cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
 						LOCK_TASK(task);
 						ADD_NEXTQ(task);
 						UNLOCK_TASK(task);
 					}
+					else{
+						cprintf("was empty\n");
+					}
 				}
+				cprintf("CPU %d released the locker\n", this_cpu->cpu_id);
 				spin_unlock(&runq_lock);
+			} else{
+				// cprintf("cant trylock to add to local, CPU=%d\n", this_cpu->cpu_id);
 			}
 		} else if(task_share < lrunq_len) {
 			// put tasks from local runq to global runq
 			if(spin_trylock(&runq_lock)) {
-				// cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
+				cprintf("+++ give tasks %d, cpu=%d, \n", lrunq_len-task_share, this_cpu->cpu_id);
 				int tasks_to_migrate = lrunq_len-task_share;
 				for(int i=0; i<tasks_to_migrate; i++) {
-					// cprintf("Tasks exported old, currently=%d to_migrate=%d\n", lrunq_len, lrunq_len-task_share);
 					struct task *task = NULL;
 					if(!list_is_empty(&lnextq)) {
 						task = container_of(list_pop(&lnextq), struct task, task_node);
@@ -137,6 +145,7 @@ void sched_yield(void)
 					}else{
 						panic("no more tasks to migrate");
 					}
+					cprintf("Tasks exported old, currently=%d to_migrate=%d, pid=%d\n", lrunq_len, lrunq_len-task_share, task->task_pid);
 					lrunq_len--;
 					runq_len++;
 					LOCK_TASK(task);
@@ -147,7 +156,7 @@ void sched_yield(void)
 			}
 		}
 		
-		if(!list_is_empty(&lnextq)) {
+		if(list_is_empty(&lrunq) && !list_is_empty(&lnextq)) {
 			// swap lrunq and lnextq
 			struct list *head_nextq = list_head(&lnextq);
 			list_remove(&lnextq);
@@ -187,10 +196,12 @@ void sched_halt()
 	}
 
 	if(last) {
-		cprintf("Destroyed the only task - nothing more to do!\n");
+		cprintf("Destroyed the only task - nothing more to do!, CPU=%d\n", this_cpu->cpu_id);
 		while(1){
 			monitor(NULL);
 		}
+	}else{
+		cprintf("CPU #%d halted.\n", this_cpu->cpu_id);
 	}
 
 	// halt CPU

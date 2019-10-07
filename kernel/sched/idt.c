@@ -471,7 +471,7 @@ void page_fault_handler(struct int_frame *frame)
 	/* Handle kernel-mode page faults. */
 	/* LAB 3: your code here. */
 	if ((frame->cs & 3) == 0) {
-		panic("kernel page fault at rip=%p, faulting address=%p\n", frame->rip, fault_va);
+		panic("kernel page fault at rip=%p, faulting address=%p, cpu=%d\n", frame->rip, fault_va, this_cpu->cpu_id);
 	}
 
 	/* We have already handled kernel-mode exceptions, so if we get here, the
