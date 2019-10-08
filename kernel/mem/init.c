@@ -169,7 +169,7 @@ void mem_init_mp(void)
 		cpus[i].cpu_tss.rsp[0] = stack_addr;
 		cprintf("mem_init_mp for loop\n");
 		populate_region(kernel_pml4, (void*)stack_addr-(KSTACK_SIZE), (KSTACK_SIZE), PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
-		// guard page: leave as non present for now
+		// guard page: leave as non present for now because it will triple fault and crash
 		// protect_region(kernel_pml4, (void*)stack_addr-(KSTACK_SIZE+KSTACK_GAP), KSTACK_GAP, 0);
 	}
 

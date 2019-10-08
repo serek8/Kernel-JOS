@@ -44,7 +44,9 @@ void task_load_elf(struct task *task, uint8_t *binary);
 #ifdef USE_BIG_KERNEL_LOCK
 	#define LOCK_TASK(task) do { } while(0)
 	#define UNLOCK_TASK(task) do { } while(0)
+	#define TRY_LOCK_TASK(task) (0)
 #else
 	#define LOCK_TASK(task) do { spin_lock(&task->task_lock); } while(0)
 	#define UNLOCK_TASK(task) do { spin_unlock(&task->task_lock); } while(0)
+	#define TRY_LOCK_TASK(task) (spin_trylock(&task->task_lock))
 #endif

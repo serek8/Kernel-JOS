@@ -493,36 +493,49 @@ void task_destroy(struct task *task)
 	if(task == cur_task) {
 		current = 1;
 	}
+
+	LOCK_TASK(task);
+	int ppid = task->task_ppid;
+
 	task->task_status = TASK_DYING;
-	atomic_dec(&nuser_tasks);
+	
 	// check if child process -> becomes zombie if parent is still running
-	if(task->task_ppid != 0) {
-		struct task *parent =  pid2task(task->task_ppid, 0);
-		
+	if(ppid != 0) {
+		struct task *parent = pid2task(task->task_ppid, 0);
+
+		// Chicken - egg problem when locking parent task that might get deleted at the same time
+		// if it gets deleted at the same time, this child becomes a root task and not a zombie
+		// therefore it needs to delete itself
+		if(!TRY_LOCK_TASK(parent)) {
+			while(tasks[ppid] != NULL && !TRY_LOCK_TASK(parent));
+			if(tasks[ppid] == NULL) {
+				UNLOCK_TASK(task);
+				task_destroy(task);
+				return;
+			}
+		}
+		// cprintf("[PID %5u] Gets a zombie, ppid=%d, CPU=%d\n", task->task_pid, task->task_ppid, this_cpu->cpu_id);
 		// add to zombies list of parent
 		list_remove(&task->task_node); // remove from local runq
-		LOCK_TASK(parent);
+		
 		list_push(&parent->task_zombies, &task->task_node);
 		// remove from children list
 		list_remove(&task->task_child);
-		UNLOCK_TASK(parent);
-
+		
 		// notify parent if waiting and not scheduled
 		if(parent && parent->task_status == TASK_NOT_RUNNABLE) {
-			LOCK_TASK(parent);
 			parent->task_frame.rax = task->task_pid; // set proper return value for wait syscall
 			parent->task_status = TASK_RUNNABLE;
 			ADD_NEXTQ(parent);
 			task_remove_child(task);
-			UNLOCK_TASK(parent);
 		}
+		UNLOCK_TASK(parent);
 	} else {
 		// a parent task is exiting
 		cprintf("[PID %5u] Exiting gracefully, CPU=%d\n", task->task_pid, this_cpu->cpu_id);
 		
 		// remove all zombies
 		struct list *node = NULL, *next = NULL;
-		LOCK_TASK(task);
 		list_foreach_safe(&task->task_zombies, node, next) {
 			struct task *zombie = container_of(node, struct task, task_node);
 			cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, zombie->task_pid);
@@ -535,12 +548,13 @@ void task_destroy(struct task *task)
 			list_remove(&child->task_child);
 			child->task_ppid = 0;
 		}
-		UNLOCK_TASK(task);
 
 		// remove task
 		list_remove(&task->task_node); // remove from local runq
 		task_free(task);
 	}
+	
+	atomic_dec(&nuser_tasks);
 
 	if(current) {
 		sched_yield();
