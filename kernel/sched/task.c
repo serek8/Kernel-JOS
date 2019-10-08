@@ -162,6 +162,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_ppid = ppid;
 	task->task_type = TASK_TYPE_USER;
 	task->task_status = TASK_RUNNABLE;
+	task->task_cpunum = this_cpu->cpu_id;
 	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
@@ -241,6 +242,7 @@ struct task *task_kernel_alloc(pid_t ppid)
 	task->task_ppid = ppid;
 	task->task_type = TASK_TYPE_KERNEL;
 	task->task_status = TASK_RUNNABLE;
+	task->task_cpunum = this_cpu->cpu_id;
 	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
@@ -408,9 +410,8 @@ void task_create(uint8_t *binary, enum task_type type)
 	task_load_elf(task, binary);
 
 	task->task_type = type;
-	if(task->task_type == TASK_TYPE_USER) {
-		atomic_inc(&nuser_tasks);
-	}
+	atomic_inc(&nuser_tasks);
+	
 	/* LAB 5: your code here. */
 	ADD_NEXTQ(task);
 	cprintf("task_create: lrunq_len=%d\n", lrunq_len);
@@ -420,7 +421,7 @@ void task_create(uint8_t *binary, enum task_type type)
 void isr_kernel_task_stub(uint64_t kstack_top);
 void ktask_base(void *kernel_task_entry){ 
 	((void(*)())kernel_task_entry)();
-	cur_task->task_status = TASK_NOT_RUNNABLE;
+	cur_task->task_status = TASK_SCHEDULE_KILL;
 	ksched_yield();
 }
 
@@ -437,6 +438,7 @@ void task_kernel_create(void *entry_point)
 	task->task_frame.rdi = (uint64_t)entry_point;
 	task->task_frame.rip = (uint64_t)ktask_base;
 	ADD_NEXTQ(task);
+	atomic_inc(&nuser_tasks);
 }
 
 
@@ -516,7 +518,7 @@ void task_destroy(struct task *task)
 		}
 	} else {
 		// a parent task is exiting
-		cprintf("[PID %5u] Exiting gracefully\n", task->task_pid);
+		cprintf("[PID %5u] Exiting gracefully, CPU=%d\n", task->task_pid, this_cpu->cpu_id);
 		
 		// remove all zombies
 		struct list *node = NULL, *next = NULL;

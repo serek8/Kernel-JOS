@@ -20,6 +20,8 @@ enum {
 	SYS_close,
 	SYS_read,
 	SYS_write,
+	SYS_sched_setaffinity,
+	SYS_sched_getaffinity,
 	NSYSCALLS,
 };
 

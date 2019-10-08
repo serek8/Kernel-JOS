@@ -27,9 +27,10 @@ struct page_info *zero_dedup;
 
 void kernel_task_example(){
 	cprintf("Hello in kernel task\n");
-	int loop_limit = 100;
+	int loop_limit = 10;
 	for(int i=0; i<loop_limit; i++){
-		cprintf("kernel task loop (%d/%d) | CPU=%d\n", i, loop_limit, sys_getcpuid());
+		cprintf("[PID %5u] Kernel task running on CPU %u(%d/%d)\n", cur_task->task_pid, this_cpu->cpu_id, i, loop_limit);
+		// cprintf("kernel task loop (%d/%d) | CPU=%d\n", i, loop_limit, sys_getcpuid());
 		
 		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away the CPU
 		ksched_yield();

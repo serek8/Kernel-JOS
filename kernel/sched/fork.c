@@ -170,9 +170,9 @@ struct task *task_clone(struct task *task)
 	list_push(&task->task_children, &clone->task_child);
 	UNLOCK_TASK(task);
 
-	if(clone->task_type == TASK_TYPE_USER) {
-		atomic_inc(&nuser_tasks);
-	}
+	// if(clone->task_type == TASK_TYPE_USER) {
+	atomic_inc(&nuser_tasks);
+	// }
 
 	return clone;
 }

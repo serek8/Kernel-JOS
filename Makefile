@@ -109,6 +109,7 @@ KERNEL_CFLAGS += -DKERNEL_VMA=0xFFFF800000000000
 KERNEL_CFLAGS += -DLAB3_SYSCALL=0x1
 #KERNEL_CFLAGS += -DBONUS_LAB3=0x1
 # KERNEL_CFLAGS += -DUSE_BIG_KERNEL_LOCK=0x1
+KERNEL_CFLAGS += -DBONUS_LAB6=0x1
 
 KERNEL_LDFLAGS := -Tkernel/kernel.ld -nostdlib -n -fno-pie
 KERNEL_LDFLAGS += -Wl,--defsym,KERNEL_LMA=0x100000
@@ -118,6 +119,7 @@ KERNEL_LDFLAGS += -static
 USER_CFLAGS := $(CFLAGS) -DJOS_USER -gdwarf-2 -fPIC
 USER_LDFLAGS := -Tuser/user.ld -nostdlib -n
 USER_CFLAGS += -DLAB3_SYSCALL=0x1
+USER_CFLAGS += -DBONUS_LAB6=0x1
 
 # Update .vars.X if variable X has changed since the last make run.
 #

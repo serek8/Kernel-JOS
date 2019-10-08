@@ -249,6 +249,12 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		#endif
 		case SYS_getcpuid:
 			return sys_getcpuid();
+		#ifdef BONUS_LAB6
+		case SYS_sched_setaffinity:
+			return sys_sched_setaffinity((pid_t)a1, (unsigned)a2, (cpu_set_t*)a3);
+		case SYS_sched_getaffinity:
+			return sys_sched_getaffinity((pid_t)a1, (unsigned)a2, (cpu_set_t*)a3);
+		#endif
 			
 	default:
 		cprintf("Kernel does not support system call=%d\n", syscallno);

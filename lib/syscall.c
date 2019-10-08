@@ -122,3 +122,12 @@ int write(int fd, const void *buf, int nbyte){
 }
 
 #endif
+
+#ifdef BONUS_LAB6
+int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	return syscall(SYS_sched_setaffinity, 0, (uint64_t)pid, (uint64_t)cpusetsize, (uint64_t)mask, 0, 0, 0);
+}
+int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	return syscall(SYS_sched_getaffinity, 0, (uint64_t)pid, (uint64_t)cpusetsize, (uint64_t)mask, 0, 0, 0);
+}
+#endif

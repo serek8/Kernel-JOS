@@ -44,13 +44,21 @@ void sched_init_mp(void)
 	lrunq_len = 0;
 }
 
+int is_affiliated_to_this_cpu(struct task *task){
+	return ((task->cpu_mask.bits & (1 << this_cpu->cpu_id)));
+}
+
+void sched_yield_run_task();
 /* Runs the next runnable task. */
 void sched_yield(void)
 {
 	/* LAB 5: your code here. */
-	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ 
+	if(cur_task != NULL && cur_task->task_status == TASK_SCHEDULE_KILL){
+		task_destroy(cur_task);
+	} else 	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ 
 		if(cur_task->schedule_ts != SCHEDULE_TIME_EXPIRED && read_tsc() - cur_task->schedule_ts < SCHEDULE_TIME_BLOCK){
-			task_run(cur_task);
+			// task_run(cur_task);
+			sched_yield_run_task(cur_task);
 		} else{ // allocated time for a task expires
 			ADD_NEXTQ(cur_task);
 		}
@@ -79,6 +87,7 @@ void sched_yield(void)
 					lrunq_len--;
 					runq_len++;
 					LOCK_TASK(task);
+					task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
 					list_push_left(&runq, &task->task_node);
 					UNLOCK_TASK(task);
 				}
@@ -111,9 +120,15 @@ void sched_yield(void)
 					// there still could be many tasks at another CPU and less on the global runq
 					if(!list_is_empty(&runq)) {
 						struct task *task = container_of(list_pop_left(&runq), struct task, task_node);
+						if(!is_affiliated_to_this_cpu(task)){
+							list_push_left(&runq, &task->task_node); // it's a bit unfair but intuitive
+							// cprintf("refused to local queue cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
+							continue;
+						}
 						runq_len--;
 						// cprintf("add to local queue cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
 						LOCK_TASK(task);
+						task->task_cpunum = this_cpu->cpu_id;
 						ADD_NEXTQ(task);
 						UNLOCK_TASK(task);
 					}
@@ -142,6 +157,7 @@ void sched_yield(void)
 					lrunq_len--;
 					runq_len++;
 					LOCK_TASK(task);
+					task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
 					list_push_left(&runq, &task->task_node);
 					UNLOCK_TASK(task);
 				}
@@ -160,6 +176,25 @@ void sched_yield(void)
 	struct task *next_task = container_of(list_pop_left(&lrunq), struct task, task_node);
 	lrunq_len--;
 	next_task->schedule_ts = read_tsc();
+	sched_yield_run_task(next_task);
+}
+
+
+
+void sched_yield_run_task(struct task *next_task){
+	int should_migrate = !is_affiliated_to_this_cpu(next_task);
+	// cprintf("cpu=%d, pid=%d, check migrate=%x\n",this_cpu->cpu_id, next_task->task_pid, should_migrate);
+	if(should_migrate && spin_trylock(&runq_lock)){ // task wants to migrate
+	// cprintf("cpu=%d, cpu_mask=0x%x, will migrate=%d\n",this_cpu->cpu_id, next_task->cpu_mask.bits, (!(next_task->cpu_mask.bits & (1 << this_cpu->cpu_id))));
+		LOCK_TASK(next_task);
+		next_task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
+		list_push_left(&runq, &next_task->task_node);
+		runq_len++;
+		UNLOCK_TASK(next_task);
+		spin_unlock(&runq_lock);
+		cur_task = NULL;
+		sched_yield();
+	}
 	task_run(next_task);
 }
 
@@ -200,14 +235,16 @@ void sched_halt()
 		"cli\n"
 		"hlt\n");
 }
-int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+int sys_sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	if(pid == 0){
+		pid = cur_task->task_pid;
+	}
 	int perm_check = 1;
 	if(cur_task == NULL) {
 		perm_check = 0;
 	} else{
 		perm_check = cur_task->task_type == TASK_TYPE_USER;
 	}
-	
 	struct task *task = pid2task(pid, perm_check);
 	if (task == NULL){
 		return -1;
@@ -216,7 +253,10 @@ int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
 	return 0;
 }
 
-int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+int sys_sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	if(pid == 0){
+		pid = cur_task->task_pid;
+	}
 	int perm_check = 1;
 	if(cur_task == NULL) {
 		perm_check = 0;

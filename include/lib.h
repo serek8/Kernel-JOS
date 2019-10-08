@@ -115,3 +115,6 @@ pid_t port_open(pid_t pid);
 int close(int fd);
 int read(int fd, void *buf, int nbyte);
 int write(int fd, const void *buf, int nbyte);
+
+int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
+int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);

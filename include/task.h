@@ -26,6 +26,8 @@ typedef struct {
 #define CPU_CLR(set, cpu) set.bits &= ~(1 << cpu);
 #define CPU_ISSET(set, cpu) ((set.bits & (1 << cpu)) != 0);
 
+#define TASK_CPUNUM_GLOBAL_RUNQ (-1)
+
 
 /* Values of task_status in struct task. */
 enum {
@@ -33,6 +35,7 @@ enum {
 	TASK_RUNNABLE,
 	TASK_RUNNING,
 	TASK_NOT_RUNNABLE,
+	TASK_SCHEDULE_KILL,
 };
 
 /* The method of interrupt used to switch to the kernel. */
