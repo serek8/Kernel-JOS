@@ -200,3 +200,33 @@ void sched_halt()
 		"cli\n"
 		"hlt\n");
 }
+int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	int perm_check = 1;
+	if(cur_task == NULL) {
+		perm_check = 0;
+	} else{
+		perm_check = cur_task->task_type == TASK_TYPE_USER;
+	}
+	
+	struct task *task = pid2task(pid, perm_check);
+	if (task == NULL){
+		return -1;
+	}
+	task->cpu_mask = *mask;
+	return 0;
+}
+
+int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
+	int perm_check = 1;
+	if(cur_task == NULL) {
+		perm_check = 0;
+	} else{
+		perm_check = cur_task->task_type == TASK_TYPE_USER;
+	}
+	struct task *task = pid2task(pid, perm_check);
+	if (task == NULL){
+		return -1;
+	}
+	*mask = task->cpu_mask;
+	return 0;
+}

@@ -4,6 +4,8 @@ void sched_init(void);
 void sched_init_mp(void);
 void sched_yield(void);
 void sched_halt(void);
+int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
+int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
 
 #ifdef USE_BIG_KERNEL_LOCK
 	#define LOCK_RUNQ(runq) do { } while(0)

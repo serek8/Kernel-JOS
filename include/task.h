@@ -16,6 +16,16 @@ typedef int32_t pid_t;
 #define FD_DONE (1 << 2) 
 #define FD_ERROR (1 << 3) 
 
+typedef struct {
+  uint64_t bits;
+} cpu_set_t;
+
+#define CPU_ZERO(set) set.bits = 0;
+#define CPU_SET(set, cpu) set.bits |= (1 << cpu);
+#define CPU_SET_ALL(set) set.bits = ~0;
+#define CPU_CLR(set, cpu) set.bits &= ~(1 << cpu);
+#define CPU_ISSET(set, cpu) ((set.bits & (1 << cpu)) != 0);
+
 
 /* Values of task_status in struct task. */
 enum {
@@ -66,6 +76,9 @@ struct task {
 
 	/* The CPU that the task is running on. */
 	int task_cpunum;
+
+	/* Pinned cpus. */
+	cpu_set_t cpu_mask;
 
 	/* The virtual address space. */
 	struct page_table *task_pml4;
