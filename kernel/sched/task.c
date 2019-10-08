@@ -656,7 +656,14 @@ void task_run(struct task *task)
 	if(cur_task->task_status == TASK_RUNNING){
 		cur_task->task_status = TASK_RUNNABLE;
 	}
+	
 	cur_task = task;
+	// task got killed from a different processor
+	if(cur_task->task_status == TASK_DYING){
+		cur_task = NULL;
+		sched_yield();
+	}
+
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;
 	load_pml4((void*)PADDR(task->task_pml4));
