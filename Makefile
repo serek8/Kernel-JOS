@@ -143,10 +143,11 @@ QEMUOPTS += -device ide-drive,drive=disk1,bus=ahci.1
 QEMUOPTS += -serial mon:stdio -gdb tcp::$(GDBPORT)
 QEMUOPTS += $(shell if $(QEMU) -nographic -help | grep -q '^-D '; then echo '-D qemu.log'; fi)
 QEMUOPTS += -no-reboot -D /dev/stdout
-IMAGES = $(OBJDIR)/kernel/kernel.img
 QEMUOPTS += -smp $(CPUS)
-IMAGES = $(OBJDIR)/kernel/swap.img
 QEMUOPTS += $(QEMUEXTRA)
+
+IMAGES += $(OBJDIR)/kernel/kernel.img
+IMAGES += $(OBJDIR)/kernel/swap.img
 
 .gdbrc: .gdbrc.tmpl
 	sed "s/localhost:1234/localhost:$(GDBPORT)/" < $^ > $@
