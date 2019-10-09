@@ -7,9 +7,11 @@
 #include <kernel/dev/pci.h>
 #include <kernel/mem.h>
 
+extern struct pci_driver ahci_driver;
 extern struct pci_driver ata_driver;
 
 struct pci_driver *pci_drivers[] = {
+	&ahci_driver,
 	&ata_driver,
 	NULL,
 };
