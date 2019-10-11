@@ -108,5 +108,6 @@ struct task {
 #ifdef BONUS_LAB5
 	struct fd fd_table[FILE_DESCRIPTION_TABLE_SIZE];
 #endif
+	struct list task_rmap_elems; // when destorying the task we can kill all its rmap_elements
 };
 

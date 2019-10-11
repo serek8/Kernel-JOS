@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list.h>
+#include <kernel/swap/swap.h>
 
 #include <x86-64/paging.h>
 
@@ -41,6 +42,8 @@ struct page_info {
 	#ifdef BONUS_LAB1
 	uint32_t canary;
 	#endif
+
+	struct rmap *pp_rmap;
 };
 #endif /* !__ASSEMBLER__ */
 

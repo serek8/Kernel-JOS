@@ -158,7 +158,8 @@ KERNEL_SRCFILES += \
 	kernel/dev/ahci.c \
 	kernel/dev/ata.c \
 	kernel/dev/disk.c \
-	kernel/dev/pci.c
+	kernel/dev/pci.c \
+	kernel/swap/swap.c
 
 # LAB 7 binaries
 KERNEL_BINFILES += \
