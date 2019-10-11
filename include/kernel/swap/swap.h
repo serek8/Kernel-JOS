@@ -2,7 +2,9 @@
 
 #include <types.h>
 #include <list.h>
+#include <paging.h>
 
+#define MB 1024*1024
 
 struct rmap {
     struct list elements;
@@ -15,3 +17,17 @@ struct rmap_elem {
     physaddr_t *entry; // PTE entry
     struct rmap p_rmap; // parent rmap
 };
+
+struct swap_disk_mapping_t{
+    struct rmap *swap_rmap;
+    uint8_t is_taken;
+};
+
+
+// struct swap_disk_mapping_t swap_disk_mapping[128 * MB / PAGE_SIZE]; // TODO: change 128 to real memsize
+
+struct page_info;
+int swap_out(struct page_info *page); // returns 0 on success
+int swap_in(uint64_t swap_index); // returns 0 on success
+
+
