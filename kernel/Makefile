@@ -205,6 +205,7 @@ $(OBJDIR)/kernel/kernel: $(KERNEL_OBJFILES) $(KERNEL_BINFILES) kernel/kernel.ld 
 # How to build the kernel disk image
 $(OBJDIR)/kernel/kernel.img: $(OBJDIR)/kernel/kernel $(OBJDIR)/boot/boot
 	@echo + mk $@
+	$(V)truncate -s %512 $(OBJDIR)/boot/boot
 	$(V)dd if=$(OBJDIR)/boot/boot of=$(OBJDIR)/kernel/kernel.img~ 2>/dev/null
 	$(V)dd if=$(OBJDIR)/kernel/kernel >>$(OBJDIR)/kernel/kernel.img~ 2>/dev/null
 	$(V)truncate -s 5M $(OBJDIR)/kernel/kernel.img~

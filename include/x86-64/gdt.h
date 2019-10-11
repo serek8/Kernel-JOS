@@ -89,6 +89,7 @@ static inline void load_gdt(struct gdtr *gdtr, uint16_t code_sel,
 	uint16_t data_sel)
 {
 	asm volatile(
+		"movq %%rsp, %%rbp\n"
 		"lgdt (%0)\n"
 		"movw %w2, %%ds\n"
 		"movw %w2, %%es\n"
