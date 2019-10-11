@@ -3,12 +3,12 @@
 
 
 int swap_out(struct page_info *page){
-    // cprintf("ptr=%a\n", page->pp_rmap);
+    cprintf("hello from swap_out\n");
     return -1;
 }
 
 int swap_in(uint64_t swap_index){
-
+    cprintf("hello from swap_in\n");
 
     return -1;
 }

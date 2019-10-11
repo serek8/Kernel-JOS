@@ -12,6 +12,7 @@
 #include <kernel/sched.h>
 #include <kernel/vma.h>
 #include <kernel/message.h>
+#include <kernel/swap/swap.h>
 
 extern void syscall64(void);
 
@@ -194,6 +195,17 @@ unsigned sys_getcpuid(){
 	return rbx >> 24;
 }
 
+int sys_swap_out(void *addr){
+	physaddr_t *entry_store;
+	return swap_out(page_lookup(cur_task->task_pml4, addr, &entry_store));
+}
+
+int sys_swap_in(void *addr){
+	physaddr_t *entry_store;
+	page_lookup(cur_task->task_pml4, addr, &entry_store);
+	return swap_in(PAGE_ADDR(*entry_store));
+}
+
 /* Dispatches to the correct kernel function, passing the arguments. */
 int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
         uint64_t a4, uint64_t a5, uint64_t a6)
@@ -255,6 +267,10 @@ int64_t syscall(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 		case SYS_sched_getaffinity:
 			return sys_sched_getaffinity((pid_t)a1, (unsigned)a2, (cpu_set_t*)a3);
 		#endif
+		case SYS_swap_out:
+			return sys_swap_out((void*)a1);
+		case SYS_swap_in:
+			return sys_swap_in((void*)a1);
 			
 	default:
 		cprintf("Kernel does not support system call=%d\n", syscallno);

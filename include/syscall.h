@@ -22,6 +22,8 @@ enum {
 	SYS_write,
 	SYS_sched_setaffinity,
 	SYS_sched_getaffinity,
+	SYS_swap_out,
+	SYS_swap_in,
 	NSYSCALLS,
 };
 

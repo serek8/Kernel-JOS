@@ -163,7 +163,8 @@ KERNEL_SRCFILES += \
 
 # LAB 7 binaries
 KERNEL_BINFILES += \
-	user/mempress
+	user/mempress \
+	user/swaptest 
 
 # Only build files if they exist.
 KERNEL_SRCFILES := $(wildcard $(KERNEL_SRCFILES))

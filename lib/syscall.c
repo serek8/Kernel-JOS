@@ -131,3 +131,10 @@ int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask){
 	return syscall(SYS_sched_getaffinity, 0, (uint64_t)pid, (uint64_t)cpusetsize, (uint64_t)mask, 0, 0, 0);
 }
 #endif
+
+int test_swap_out(void *addr){
+	return syscall(SYS_swap_out, 0, (uint64_t)addr, 0, 0, 0, 0, 0);
+}
+int test_swap_in(void *addr){
+	return syscall(SYS_swap_in, 0, (uint64_t)addr, 0, 0, 0, 0, 0);
+}

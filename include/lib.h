@@ -118,3 +118,6 @@ int write(int fd, const void *buf, int nbyte);
 
 int sched_setaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
 int sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
+
+int test_swap_out(void *addr);
+int test_swap_in(void *addr);
