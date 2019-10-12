@@ -24,6 +24,8 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	page = page_alloc(ALLOC_ZERO);
 	page->pp_ref++;
+	page->pp_rmap = kmalloc(sizeof(struct rmap));
+	rmap_init(page->pp_rmap);
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
 
 	return 0;
