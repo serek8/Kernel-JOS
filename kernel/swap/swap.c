@@ -131,6 +131,11 @@ void swap_print_lru()
     cprintf("\n----------\n");
 }
 
+/**
+ * Get LRU page with second chance / CLOCK algorithm.
+ * Iterate over lru_pages, advancing head of list if r=1.
+ * If r=0, return page and remove from lru_pages.
+ */
 struct page_info *swap_clock()
 {
     struct page_info *page;
@@ -141,10 +146,54 @@ struct page_info *swap_clock()
             return page;
         }
         page->pp_swap_node.r = 0;
+
         // advance head of list
         list_advance_head(&lru_pages);
     }
     return NULL;
+}
+
+/**
+ * Update lru_pages according to whether pages were accessed by the processor.
+ * Iterate over all page_infos in lru_pages. 
+ * For every page iterate over all rmap elements.
+ * - check if PTE has PAGE_ACCESSED flag -> append to lru_pages, reset second chance
+ * - reset PAGE_ACCESSED flag
+ */
+void swapd_update_lru()
+{
+    struct list *node, *next, *node_rmap;
+    // Save the last element of lru_pages. We're going to append to it on the fly.
+    struct list *last = lru_pages.prev;
+
+    list_foreach_safe(&lru_pages, node, next) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+        
+        int updated = 0;
+        // iterate over every element in the rmap
+        list_foreach(&page->pp_rmap->elems, node_rmap) {
+            struct rmap_elem *rmap_elem = container_of(node_rmap, struct rmap_elem, rmap_node);
+            
+            cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, task_pid=%d, PTE=%p, accessed=%d\n", 
+            page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), 
+            rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
+            
+            // if page was accessed -> append to lru_pages, reset second chance
+            if(((*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED) && !updated) {
+                page->pp_swap_node.r = 1;
+                list_remove(node);
+                list_push_left(&lru_pages, node);
+                updated = 1;
+            }
+
+            // reset accessed flag
+            *rmap_elem->entry &= ~(PAGE_ACCESSED);
+        }
+        // exit loop once we iterated over every item
+        if(node == last) {
+            break;
+        }
+    }
 }
 
 void swapd()
@@ -167,11 +216,14 @@ void swapd()
     }
 
     swap_print_lru();
-    swap_clock();
-    swap_print_lru();
-}
+    // swap_clock();
+    // swap_print_lru();
 
-void swapd_update_lru()
-{
-    
+    swapd_update_lru();
+    swap_print_lru();
+
+    ksched_yield();
+
+    swapd_update_lru();
+    swap_print_lru();
 }
