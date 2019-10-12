@@ -39,3 +39,6 @@ void rmap_free(struct rmap *map);
 void rmap_free_task_rmap_elems(struct list *task_rmap_elems);
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task);
 
+void swap_init();
+void swapd();
+void swap_add(struct page_info *page);

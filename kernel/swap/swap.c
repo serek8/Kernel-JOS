@@ -1,7 +1,11 @@
 #include <kernel/swap/swap.h>
+
 #include <stdio.h>
+#include <kernel/sched.h>
 #include <kernel/mem.h>
-#include <task.h>
+
+struct list lru_pages;
+// TODO: lock
 
 void rmap_init(struct rmap *map){
     list_init(&map->elems);
@@ -96,4 +100,78 @@ int swap_out(struct page_info *page){
 int swap_in(uint64_t swap_index){
     cprintf("hello from swap_in\n");
     return -1;
+}
+
+void swap_init()
+{
+    list_init(&lru_pages);
+}
+
+void swap_add(struct page_info *page)
+{
+    // set second chance value
+    page->pp_swap_node.r = 1; 
+    list_push_left(&lru_pages, &page->pp_swap_node.n);
+    cprintf("add: page=%p, pp_ref=%d, content=%p\n", page, page->pp_ref, *((int*)page2kva(page)));
+}
+
+void swap_print_lru()
+{
+    cprintf("----------\nLRU pages\n\n");
+    // cprintf("%p, prev=%p, next=%p\n", &lru_pages,lru_pages.prev, lru_pages.next);
+    struct list *node;
+    int i = 0;
+    list_foreach(&lru_pages, node) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+
+        cprintf("%d: swap_node.r=%d, page=%p, pp_ref=%d, content=%p\n", i, page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)));
+        // cprintf("node=%p, prev=%p, next=%p\n", node, node->prev, node->next);
+        i++;
+    }
+    cprintf("\n----------\n");
+}
+
+struct page_info *swap_clock()
+{
+    struct page_info *page;
+    while(1) {
+        page = GET_PAGE_FROM_SWAP_NODE_N(lru_pages.next);
+        if(page->pp_swap_node.r == 0) {
+            list_pop_left(&lru_pages);
+            return page;
+        }
+        page->pp_swap_node.r = 0;
+        // advance head of list
+        list_advance_head(&lru_pages);
+    }
+    return NULL;
+}
+
+void swapd()
+{
+    while(list_is_empty(&lru_pages)) {
+        ksched_yield();
+    }
+    ksched_yield();
+
+    struct list *node;
+    int i = 0;
+    list_foreach(&lru_pages, node) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+
+        if(i==3) {
+            page->pp_swap_node.r = 0;
+            break;
+        }
+        i++;
+    }
+
+    swap_print_lru();
+    swap_clock();
+    swap_print_lru();
+}
+
+void swapd_update_lru()
+{
+    
 }

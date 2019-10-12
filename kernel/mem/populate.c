@@ -2,12 +2,14 @@
 #include <paging.h>
 
 #include <kernel/mem.h>
+#include <kernel/swap/swap.h>
 
 struct populate_info {
 	struct page_table *pml4;
 	uint64_t flags;
 	uintptr_t base, end;
 	struct task *taskx;
+	int user_page;
 };
 
 static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
@@ -35,6 +37,9 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	// void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
+	if(info->user_page) {
+		swap_add(page);
+	}
 
 	return 0;
 }
@@ -58,6 +63,9 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		page = page_alloc(ALLOC_ZERO | ALLOC_HUGE);
 		page->pp_ref++;
 		*entry = info->flags | PAGE_HUGE | PAGE_ADDR(page2pa(page));
+		if(info->user_page) {
+			swap_add(page);
+		}
 	} else {
 		// 4K page -> allocate page table
 		ptbl_alloc(entry, base, end, walker);
@@ -72,6 +80,15 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 void populate_region(struct page_table *pml4, void *va, size_t size,
 	uint64_t flags, struct task *taskx)
 {
+	populate_region_user(pml4, va, size, flags, taskx, 0);
+}
+
+/* Populates the region [va, va + size) with pages by allocating pages from the
+ * frame allocator and mapping them.
+ */
+void populate_region_user(struct page_table *pml4, void *va, size_t size,
+	uint64_t flags, struct task *taskx, int user_page)
+{
 	/* LAB 3: your code here. */
 	if(size == 0) {
 		panic("Can't populate with size=0\n");
@@ -82,7 +99,8 @@ void populate_region(struct page_table *pml4, void *va, size_t size,
 		.base = ROUNDDOWN((uintptr_t)va, PAGE_SIZE),
 		.end = ROUNDUP((uintptr_t)va + size, PAGE_SIZE) - 1,
 		.pml4 = pml4,
-		.taskx = taskx
+		.taskx = taskx,
+		.user_page = user_page,
 	};
 	struct page_walker walker = {
 		.get_pte = populate_pte,
