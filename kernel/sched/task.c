@@ -481,8 +481,6 @@ void task_free(struct task *task)
 		cur_task = NULL;
 	}
 
-	rmap_free_task_rmap_elems(&task->task_rmap_elems);
-
 	/* Free the task. */
 	kfree(task);
 }
@@ -502,6 +500,7 @@ void task_destroy(struct task *task)
 	int ppid = task->task_ppid;
 
 	task->task_status = TASK_DYING;
+	rmap_free_task_rmap_elems(&task->task_rmap_elems);
 	
 	// check if child process -> becomes zombie if parent is still running
 	if(ppid != 0) {

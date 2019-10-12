@@ -22,6 +22,7 @@ void rmap_init(struct rmap *map){
 //     }
 //     // kfree(map);
 // }
+
 void print_task_rmap_elems(struct task *taskx);
 void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
     if(task_rmap_elems == NULL){
@@ -31,19 +32,17 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
     struct rmap_elem *elem;
 	struct list *node = NULL, *next = NULL;
 
-    cprintf("rmap_free_task_rmap_elems:\n");
-
+    // cprintf("rmap_free_task_rmap_elems:\n");
     // cprintf("sumup_task\n; * * * * * * * * * \n");
     // elem = container_of(task_rmap_elems->next, struct rmap_elem, task_node);
     // print_task_rmap_elems(elem->p_task);
     // cprintf("end sumup_task\n; * * * * * * * * * \n");
-    
 	list_foreach_safe(task_rmap_elems, node, next) {
 		elem = container_of(node, struct rmap_elem, task_node);
         cprintf("  > removing: &rmap=%p, &pte=%p, p_task_pid=%d, &p_task=%p\n", elem->p_rmap, elem->entry, elem->p_task->task_pid, elem->p_task);
         list_remove(&elem->task_node);
         list_remove(&elem->rmap_node);
-        // kfree(elem);
+        kfree(elem);
     }
 }
 
@@ -58,18 +57,13 @@ void rmap_elem_init(struct rmap_elem *elem){
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
     assert((uint64_t)pte > KERNEL_VMA); // make sure PTE is in kernel address space
     cprintf("rmap_add_mapping: &rmap=%p, pte=%p, p_task_pid=%d, p_task=%p\n", map, pte, p_task->task_pid, p_task);
-    struct rmap_elem *map_elem = kmalloc(sizeof(struct rmap));
+    struct rmap_elem *map_elem = kmalloc(sizeof(struct rmap_elem));
     rmap_elem_init(map_elem);
     list_push_left(&map->elems, &map_elem->rmap_node);
     list_push_left(&p_task->task_rmap_elems, &map_elem->task_node);
     map_elem->entry = pte; // kernel address space
     map_elem->p_rmap = map;
     map_elem->p_task = p_task;
-
-    cprintf("sumup_task\n; * * * * * * * * * \n");
-    print_task_rmap_elems(p_task);
-    cprintf("end sumup_task\n; * * * * * * * * * \n");
-
 }
 
 void print_page_info_rmap_elems(struct page_info *page){
