@@ -481,6 +481,8 @@ void task_free(struct task *task)
 		cur_task = NULL;
 	}
 
+	rmap_free_task_rmap_elems(&task->task_rmap_elems);
+
 	/* Free the task. */
 	kfree(task);
 }

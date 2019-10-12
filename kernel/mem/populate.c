@@ -28,7 +28,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	// add reverse mapping (support only user tasks)
 	if(info->taskx && info->taskx->task_type == TASK_TYPE_USER){ 
-		cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", info->taskx);
+		// cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", info->taskx);
 		page->pp_rmap = kmalloc(sizeof(struct rmap));
 		rmap_init(page->pp_rmap);
 		rmap_add_mapping(page->pp_rmap, entry, info->taskx);

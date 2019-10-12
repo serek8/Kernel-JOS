@@ -18,6 +18,7 @@ struct rmap_elem {
     struct list task_node; // list anchor for task, so that when destorying a task we can kill all its rmap_elements
     physaddr_t *entry; // PTE entry
     struct rmap *p_rmap; // parent rmap
+    struct task *p_task; // parent task | just for debuging | remove later
 };
 
 struct swap_disk_mapping_t{
@@ -34,5 +35,7 @@ struct task;
 int swap_out(struct page_info *page); // returns 0 on success
 int swap_in(uint64_t swap_index); // returns 0 on success
 void rmap_init(struct rmap *map);
+void rmap_free(struct rmap *map);
+void rmap_free_task_rmap_elems(struct list *task_rmap_elems);
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task);
 
