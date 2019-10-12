@@ -25,8 +25,8 @@ struct swap_disk_mapping_t{
     uint8_t is_taken;
 };
 
-
-struct swap_disk_mapping_t swap_disk_mapping[128 * MB / PAGE_SIZE]; // TODO: change 128 to real memsize
+// todo: Could not allocate page of order 9. Out of memory
+// struct swap_disk_mapping_t swap_disk_mapping[128 * MB / PAGE_SIZE]; // TODO: change 128 to real memsize
 
 struct page_info;
 struct task;
@@ -34,4 +34,5 @@ struct task;
 int swap_out(struct page_info *page); // returns 0 on success
 int swap_in(uint64_t swap_index); // returns 0 on success
 void rmap_init(struct rmap *map);
+void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task);
 

@@ -7,6 +7,7 @@ struct populate_info {
 	struct page_table *pml4;
 	uint64_t flags;
 	uintptr_t base, end;
+	struct task *taskx;
 };
 
 static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
@@ -24,8 +25,15 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	}
 	page = page_alloc(ALLOC_ZERO);
 	page->pp_ref++;
-	page->pp_rmap = kmalloc(sizeof(struct rmap));
-	rmap_init(page->pp_rmap);
+
+	// add reverse mapping (support only user tasks)
+	if(info->taskx && info->taskx->task_type == TASK_TYPE_USER){ 
+		cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", info->taskx);
+		page->pp_rmap = kmalloc(sizeof(struct rmap));
+		rmap_init(page->pp_rmap);
+		rmap_add_mapping(page->pp_rmap, entry, info->taskx);
+	}
+	// void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
 	*entry = info->flags | PAGE_ADDR(page2pa(page));
 
 	return 0;
@@ -62,7 +70,7 @@ static int populate_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
  * frame allocator and mapping them.
  */
 void populate_region(struct page_table *pml4, void *va, size_t size,
-	uint64_t flags)
+	uint64_t flags, struct task *taskx)
 {
 	/* LAB 3: your code here. */
 	if(size == 0) {
@@ -74,6 +82,7 @@ void populate_region(struct page_table *pml4, void *va, size_t size,
 		.base = ROUNDDOWN((uintptr_t)va, PAGE_SIZE),
 		.end = ROUNDUP((uintptr_t)va + size, PAGE_SIZE) - 1,
 		.pml4 = pml4,
+		.taskx = taskx
 	};
 	struct page_walker walker = {
 		.get_pte = populate_pte,

@@ -36,6 +36,12 @@ struct page_info *copy_ptbl(physaddr_t *entry)
 			// clone_ptbl->entries[i],
 			// orig_ptbl->entries[i] & PAGE_MASK,
 			// clone_ptbl->entries[i] & PAGE_MASK);
+
+			// add reverse mapping (support only user tasks)
+			if(cur_task && cur_task->task_type == TASK_TYPE_USER){ 
+				cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", cur_task);
+				rmap_add_mapping(entry_page->pp_rmap, &clone_ptbl->entries[i], cur_task);
+			}
 		}
 	}
 

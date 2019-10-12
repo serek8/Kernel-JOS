@@ -4,4 +4,4 @@
 #include <paging.h>
 
 void populate_region(struct page_table *pml4, void *va, size_t size,
-	uint64_t flags);
+	uint64_t flags, struct task *taskx);

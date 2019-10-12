@@ -358,7 +358,7 @@ void lab3_check_populate_protect(struct page_table *pml4) {
 	struct page_info *page;
 	physaddr_t *entry;
 
-	populate_region(pml4, addr, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	populate_region(pml4, addr, PAGE_SIZE*2, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC, NULL);
 
 	// check for first page
 	page = page_lookup(pml4, addr, &entry);
@@ -396,7 +396,7 @@ void lab3_check_populate_protect(struct page_table *pml4) {
 
 	// misaligned huge page from 0x1000
 	addr = (void*)0x1000;
-	populate_region(pml4, addr, HPAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
+	populate_region(pml4, addr, HPAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC, NULL);
 
 	// check for first page
 	page = page_lookup(pml4, addr, &entry);
@@ -421,7 +421,7 @@ void lab3_check_populate_protect(struct page_table *pml4) {
 
 	// aligned huge page + 4K from 0x0
 	addr = (void*)0x0;
-	populate_region(pml4, addr, HPAGE_SIZE+PAGE_SIZE, PAGE_PRESENT);
+	populate_region(pml4, addr, HPAGE_SIZE+PAGE_SIZE, PAGE_PRESENT, NULL);
 
 	// check for first page - should be huge page
 	page = page_lookup(pml4, addr, &entry);

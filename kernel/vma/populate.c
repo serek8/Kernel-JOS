@@ -16,7 +16,7 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	struct vma *vma, void *udata)
 {
 	/* LAB 4: your code here. */	
-	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE);		
+	populate_region(task->task_pml4, base, size, PAGE_PRESENT | PAGE_WRITE, task);		
 	if (vma->vm_src){
 		void *dst = MAX(vma->vm_base + vma->base_offset, base);
 		void *file_src = vma->vm_src + pos_abs((base - vma->vm_base) - vma->base_offset);

@@ -177,6 +177,7 @@ struct task *task_alloc(pid_t ppid)
 	list_init(&task->task_children);
 	list_init(&task->task_child);
 	list_init(&task->task_zombies);
+	list_init(&task->task_rmap_elems);
 
 	memset(&task->task_frame, 0, sizeof task->task_frame);
 
@@ -254,6 +255,7 @@ struct task *task_kernel_alloc(pid_t ppid)
 	list_init(&task->task_children);
 	list_init(&task->task_child);
 	list_init(&task->task_zombies);
+	list_init(&task->task_rmap_elems);
 
 	memset(&task->task_frame, 0, sizeof task->task_frame);
 
@@ -433,7 +435,7 @@ void task_kernel_create(void *entry_point)
 {
 	struct task *task = task_kernel_alloc(0);
 	load_pml4((void*)PADDR(task->task_pml4));
-	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_USER);
+	populate_region(task->task_pml4, (void*)USTACK_TOP-PAGE_SIZE, PAGE_SIZE, PAGE_PRESENT | PAGE_WRITE | PAGE_USER, NULL);
 	task->task_frame.rsp = USTACK_TOP;
 	task->task_frame.rdi = (uint64_t)entry_point;
 	task->task_frame.rip = (uint64_t)ktask_base;
