@@ -102,7 +102,9 @@ void readseg(uint32_t pa, uint32_t count, uint32_t offset)
 	pa &= ~(SECTSIZE - 1);
 
 	/* translate from bytes to sectors, and kernel starts at sector 1 */
-	offset = (offset / SECTSIZE) + 1 + (stage2_end - stage2) / SECTSIZE;
+	offset = (offset / SECTSIZE);
+	offset += 1;
+	offset += (stage2_end - stage2 + SECTSIZE - 1) / SECTSIZE;
 
 	/* If this is too slow, we could read lots of sectors at a time. We'd write
 	 * more to memory than asked, but it doesn't matter -- we load in increasing
