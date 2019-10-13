@@ -201,9 +201,10 @@ int sys_swap_out(void *addr){
 }
 
 int sys_swap_in(void *addr){
-	physaddr_t *entry_store;
+	physaddr_t *entry_store = NULL;
 	page_lookup(cur_task->task_pml4, addr, &entry_store);
-	return swap_in(PAGE_ADDR(*entry_store));
+	cprintf("custom swap-in\n");
+	return swap_in(*entry_store); // todo: pass whole PTE
 }
 
 /* Dispatches to the correct kernel function, passing the arguments. */

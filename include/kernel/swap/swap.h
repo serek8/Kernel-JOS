@@ -10,6 +10,7 @@
 
 struct rmap {
     struct list elems;
+    uint16_t pp_ref;
     // lock
 };
 
@@ -22,18 +23,16 @@ struct rmap_elem {
 };
 
 struct swap_disk_mapping_t{
-    struct rmap *swap_rmap;
+    struct rmap *swap_rmap;    
     uint8_t is_taken;
 };
-
-// todo: Could not allocate page of order 9. Out of memory
-// struct swap_disk_mapping_t swap_disk_mapping[128 * MB / PAGE_SIZE]; // TODO: change 128 to real memsize
 
 struct page_info;
 struct task;
 
+void swap_init();
 int swap_out(struct page_info *page); // returns 0 on success
-int swap_in(uint64_t swap_index); // returns 0 on success
+int swap_in(physaddr_t pte); // returns 0 on success
 void rmap_init(struct rmap *map);
 void rmap_free(struct rmap *map);
 void rmap_free_task_rmap_elems(struct list *task_rmap_elems);

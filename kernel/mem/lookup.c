@@ -16,6 +16,10 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	struct lookup_info *info = walker->udata;
 
 	/* LAB 2: your code here. */
+	if(*entry & PAGE_SWAP) {
+		cprintf("lookup_pte swap bit detected\n");
+		info->entry = entry;
+	}
 	if(*entry & PAGE_PRESENT) {
 		info->entry = entry;
 	}

@@ -18,6 +18,7 @@
 #include <kernel/sched/idt.h>
 #include <kernel/sched/syscall.h>
 #include <spinlock.h>
+#include <kernel/swap/swap.h>
 
 extern struct page_table *kernel_pml4;
 volatile int startup_completed = 0;
@@ -76,6 +77,7 @@ void kmain(struct boot_info *boot_info)
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
+	swap_init();
 
 	lab3_check_populate_protect(kernel_pml4);
 	

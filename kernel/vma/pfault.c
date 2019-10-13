@@ -18,6 +18,11 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 
 	physaddr_t *entry;
 	struct page_info *page = page_lookup(task->task_pml4, va, &entry);
+	if(*entry & PAGE_SWAP) { // TODO lab7: what if it was swapped out but need to COW
+		cprintf("Page fault handler found swapped-out entry.\n");
+		swap_in(*entry);
+	}
+
 	// COW
 	if(entry != 0x0 && 
 	page != NULL &&

@@ -11,6 +11,7 @@
 #define PAGE_DIRTY (1 << 6)
 #define PAGE_HUGE (1 << 7)
 #define PAGE_GLOBAL (1 << 8)
+#define PAGE_SWAP (1 << 9)
 
 #ifdef __ASSEMBLER__
 #define PAGE_NO_EXEC (1 << 63)
