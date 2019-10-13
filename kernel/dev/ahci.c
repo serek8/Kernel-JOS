@@ -94,6 +94,9 @@ int64_t ahci_read(struct disk *disk, void *buf, size_t count, uint64_t addr)
 	uint32_t *data = buf;
 	size_t i;
 
+	/* Ensure that the buffer is 1024 kiB aligned. */
+	assert(!((uintptr_t)buf & (1024 - 1)));
+
 	if (ahci_disk->state == AHCI_IDLE) {
 		/* The disk is currently idle. Find an available command slot
 		 * to use to issue a read request.
@@ -195,6 +198,9 @@ int64_t ahci_write(struct disk *disk, const void *buf, size_t count, uint64_t ad
 	volatile struct hba_port *port = ahci_disk->port;
 	uint32_t *data = (uint32_t *)buf;
 	size_t i;
+
+	/* Ensure that the buffer is 1024 kiB aligned. */
+	assert(!((uintptr_t)buf & (1024 - 1)));
 
 	if (ahci_disk->state == AHCI_IDLE) {
 		/* The disk is currently idle. Find an available command slot
