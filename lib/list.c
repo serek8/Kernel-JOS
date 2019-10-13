@@ -68,3 +68,17 @@ struct list *list_pop_left(struct list *head)
 
 	return node;
 }
+
+void list_advance_head(struct list *head)
+{
+		struct list *temp = head->next->next;
+
+        head->next->prev = head->prev;
+        head->next->next = head;
+
+        head->prev->next = head->next;
+
+        head->prev = head->next;
+        head->next = temp;
+        head->next->prev = head;
+}

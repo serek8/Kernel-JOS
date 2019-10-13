@@ -9,6 +9,11 @@
 #define BONUS_LAB1 1
 
 #ifndef __ASSEMBLER__
+struct swap_node {
+	int r; // second chance value
+	struct list n; // node used in lru_list
+};
+
 /*
  * Page descriptor structures, mapped at USER_PAGES.
  * Read/write to the kernel, read-only to user programs.
@@ -44,6 +49,10 @@ struct page_info {
 	#endif
 
 	struct rmap *pp_rmap;
+	struct swap_node pp_swap_node;
 };
+
+#define GET_PAGE_FROM_SWAP_NODE_N(node) (container_of(container_of(node, struct swap_node, n), struct page_info, pp_swap_node))
+
 #endif /* !__ASSEMBLER__ */
 

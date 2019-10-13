@@ -13,7 +13,7 @@ int main(int argc, char **argv)
 
 	printf("### test *0x1000000 = %p\n", *addr);
 	test_swap_out(addr);
-	// printf("### test *0x1000000 = %p\n", *addr);
+	printf("### test *0x1000000 = %p\n", *addr);
 	test_swap_in(addr);
 	printf("### test *0x1000000 = %p\n", *addr);
 	// printf("will fork\n");

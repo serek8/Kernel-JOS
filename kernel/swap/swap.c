@@ -1,5 +1,7 @@
 #include <kernel/swap/swap.h>
+
 #include <stdio.h>
+#include <kernel/sched.h>
 #include <kernel/mem.h>
 #include <task.h>
 #include <kernel/dev/disk.h>
@@ -8,6 +10,9 @@
 
 #define SWAP_DISC_SIZE  2*PAGE_SIZE
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
+
+struct list lru_pages;
+// TODO: lock
 
 void rmap_init(struct rmap *map){
     list_init(&map->elems);
@@ -18,6 +23,7 @@ struct swap_disk_mapping_t swap_disk_mapping[SWAP_DISC_INDEX_NUM]; // TODO: chan
 void *tmp_ram_backed_disc;
 
 void swap_init(){
+    list_init(&lru_pages);
     tmp_ram_backed_disc = (void*)(KSTACK_TOP - KSTACK_SIZE);
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         swap_disk_mapping[i].swap_rmap = NULL;
@@ -261,3 +267,125 @@ void rmap_free(struct rmap *map){
 //         ata_read_sector(buf + i*SECT_SIZE); 
 //     }
 //     cprintf("read=%s\n", buf);
+
+
+void swap_add(struct page_info *page)
+{
+    // set second chance value
+    page->pp_swap_node.r = 1; 
+    list_push_left(&lru_pages, &page->pp_swap_node.n);
+    cprintf("add: page=%p, pp_ref=%d, content=%p\n", page, page->pp_ref, *((int*)page2kva(page)));
+}
+
+void swap_print_lru()
+{
+    cprintf("----------\nLRU pages\n\n");
+    // cprintf("%p, prev=%p, next=%p\n", &lru_pages,lru_pages.prev, lru_pages.next);
+    struct list *node;
+    int i = 0;
+    list_foreach(&lru_pages, node) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+
+        cprintf("%d: swap_node.r=%d, page=%p, pp_ref=%d, content=%p\n", i, page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)));
+        // cprintf("node=%p, prev=%p, next=%p\n", node, node->prev, node->next);
+        i++;
+    }
+    cprintf("\n----------\n");
+}
+
+/**
+ * Get LRU page with second chance / CLOCK algorithm.
+ * Iterate over lru_pages, advancing head of list if r=1.
+ * If r=0, return page and remove from lru_pages.
+ */
+struct page_info *swap_clock()
+{
+    struct page_info *page;
+    while(1) {
+        page = GET_PAGE_FROM_SWAP_NODE_N(lru_pages.next);
+        if(page->pp_swap_node.r == 0) {
+            list_pop_left(&lru_pages);
+            return page;
+        }
+        page->pp_swap_node.r = 0;
+
+        // advance head of list
+        list_advance_head(&lru_pages);
+    }
+    return NULL;
+}
+
+/**
+ * Update lru_pages according to whether pages were accessed by the processor.
+ * Iterate over all page_infos in lru_pages. 
+ * For every page iterate over all rmap elements.
+ * - check if PTE has PAGE_ACCESSED flag -> append to lru_pages, reset second chance
+ * - reset PAGE_ACCESSED flag
+ */
+void swapd_update_lru()
+{
+    struct list *node, *next, *node_rmap;
+    // Save the last element of lru_pages. We're going to append to it on the fly.
+    struct list *last = lru_pages.prev;
+
+    list_foreach_safe(&lru_pages, node, next) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+        
+        int updated = 0;
+        // iterate over every element in the rmap
+        list_foreach(&page->pp_rmap->elems, node_rmap) {
+            struct rmap_elem *rmap_elem = container_of(node_rmap, struct rmap_elem, rmap_node);
+            
+            cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, task_pid=%d, PTE=%p, accessed=%d\n", 
+            page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), 
+            rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
+            
+            // if page was accessed -> append to lru_pages, reset second chance
+            if(((*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED) && !updated) {
+                page->pp_swap_node.r = 1;
+                list_remove(node);
+                list_push_left(&lru_pages, node);
+                updated = 1;
+            }
+
+            // reset accessed flag
+            *rmap_elem->entry &= ~(PAGE_ACCESSED);
+        }
+        // exit loop once we iterated over every item
+        if(node == last) {
+            break;
+        }
+    }
+}
+
+void swapd()
+{
+    while(list_is_empty(&lru_pages)) {
+        ksched_yield();
+    }
+    ksched_yield();
+
+    struct list *node;
+    int i = 0;
+    list_foreach(&lru_pages, node) {
+        struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+
+        if(i==3) {
+            page->pp_swap_node.r = 0;
+            break;
+        }
+        i++;
+    }
+
+    swap_print_lru();
+    // swap_clock();
+    // swap_print_lru();
+
+    swapd_update_lru();
+    swap_print_lru();
+
+    ksched_yield();
+
+    swapd_update_lru();
+    swap_print_lru();
+}

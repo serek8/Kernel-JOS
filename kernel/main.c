@@ -77,6 +77,8 @@ void kmain(struct boot_info *boot_info)
 	/* Set up the tasks. */
 	task_init();
 	sched_init();
+
+	// Set up swapping
 	swap_init();
 
 	lab3_check_populate_protect(kernel_pml4);
@@ -97,7 +99,7 @@ void kmain(struct boot_info *boot_info)
 
 	
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// task_kernel_create(kernel_task_example);
+	// task_kernel_create(swapd);
 	// cpu_set_t mask;
 	// CPU_ZERO(mask);
 	// CPU_SET(mask, 1);

@@ -53,3 +53,4 @@ void list_push(struct list *head, struct list *node);
 void list_push_left(struct list *head, struct list *node);
 struct list *list_pop(struct list *head);
 struct list *list_pop_left(struct list *head);
+void list_advance_head(struct list *head);
