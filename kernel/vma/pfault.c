@@ -28,7 +28,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	page != NULL &&
 	(*entry & PAGE_WRITE) != (PAGE_WRITE) && 
 	(vma->vm_flags & VM_WRITE) == (VM_WRITE)) {
-		// cprintf("pfault: COW!\n");
+		cprintf("pfault: COW!\n");
 
 		if(page->pp_ref == 1) {
 			*entry |= PAGE_WRITE;
@@ -42,6 +42,10 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 				memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
 			}
 			++new_page->pp_ref;
+			new_page->pp_rmap = kmalloc(sizeof(struct rmap));
+			rmap_init(new_page->pp_rmap);
+			rmap_unlink_task_rmap_elem_by_rmap_obj(&task->task_rmap_elems, page->pp_rmap);
+			// rmap_add_mapping
 
 			*entry = PAGE_ADDR(page2pa(new_page)) | (*entry & PAGE_MASK);
 			*entry |= PAGE_WRITE;

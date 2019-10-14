@@ -36,6 +36,7 @@ int swap_in(physaddr_t pte); // returns 0 on success
 void rmap_init(struct rmap *map);
 void rmap_free(struct rmap *map);
 void rmap_free_task_rmap_elems(struct list *task_rmap_elems);
+void rmap_unlink_task_rmap_elem_by_rmap_obj(struct list *task_rmap_elems, struct rmap *rmap_obj);
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task);
 
 void swapd();

@@ -59,6 +59,31 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
     }
 }
 
+/* Used by COW to remove the rmap element from the task list. */
+/* *map */
+void rmap_unlink_task_rmap_elem_by_rmap_obj(struct list *task_rmap_elems, struct rmap *rmap_obj){
+    if(task_rmap_elems == NULL){
+        panic("shouldnt end up here- rmap_free_task_rmap_elems\n");
+        return;
+    }
+    struct rmap_elem *elem;
+	struct list *node = NULL, *next = NULL;
+    cprintf("rmap_unlink_task_rmap_elem_by_rmap_obj:\n");
+    // cprintf("sumup_task\n; * * * * * * * * * \n");
+    // elem = container_of(task_rmap_elems->next, struct rmap_elem, task_node);
+    // print_task_rmap_elems(elem->p_task);
+    // cprintf("end sumup_task\n; * * * * * * * * * \n");
+	list_foreach_safe(task_rmap_elems, node, next) {
+		elem = container_of(node, struct rmap_elem, task_node);
+        if(elem->p_rmap == rmap_obj){
+            cprintf("  > unlink elem from task: &rmap=%p, elem->ref=%d, &pte=%p, *pte=%p, page=%p, task_pid=%d\n", elem->p_rmap, elem->p_rmap->pp_ref, elem->entry, *elem->entry, pa2page(PAGE_ADDR((*elem->entry))), elem->p_task->task_pid);
+            list_remove(&elem->task_node);
+            list_remove(&elem->rmap_node);
+            kfree(elem);
+        }
+    }
+}
+
 void rmap_elem_init(struct rmap_elem *elem){
     list_init(&elem->rmap_node);
     list_init(&elem->task_node);
