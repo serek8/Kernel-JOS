@@ -9,8 +9,9 @@
 #include <string.h>
 #include <error.h>
 
-#define SWAP_DISC_SIZE  2*PAGE_SIZE
+#define SWAP_DISC_SIZE  (1 * MB) // todo: lab7 we need to extend to 128M
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
+
 
 struct list lru_pages;
 // TODO: lock
@@ -20,10 +21,13 @@ void rmap_init(struct rmap *map){
     map->pp_ref = 0; // will update value on swap operation
 }
 
-// todo: Could not allocate page of order 9. Out of memory
-struct swap_disk_mapping_t swap_disk_mapping[SWAP_DISC_INDEX_NUM]; // TODO: change 128 to real memsize
+struct swap_disk_mapping_t *swap_disk_mapping; // TODO: change 128 to real memsize
 
 void swap_init(){
+    cprintf("Initializing swap module. Available swap pages: %d. TODO: support 128MB and huge pages\n", SWAP_DISC_INDEX_NUM);
+    // cprintf("SIZE=%d, sizeof=%d\n", SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t), sizeof(struct swap_disk_mapping_t));
+    assert(SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t) <= PAGE_SIZE);
+    swap_disk_mapping = page2kva(page_alloc(ALLOC_ZERO));
     list_init(&lru_pages);
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         swap_disk_mapping[i].swap_rmap = NULL;
@@ -130,7 +134,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         *elem->entry &= (~PAGE_PRESENT);
         *elem->entry |= (PAGE_SWAP);
         *elem->entry &= (PAGE_MASK);
-        *elem->entry |= PAGE_ADDR(swap_index);
+        *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
         // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
@@ -184,7 +188,7 @@ int swap_out(struct page_info *page){
 
 
 int swap_in(physaddr_t pte){
-    uint64_t swap_index = PAGE_ADDR(pte);
+    uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
     cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
         cprintf("the PTE is already swapped in\n");
@@ -233,8 +237,8 @@ void disc_ahci_read(struct page_info *page, uint64_t addr){
     assert(disk_read(disk, buf, size, addr)  == -EAGAIN);
     while (!disk_poll(disk));
     int64_t disk_read_res = disk_read(disk, buf, size, addr);
-    cprintf("disk_read_res=%d\n", disk_read_res);
-    cprintf("read=%c, %s\n", buf);
+    // cprintf("disk_read_res=%d\n", disk_read_res);
+    // cprintf("read=%c, %s\n", buf);
 }
 
 
@@ -245,10 +249,10 @@ void rmap_free(struct rmap *map){
     }
     struct rmap_elem *elem;
     struct list *node = NULL, *next = NULL;
-    cprintf("rmap_free: removing all rmap elems for the page_info\n");
+    // cprintf("rmap_free: removing all rmap elems for the page_info\n");
 	list_foreach_safe(&map->elems, node, next) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        cprintf("  > removing elem->p_rmap=%p, &pte=%p, pte=(%p)\n", elem->p_rmap, elem->entry, *elem->entry);
+        // cprintf("  > removing elem->p_rmap=%p, &pte=%p, pte=(%p)\n", elem->p_rmap, elem->entry, *elem->entry);
         list_remove(&elem->task_node);
         list_remove(&elem->rmap_node);
         kfree(elem);

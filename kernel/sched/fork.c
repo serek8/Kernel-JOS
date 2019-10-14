@@ -41,8 +41,8 @@ struct page_info *copy_ptbl(physaddr_t *entry, struct task *clone_task)
 			if(clone_task && clone_task->task_type == TASK_TYPE_USER){ 
 				struct rmap *map = NULL;
 				if(orig_ptbl->entries[i] & PAGE_SWAP){
-					cprintf("fork found swap pte, offset=0x%x\n", PAGE_ADDR(clone_ptbl->entries[i]));
-					map = get_swap_disk_mapping_by_id(PAGE_ADDR(clone_ptbl->entries[i]))->swap_rmap;
+					cprintf("fork found swap pte, offset=0x%x\n", PAGE_ADDR_TO_SWAP_INDEX(clone_ptbl->entries[i]));
+					map = get_swap_disk_mapping_by_id(PAGE_ADDR_TO_SWAP_INDEX(clone_ptbl->entries[i]))->swap_rmap;
 					++map->pp_ref; // increment pp_ref because swap_disk_mapping is only updated on swap_out and swap_in
 				} else{
 					map = entry_page->pp_rmap;

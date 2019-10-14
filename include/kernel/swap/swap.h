@@ -6,6 +6,7 @@
 #include <x86-64/memory.h>
 #include <assert.h>
 
+#define PAGE_ADDR_TO_SWAP_INDEX(x) (PAGE_ADDR(x) >> PAGE_TABLE_SHIFT)
 #define MB 1024*1024
 
 struct rmap {
@@ -25,6 +26,8 @@ struct rmap_elem {
 struct swap_disk_mapping_t{
     struct rmap *swap_rmap;    
     uint8_t is_taken;
+    // done add anymore fields because 128M/PAGE_SIZE * this_struct cant be bigger than PAGE_SIZE.
+    // It is hard to maintain bigger array(swap_disk_mapping).
 };
 
 struct page_info;
