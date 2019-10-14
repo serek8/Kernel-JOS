@@ -8,30 +8,33 @@ int main(int argc, char **argv)
 	printf("[PID %5u] Hello in swap test!\n", pid);
 
 	char *addr = (void *)0x1000000;
-	char *ret;
-	ret = mmap(addr, PAGE_SIZE, PROT_READ, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-
-	printf("### test *0x1000000 = %p\n", *addr);
+	char *ret=  mmap(addr, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	test_swap_out(addr);
-	printf("### test *0x1000000 = %p\n", *addr);
-	test_swap_in(addr);
-	printf("### test *0x1000000 = %p\n", *addr);
+	// *addr = 0x61;
+	// printf("### test *0x1000000 = %p\n", *addr);
+	// test_swap_out(addr);
+	// printf("### test *0x1000000 = %p\n", *addr);
+	// test_swap_in(addr);
+	// printf("### test *0x1000000 = %p\n", *addr);
 	// printf("will fork\n");
-	// int child = fork();
-	// if(child == 0){
-	// 	printf("[PID %5u] I am the child!\n", getpid());
-	// 	printf("*0x1000000 = %p\n", *addr);
-	// 	// test_swap_out(addr);
-	// } else{
-	// 	sched_yield();
-	// 	sched_yield();
-	// 	sched_yield();
-	// 	// printf("[PID %5u] I am the parent!\n", getpid());
-	// 	// test_swap_out(addr);
-	// }
+	int child = fork();
+	if(child == 0){
+		printf("[PID %5u] I am the child!\n", getpid());
+		
+		printf("*0x1000000 = %p\n", *addr);
+		test_swap_out(addr);
+	} else{
+		// sched_yield();
+		// sched_yield();
+		// sched_yield();
+		printf("[PID %5u] I am the parent!\n", getpid());
+		test_swap_out(addr);
+		printf("*0x1000000 = %p\n", *addr);
+		// test_swap_out(addr);
+	}
 
 
-	printf("[PID %5u] I am done! Good bye!\n", pid);
+	printf("[PID %5u] I am done! Good bye!\n", getpid());
 
 	return 0;
 }

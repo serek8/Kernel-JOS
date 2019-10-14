@@ -296,7 +296,7 @@ void page_decref(struct page_info *pp)
 	#endif
 
 	if(pp->pp_ref == 0) {
-		panic("Trying to decrement ref when already 0.\n");
+		panic("Trying to decrement ref when already 0. page_info=%p, rmap=%p\n", pp, pp->pp_rmap);
 	}
 
 	atomic_dec(&pp->pp_ref);

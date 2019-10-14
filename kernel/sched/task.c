@@ -457,7 +457,7 @@ void task_free(struct task *task)
 	if (task == cur_task) {
 		load_pml4((struct page_table *)PADDR(kernel_pml4));
 	}
-
+	rmap_free_task_rmap_elems(&task->task_rmap_elems);
 	
 
 	#ifndef USE_BIG_KERNEL_LOCK
@@ -500,7 +500,6 @@ void task_destroy(struct task *task)
 	int ppid = task->task_ppid;
 
 	task->task_status = TASK_DYING;
-	rmap_free_task_rmap_elems(&task->task_rmap_elems);
 	
 	// check if child process -> becomes zombie if parent is still running
 	if(ppid != 0) {
