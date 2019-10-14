@@ -39,8 +39,17 @@ struct page_info *copy_ptbl(physaddr_t *entry, struct task *clone_task)
 
 			// add reverse mapping (support only user tasks)
 			if(clone_task && clone_task->task_type == TASK_TYPE_USER){ 
+				struct rmap *map = NULL;
+				if(orig_ptbl->entries[i] & PAGE_SWAP){
+					cprintf("fork found swap pte, offset=0x%x\n", PAGE_ADDR(clone_ptbl->entries[i]));
+					map = get_swap_disk_mapping_by_id(PAGE_ADDR(clone_ptbl->entries[i]))->swap_rmap;
+					++map->pp_ref; // increment pp_ref because swap_disk_mapping is only updated on swap_out and swap_in
+				} else{
+					map = entry_page->pp_rmap;
+				}
+				rmap_add_mapping(map, &clone_ptbl->entries[i], clone_task);
 				// cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", clone_task);
-				rmap_add_mapping(entry_page->pp_rmap, &clone_ptbl->entries[i], clone_task);
+				
 			}
 		}
 	}

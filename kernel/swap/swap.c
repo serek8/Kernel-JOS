@@ -32,6 +32,9 @@ void swap_init(){
     }
 }
 
+struct swap_disk_mapping_t *get_swap_disk_mapping_by_id(int i){
+    return &swap_disk_mapping[i];
+}
 
 void print_task_rmap_elems(struct task *taskx);
 int find_free_swap_index();
@@ -68,7 +71,7 @@ void rmap_unlink_task_rmap_elem_by_rmap_obj(struct list *task_rmap_elems, struct
 	list_foreach_safe(task_rmap_elems, node, next) {
 		elem = container_of(node, struct rmap_elem, task_node);
         if(elem->p_rmap == rmap_obj){
-            cprintf("  > unlink elem from task: &rmap=%p, elem->ref=%d, &pte=%p, *pte=%p, page=%p, task_pid=%d\n", elem->p_rmap, elem->p_rmap->pp_ref, elem->entry, *elem->entry, pa2page(PAGE_ADDR((*elem->entry))), elem->p_task->task_pid);
+            cprintf("  > unlink elem from task: &rmap=%p, elem->ref=%d, &pte=%p, *pte=%p, page=%p, PID=%d\n", elem->p_rmap, elem->p_rmap->pp_ref, elem->entry, *elem->entry, pa2page(PAGE_ADDR((*elem->entry))), elem->p_task->task_pid);
             list_remove(&elem->task_node);
             list_remove(&elem->rmap_node);
             kfree(elem);
@@ -86,7 +89,7 @@ void rmap_elem_init(struct rmap_elem *elem){
 /* address to 'pte' is in kernel address space */
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
     assert((uint64_t)pte > KERNEL_VMA); // make sure PTE is in kernel address space
-    cprintf("rmap_add_mapping: &rmap=%p, &pte=%p, *pte=%p, page=%p, p_task_pid=%d, p_task=%p\n", map, pte, *pte, pa2page(PAGE_ADDR((*pte))), p_task->task_pid, p_task);
+    cprintf("rmap_add_mapping: &rmap=%p, &pte=%p, *pte=%p, page=%p, PID=%d\n", map, pte, *pte, pa2page(PAGE_ADDR((*pte))), p_task->task_pid);
     struct rmap_elem *map_elem = kmalloc(sizeof(struct rmap_elem));
     rmap_elem_init(map_elem);
     list_push_left(&map->elems, &map_elem->rmap_node);
@@ -148,6 +151,8 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
         cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
+
+
 void stest();
 
 int swap_out(struct page_info *page){
