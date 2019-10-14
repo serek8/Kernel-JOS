@@ -197,7 +197,13 @@ unsigned sys_getcpuid(){
 
 int sys_swap_out(void *addr){
 	physaddr_t *entry_store;
-	return swap_out(page_lookup(cur_task->task_pml4, addr, &entry_store));
+	struct page_info *p = page_lookup(cur_task->task_pml4, addr, &entry_store);
+	if(*entry_store & PAGE_SWAP){
+		cprintf("Error! Tried to swap already swapped page!\n");
+		return -1;
+	}
+	cprintf("sys_swap_out, *entry=0x%x\n", *entry_store);
+	return swap_out(p);
 }
 
 int sys_swap_in(void *addr){

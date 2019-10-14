@@ -46,10 +46,6 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
 	struct list *node = NULL, *next = NULL;
 
     cprintf("rmap_free_task_rmap_elems:\n");
-    // cprintf("sumup_task\n; * * * * * * * * * \n");
-    // elem = container_of(task_rmap_elems->next, struct rmap_elem, task_node);
-    // print_task_rmap_elems(elem->p_task);
-    // cprintf("end sumup_task\n; * * * * * * * * * \n");
 	list_foreach_safe(task_rmap_elems, node, next) {
 		elem = container_of(node, struct rmap_elem, task_node);
         cprintf("  > removing: &rmap=%p, elem->ref=%d, &pte=%p, *pte=%p, page=%p, task_pid=%d\n", elem->p_rmap, elem->p_rmap->pp_ref, elem->entry, *elem->entry, pa2page(PAGE_ADDR((*elem->entry))), elem->p_task->task_pid);
@@ -69,10 +65,6 @@ void rmap_unlink_task_rmap_elem_by_rmap_obj(struct list *task_rmap_elems, struct
     struct rmap_elem *elem;
 	struct list *node = NULL, *next = NULL;
     cprintf("rmap_unlink_task_rmap_elem_by_rmap_obj:\n");
-    // cprintf("sumup_task\n; * * * * * * * * * \n");
-    // elem = container_of(task_rmap_elems->next, struct rmap_elem, task_node);
-    // print_task_rmap_elems(elem->p_task);
-    // cprintf("end sumup_task\n; * * * * * * * * * \n");
 	list_foreach_safe(task_rmap_elems, node, next) {
 		elem = container_of(node, struct rmap_elem, task_node);
         if(elem->p_rmap == rmap_obj){
@@ -107,10 +99,10 @@ void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
 void print_page_info_rmap_elems(struct page_info *page){
     struct rmap_elem *elem;
 	struct list *node;
-    // cprintf("page=%p, page->pp_rmap=%p\n", page, page->pp_rmap);
+    cprintf("page=%p, page->pp_rmap=%p\n", page, page->pp_rmap);
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        // cprintf("  > p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, page, elem->entry, *elem->entry);
+        cprintf("  > p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, page, elem->entry, *elem->entry);
     }
 }
 
@@ -120,7 +112,7 @@ void print_task_rmap_elems(struct task *taskx){
     cprintf("task_pid=%p, &task=%p\n", taskx->task_pid, taskx);
 	list_foreach(&taskx->task_rmap_elems, node) {
 		elem = container_of(node, struct rmap_elem, task_node);
-        // cprintf("  > &p_rmap=%p, &pte=%p, *pte=%p\n", elem->p_rmap, elem->entry, *elem->entry);
+        cprintf("  > &p_rmap=%p, &pte=%p, *pte=%p\n", elem->p_rmap, elem->entry, *elem->entry);
     }
 }
 void read_from_disk(void *addr, uint64_t index);
@@ -129,37 +121,42 @@ void write_to_disk(void *addr, uint64_t index);
 void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index){
     struct rmap_elem *elem;
 	struct list *node;
-    // cprintf("rmap_prepare_ptes_for_swap_out:\n");
+    cprintf("rmap_prepare_ptes_for_swap_out:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, page, elem->entry, *elem->entry);
+        cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
         *elem->entry &= (~PAGE_PRESENT);
         *elem->entry |= (PAGE_SWAP);
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(swap_index);
-        // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry);
+        cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 
 void rmap_prepare_ptes_for_swap_in(struct page_info *page){
     struct rmap_elem *elem;
 	struct list *node;
-    // cprintf("rmap_prepare_ptes_for_swap_in:\n");
+    cprintf("rmap_prepare_ptes_for_swap_in:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
 
-        // cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry);
+        cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
         *elem->entry &= (~PAGE_SWAP);
         *elem->entry |= (PAGE_PRESENT);
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(page2pa(page));
-        // cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p\n", elem->p_rmap, page, elem->entry, *elem->entry);
+        cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 void stest();
+
 int swap_out(struct page_info *page){
     if(!page){
         return -1;
+    }
+    if((uint64_t)page < KPAGES+(KERNEL_LMA/PAGE_SIZE)*sizeof(*page)){ 
+        // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
+        panic("Error! This page seems to be already swapped out!");
     }
     // stest();
     cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);

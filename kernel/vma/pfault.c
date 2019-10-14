@@ -42,15 +42,17 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 				memcpy(page2kva(new_page), page2kva(page), PAGE_SIZE);
 			}
 			++new_page->pp_ref;
+			*entry = PAGE_ADDR(page2pa(new_page)) | (*entry & PAGE_MASK);
+			*entry |= PAGE_WRITE;
+			tlb_invalidate(task->task_pml4, va);
+
 			new_page->pp_rmap = kmalloc(sizeof(struct rmap));
 			rmap_init(new_page->pp_rmap);
 			rmap_unlink_task_rmap_elem_by_rmap_obj(&task->task_rmap_elems, page->pp_rmap);
-			// rmap_add_mapping
+			rmap_add_mapping(new_page->pp_rmap, entry, task);
 
-			*entry = PAGE_ADDR(page2pa(new_page)) | (*entry & PAGE_MASK);
-			*entry |= PAGE_WRITE;
+
 			page_decref(page);
-			tlb_invalidate(task->task_pml4, va);
 		}
 		return 0;
 	}

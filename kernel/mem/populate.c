@@ -28,6 +28,7 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	page = page_alloc(ALLOC_ZERO);
 	page->pp_ref++;
 
+	*entry = info->flags | PAGE_ADDR(page2pa(page));
 	// add reverse mapping (support only user tasks)
 	if(info->taskx && info->taskx->task_type == TASK_TYPE_USER){ 
 		// cprintf("populate_pte: adding reverse mapping for info->taskx=%p\n", info->taskx);
@@ -35,8 +36,6 @@ static int populate_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		rmap_init(page->pp_rmap);
 		rmap_add_mapping(page->pp_rmap, entry, info->taskx);
 	}
-	// void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
-	*entry = info->flags | PAGE_ADDR(page2pa(page));
 	if(info->user_page) {
 		swap_add(page);
 	}
