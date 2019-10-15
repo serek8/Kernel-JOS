@@ -159,7 +159,8 @@ KERNEL_SRCFILES += \
 	kernel/dev/ata.c \
 	kernel/dev/disk.c \
 	kernel/dev/pci.c \
-	kernel/swap/swap.c
+	kernel/swap/swap.c \
+	kernel/mem/oom.c
 
 # LAB 7 binaries
 KERNEL_BINFILES += \

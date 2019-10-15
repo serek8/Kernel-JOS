@@ -2,6 +2,7 @@
 
 #include <kernel/mem.h>
 #include <kernel/vma.h>
+#include <atomic.h>
 
 int pos_abs(int n) { return n > 0 ? n : 0; }
 
@@ -30,6 +31,8 @@ int do_populate_vma(struct task *task, void *base, size_t size,
 	pt_flags += (vma->vm_flags & VM_WRITE) ? PAGE_WRITE : 0;
 	// cprintf("do_populate_vma: base=%p, size=%d, page_flags=%p, name=%s\n", base, size, pt_flags, vma->vm_name);
 	protect_region(task->task_pml4, base, size, pt_flags);
+	
+	atomic_add(&task->task_active_pages, size/PAGE_SIZE);
 	return 0;
 }
 

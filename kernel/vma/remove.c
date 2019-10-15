@@ -3,6 +3,7 @@
 
 #include <kernel/mem.h>
 #include <kernel/vma.h>
+#include <atomic.h>
 
 /* Removes the given VMA from the given task. */
 void remove_vma(struct task *task, struct vma *vma)
@@ -73,6 +74,7 @@ int do_unmap_vma(struct task *task, void *base, size_t size, struct vma *vma, //
 	page_lookup(task->task_pml4, base, &entry);
 	if(!(*entry & PAGE_DIRTY)) {
 		unmap_page_range(task->task_pml4, base, size);
+		atomic_sub(&task->task_active_pages, size/PAGE_SIZE);
 	}
 	return 0;
 }

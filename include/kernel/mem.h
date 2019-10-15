@@ -16,4 +16,5 @@
 #include <kernel/mem/tlb.h>
 #include <kernel/mem/user.h>
 #include <kernel/mem/walk.h>
+#include <kernel/mem/oom.h>
 
