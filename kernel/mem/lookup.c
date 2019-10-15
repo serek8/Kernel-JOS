@@ -38,6 +38,10 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		info->entry = entry;
 	}
+	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)) {
+		cprintf("lookup_pde swap bit detected\n");
+		info->entry = entry;
+	}
 
 	return 0;
 }

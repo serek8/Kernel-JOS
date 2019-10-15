@@ -9,7 +9,7 @@
 #include <string.h>
 #include <error.h>
 
-#define SWAP_DISC_SIZE  (1 * MB) // todo: lab7 we need to extend to 128M
+#define SWAP_DISC_SIZE  (128 * MB)
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
 
 
@@ -21,17 +21,17 @@ void rmap_init(struct rmap *map){
     map->pp_ref = 0; // will update value on swap operation
 }
 
-struct swap_disk_mapping_t *swap_disk_mapping; // TODO: change 128 to real memsize
+struct swap_disk_mapping_t *swap_disk_mapping;
 
 void swap_init(){
-    cprintf("Initializing swap module. Available swap pages: %d. TODO: support 128MB and huge pages\n", SWAP_DISC_INDEX_NUM);
-    // cprintf("SIZE=%d, sizeof=%d\n", SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t), sizeof(struct swap_disk_mapping_t));
-    assert(SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t) <= PAGE_SIZE);
-    swap_disk_mapping = page2kva(page_alloc(ALLOC_ZERO));
+    cprintf("Initializing swap module. Available swap space: %dMB (%d pages).\n", (SWAP_DISC_SIZE/MB), SWAP_DISC_INDEX_NUM);
+    assert(SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t) <= HPAGE_SIZE);
+    swap_disk_mapping = page2kva(page_alloc(ALLOC_ZERO | ALLOC_HUGE));
     list_init(&lru_pages);
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         swap_disk_mapping[i].swap_rmap = NULL;
         swap_disk_mapping[i].is_taken = 0;
+        swap_disk_mapping[i].pp_order = 0;
     }
 }
 
@@ -130,12 +130,13 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
     // cprintf("rmap_prepare_ptes_for_swap_out:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
         *elem->entry &= (~PAGE_PRESENT);
         *elem->entry |= (PAGE_SWAP);
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
-        // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("TODO FLUSH\n");
     }
 }
 
@@ -152,11 +153,11 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(page2pa(page));
         // cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("TODO FLUSH\n");
     }
 }
 
 
-void stest();
 void disc_ahci_write(struct page_info *page, uint64_t addr);
 void disc_ahci_read(struct page_info *page, uint64_t addr);
 
@@ -168,16 +169,27 @@ int swap_out(struct page_info *page){
         // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
         panic("Error! This page seems to be already swapped out!");
     }
-    // stest();
     cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);
-    int free_index = find_free_swap_index();
+    int free_index = find_free_swap_index(page->pp_order);
     if(free_index == -1) panic("no more free swap pages!\n");
+    int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
     struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[free_index];
     page->pp_rmap->pp_ref = page->pp_ref;
     swap_index_elem->swap_rmap = page->pp_rmap;
     swap_index_elem->is_taken = 1;
-    disc_ahci_write(page, free_index * PAGE_SIZE);
+    swap_index_elem->pp_order = page->pp_order;
     rmap_prepare_ptes_for_swap_out(page, free_index);
+    disc_ahci_write(page, free_index * PAGE_SIZE);
+
+    // huge pages
+    for(int i=1; i<iterations; i++){
+        struct page_info *page_i = page+i;
+        swap_index_elem = &swap_disk_mapping[free_index + i];
+        swap_index_elem->swap_rmap = NULL;
+        swap_index_elem->is_taken = 1;
+        swap_index_elem->pp_order = 0x2; // error value
+        disc_ahci_write(page_i, (free_index + i) * PAGE_SIZE);
+    }
 
     // clear page_info struct
     page->pp_rmap = NULL;
@@ -195,21 +207,44 @@ int swap_in(physaddr_t pte){
         return -1;
     }
     struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[swap_index];
-    struct page_info *page = page_alloc(BUDDY_4K_PAGE);
+    int is_huge_page = swap_index_elem->pp_order == BUDDY_2M_PAGE;
+    struct page_info *page = page_alloc(is_huge_page ? ALLOC_HUGE : 0);
     page->pp_rmap = swap_index_elem->swap_rmap;
     page->pp_ref = swap_index_elem->swap_rmap->pp_ref;
-    // todo: pp_order?
     swap_index_elem->swap_rmap = NULL;
     swap_index_elem->is_taken = 0;
+    rmap_prepare_ptes_for_swap_in(page); // todo: lab7 flush
     disc_ahci_read(page, swap_index * PAGE_SIZE);
-    rmap_prepare_ptes_for_swap_in(page);
+    int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
+
+    // huge pages
+    for(int i=1; i<iterations; i++){
+        struct page_info *page_i = page+i;
+        swap_index_elem = &swap_disk_mapping[swap_index + i];
+        swap_index_elem->swap_rmap = NULL;
+        swap_index_elem->is_taken = 0;
+        swap_index_elem->pp_order = 0;
+        disc_ahci_read(page_i, (swap_index + i) * PAGE_SIZE);
+    }
     cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
     return 0;
 }
 
-int find_free_swap_index(){
+int is_consecutive_512_indexes_free(int i){
+    for(; i<512; i++){
+        if(swap_disk_mapping[i].is_taken == 1 || i == SWAP_DISC_INDEX_NUM){
+            return 0;
+        }
+    }
+    return 1;
+}
+
+int find_free_swap_index(int order){
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         if(swap_disk_mapping[i].is_taken == 0){
+            if(order == BUDDY_2M_PAGE && !is_consecutive_512_indexes_free(i)){
+                continue;
+            }
             return i;
         }
     }
@@ -225,7 +260,7 @@ void disc_ahci_write(struct page_info *page, uint64_t addr){
     assert(disk_write(disk, buf, size, addr) == -EAGAIN);
     while (!disk_poll(disk));
     int64_t disk_write_res = disk_write(disk, buf, size, addr);
-    cprintf("disk_write_res=%d\n", disk_write_res);
+    // cprintf("disk_write_res=%d\n", disk_write_res);
 
 }
 

@@ -1,7 +1,6 @@
 #include <lib.h>
 
-
-// Maultiple swaps
+// // Big pages swaps
 int main(int argc, char **argv)
 {
 	pid_t pid = getpid();
@@ -10,20 +9,44 @@ int main(int argc, char **argv)
 	printf("[PID %5u] Hello in swap test!\n", pid);
 
 	char *addr = (void *)0x1000000;
-	char *addr2 = (void *)0x1001000;
-	mmap(addr, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
-	mmap(addr2, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+	char *addr2 = (void *)0x1010000;
+	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
+	// mmap(addr2, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	*addr = 0x51;
-	*addr2 = 0x52;
+	// *addr2 = 0x52;
 	test_swap_out(addr); 
-	test_swap_out(addr2);
+	// test_swap_out(addr2);
 	printf("*0x1000000 = %p\n", *addr);
-	printf("*0x1001000 = %p\n", *addr2);
+	// printf("*0x1001000 = %p\n", *addr2);
 
 	printf("[PID %5u] I am done! Good bye!\n", getpid());
 
 	return 0;
 }
+
+// Maultiple swaps
+// int main(int argc, char **argv)
+// {
+// 	pid_t pid = getpid();
+// 	int i;
+
+// 	printf("[PID %5u] Hello in swap test!\n", pid);
+
+// 	char *addr = (void *)0x1000000;
+// 	char *addr2 = (void *)0x1001000;
+// 	mmap(addr, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+// 	mmap(addr2, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+// 	*addr = 0x51;
+// 	*addr2 = 0x52;
+// 	test_swap_out(addr); 
+// 	test_swap_out(addr2);
+// 	printf("*0x1000000 = %p\n", *addr);
+// 	printf("*0x1001000 = %p\n", *addr2);
+
+// 	printf("[PID %5u] I am done! Good bye!\n", getpid());
+
+// 	return 0;
+// }
 
 
 // COW
