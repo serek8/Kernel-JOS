@@ -3,6 +3,7 @@
 #include <paging.h>
 
 #include <kernel/mem.h>
+#include <kernel/sched/task.h>
 
 /* Allocates a page table if none is present for the given entry.
  * If there is already something present in the PTE, then this function simply
@@ -107,7 +108,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	flags &= ~(PAGE_DIRTY);
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++){
 		// check if all entries are present
-		if(!(pt->entries[i] & PAGE_PRESENT)){
+		if(!(pt->entries[i] & PAGE_PRESENT)){ // it also eliminates PAGE_SWAP
 			return 0;
 		}
 		uint64_t entry_flags = pt->entries[i] & PAGE_MASK;
@@ -136,9 +137,15 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
+		if(page->pp_ref == 1) rmap_free(page->pp_rmap); // toda lab7: lock + pp_ref without locking
 		page_decref(pte_page);
 		tlb_invalidate(info->pml4, (void*)(start_addr + PAGE_SIZE * i));
 	}
+	// add swapping for huge page
+	page->pp_rmap = kmalloc(sizeof(struct rmap));
+	rmap_init(page->pp_rmap);
+	rmap_add_mapping(page->pp_rmap, entry, cur_task); //info->taskx
+
 	page_decref(pt_page);
 	return 0;
 }

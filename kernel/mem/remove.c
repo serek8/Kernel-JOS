@@ -20,6 +20,7 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	/* LAB 2: your code here. */
 	if(*entry & PAGE_PRESENT){
 		struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
+		if(page->pp_ref == 1) rmap_free(page->pp_rmap); // toda lab7: lock + pp_ref without locking
 		page_decref(page);
 		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);

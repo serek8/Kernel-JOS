@@ -10,7 +10,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	/* LAB 4: your code here. */
 	struct vma *vma = find_vma(NULL, NULL, &task->task_rb, va);
 
-	cprintf("pfault: vma=%p, vm_base=%p\n", vma, vma->vm_base);
+	// cprintf("pfault: vma=%p, va=%p vm_base=%p\n", vma, va, vma->vm_base);
 
 	if(!(vma->vm_base <= va && vma->vm_end >= va) || vma->vm_flags == 0) {
 		return -1;
