@@ -18,10 +18,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 
 	physaddr_t *entry;
 	struct page_info *page = page_lookup(task->task_pml4, va, &entry);
-	if(page && *entry & PAGE_SWAP) { // TODO lab7: what if it was swapped out but need to COW
-		cprintf("Page fault handler found swapped-out entry.\n");
-		swap_in(*entry);
-	}
+	
 
 	// COW
 	if(entry != 0x0 && 
@@ -29,6 +26,10 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	(*entry & PAGE_WRITE) != (PAGE_WRITE) && 
 	(vma->vm_flags & VM_WRITE) == (VM_WRITE)) {
 		cprintf("pfault: COW!\n");
+
+		if(page && *entry & PAGE_SWAP) {
+			swap_in(*entry);
+		}
 
 		if(page->pp_ref == 1) {
 			*entry |= PAGE_WRITE;
@@ -54,6 +55,11 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 
 			page_decref(page);
 		}
+		return 0;
+	}
+
+	if(page && *entry & PAGE_SWAP) {
+		swap_in(*entry);
 		return 0;
 	}
 
