@@ -151,6 +151,9 @@ struct task *task_clone(struct task *task)
 	clone->task_frame = task->task_frame;
 	clone->task_frame.rax = 0;
 
+	// copy number of used pages
+	clone->task_active_pages = task->task_active_pages;
+
 	list_init(&clone->task_rmap_elems);	
 
 	// Copy page tables
