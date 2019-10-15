@@ -139,20 +139,20 @@ void mem_init(struct boot_info *boot_info)
 	write_msr(MSR_EFER, read_msr(MSR_EFER) | MSR_EFER_NXE);
 
 	/* Check the kernel PML4. */
-	lab2_check_pml4();
+	// lab2_check_pml4();
 
 	/* Load the kernel PML4. */
 	write_cr3(PADDR(((void *)kernel_pml4)));
 	
 	/* Check the paging functions. */
-	lab2_check_paging();
+	// lab2_check_paging();
 
 	/* Add the rest of the physical memory to the buddy allocator. */
 	cprintf("Adding the rest of the physical memory to the buddy allocator\n");
 	page_init_ext(boot_info);
 
 	/* Check the buddy allocator. */
-	lab2_check_buddy(boot_info);
+	// lab2_check_buddy(boot_info);
 }
 
 void mem_init_mp(void)
