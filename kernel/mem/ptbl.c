@@ -65,18 +65,18 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 			struct page_info *p4k = page_alloc(BUDDY_4K_PAGE);
 			p4k->pp_ref += 1;
-			swap_add(p4k);
+			swap_add(p4k); // add to LRU list
 			
 			pt->entries[i] = flags | PAGE_ADDR(page2pa(p4k));
 			memcpy(page2kva(p4k), page2kva(huge_page)+PAGE_SIZE*i, PAGE_SIZE);
 		}
 
-		swap_remove(huge_page);
+		swap_remove(huge_page); // remove from LRU list
 		page_decref(huge_page);
 		return 0;
 	}
 	panic("ptbl_split: else?\n");
-	
+
 	return 0;
 }
 
@@ -140,8 +140,8 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
-		if(page->pp_ref == 1) rmap_free(page->pp_rmap); // toda lab7: lock + pp_ref without locking
-		swap_remove(pte_page);
+		swap_remove(pte_page); // remove from LRU list
+		// at this point we know that pages are present
 		page_decref(pte_page);
 		tlb_invalidate(info->pml4, (void*)(start_addr + PAGE_SIZE * i));
 	}
@@ -149,7 +149,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	page->pp_rmap = kmalloc(sizeof(struct rmap));
 	rmap_init(page->pp_rmap);
 	rmap_add_mapping(page->pp_rmap, entry, cur_task); //info->taskx
-	swap_add(page);
+	swap_add(page); // add to LRU list
 
 	page_decref(pt_page);
 	return 0;

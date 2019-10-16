@@ -273,7 +273,7 @@ void disc_ahci_read(struct page_info *page, uint64_t addr){
     while (!disk_poll(disk));
     int64_t disk_read_res = disk_read(disk, buf, size, addr);
     // cprintf("disk_read_res=%d\n", disk_read_res);
-    // cprintf("read=%c, %s\n", buf);
+    // cprintf("read=%d\n", *(uint64_t*)buf);
 }
 
 
@@ -293,6 +293,29 @@ void rmap_free(struct rmap *map){
         kfree(elem);
     }
     kfree(map);
+}
+
+
+void rmap_decref_swapped_out(physaddr_t pte){
+    uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
+    cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
+    if(!(pte & PAGE_SWAP)) {
+        panic("the PTE is already swapped in\n");
+        return;
+    }
+    struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[swap_index];
+    int iterations = swap_index_elem->pp_order == BUDDY_4K_PAGE ? 1 : 512;
+    swap_index_elem->swap_rmap->pp_ref--;
+    if(swap_index_elem->swap_rmap->pp_ref == 0){
+        cprintf("remove whole HPAGE from the disk");
+        rmap_free(swap_index_elem->swap_rmap);
+    }
+    for(int i=0; i<iterations; i++){
+        swap_index_elem = &swap_disk_mapping[swap_index + i];
+        swap_index_elem->swap_rmap = NULL;
+        swap_index_elem->is_taken = 0;
+        swap_index_elem->pp_order = 0;
+    }
 }
 
 
