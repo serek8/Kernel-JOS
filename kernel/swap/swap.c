@@ -296,7 +296,7 @@ void rmap_free(struct rmap *map){
 }
 
 
-void rmap_free_swapped_out(physaddr_t pte){
+void rmap_decref_swapped_out(physaddr_t pte){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
     cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
@@ -305,7 +305,11 @@ void rmap_free_swapped_out(physaddr_t pte){
     }
     struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[swap_index];
     int iterations = swap_index_elem->pp_order == BUDDY_4K_PAGE ? 1 : 512;
-    rmap_free(swap_index_elem->swap_rmap);
+    swap_index_elem->swap_rmap->pp_ref--;
+    if(swap_index_elem->swap_rmap->pp_ref == 0){
+        cprintf("remove whole HPAGE from the disk");
+        rmap_free(swap_index_elem->swap_rmap);
+    }
     for(int i=0; i<iterations; i++){
         swap_index_elem = &swap_disk_mapping[swap_index + i];
         swap_index_elem->swap_rmap = NULL;

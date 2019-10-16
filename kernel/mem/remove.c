@@ -19,13 +19,12 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	if(*entry & PAGE_SWAP){
 		// swap_in(*entry); // todo lab7: optimalize by removing pages directly from the hard drive
-		rmap_free_swapped_out(*entry);
+		rmap_decref_swapped_out(*entry);
 		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
 	} 
 	else if(*entry & PAGE_PRESENT){
 		struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
-		if(page->pp_ref == 1) rmap_free(page->pp_rmap); // toda lab7: lock + pp_ref without locking
 		page_decref(page);
 		*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 		tlb_invalidate(info->pml4, (void*)base);
@@ -44,7 +43,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)){
 		if(info->size == HPAGE_SIZE) {
-			rmap_free_swapped_out(*entry); // removes directly from the disk
+			rmap_decref_swapped_out(*entry); // removes directly from the disk
 			*entry = 0; 
 			tlb_invalidate(info->pml4, (void*)base);
 		} else{
@@ -55,7 +54,6 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		// if we are deleting the complete huge page, remove it immediately
 		if(info->size == HPAGE_SIZE) {
 			struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
-			if(page->pp_ref == 1) rmap_free(page->pp_rmap); 
 			page_decref(page);
 			*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 			tlb_invalidate(info->pml4, (void*)base);

@@ -290,6 +290,7 @@ void page_free(struct page_info *pp)
  */
 void page_decref(struct page_info *pp)
 {
+	if(pp->pp_ref == 1 && pp->pp_rmap) rmap_free(pp->pp_rmap); 
 	#ifndef USE_BIG_KERNEL_LOCK
 	spin_lock(&buddy_lock);
 	#endif
