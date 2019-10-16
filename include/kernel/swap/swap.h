@@ -44,3 +44,4 @@ struct swap_disk_mapping_t *get_swap_disk_mapping_by_id(int i);
 
 void swapd();
 void swap_add(struct page_info *page);
+void swap_remove(struct page_info *page);
