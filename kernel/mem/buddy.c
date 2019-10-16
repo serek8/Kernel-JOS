@@ -218,7 +218,7 @@ struct page_info *page_alloc(int alloc_flags)
 	if(page->pp_ref != 0) {
 		panic("Tried to allocate page but ref count not 0. pa=%p", page2pa(page));
 	}
-
+	page->pp_rmap = NULL;
 	page->pp_free = 0;
 	list_remove(&page->pp_node);
 
@@ -290,7 +290,10 @@ void page_free(struct page_info *pp)
  */
 void page_decref(struct page_info *pp)
 {
-	if(pp->pp_ref == 1 && pp->pp_rmap) rmap_free(pp->pp_rmap); 
+	if(pp->pp_ref == 1 && pp->pp_rmap) {
+		// cprintf("page_decref last one for pp=%p\n", pp);
+		rmap_free(pp->pp_rmap); 
+	}
 	#ifndef USE_BIG_KERNEL_LOCK
 	spin_lock(&buddy_lock);
 	#endif

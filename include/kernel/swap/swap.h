@@ -5,6 +5,7 @@
 #include <paging.h>
 #include <x86-64/memory.h>
 #include <assert.h>
+#include <spinlock.h>
 
 #define PAGE_ADDR_TO_SWAP_INDEX(x) (PAGE_ADDR(x) >> PAGE_TABLE_SHIFT)
 #define MB (1024*1024)
@@ -12,8 +13,12 @@
 struct rmap {
     struct list elems;
     uint16_t pp_ref;
-    // lock
+    struct spinlock rmap_lock;
 };
+
+#define LOCK_RMAP(rmap) do { spin_lock(&rmap->rmap_lock); } while(0)
+#define UNLOCK_RMAP(rmap) do { spin_unlock(&rmap->rmap_lock); } while(0)
+#define TRY_LOCK_RMAP(rmap) (spin_trylock(&rmap->rmap_lock))
 
 struct rmap_elem {
     struct list rmap_node;

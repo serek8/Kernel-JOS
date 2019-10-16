@@ -203,7 +203,10 @@ int sys_swap_out(void *addr){
 		return -1;
 	}
 	cprintf("sys_swap_out, *entry=0x%x\n", *entry_store);
-	return swap_out(p);
+	swap_out(p);
+	p->pp_ref=1;
+	page_decref(p);
+	return 0;
 }
 
 int sys_swap_in(void *addr){

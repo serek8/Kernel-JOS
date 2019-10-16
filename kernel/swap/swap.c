@@ -17,6 +17,8 @@ struct list lru_pages;
 // TODO: lock
 
 void rmap_init(struct rmap *map){
+    // cprintf("rmap_init, rmap=%p\n", map);
+    spin_init(&map->rmap_lock, "rmap_lock");
     list_init(&map->elems);
     map->pp_ref = 0; // will update value on swap operation
 }
@@ -51,7 +53,7 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
     struct rmap_elem *elem;
 	struct list *node = NULL, *next = NULL;
 
-    // cprintf("rmap_free_task_rmap_elems:\n");
+    // cprintf("rmap_free_task_rmap_elems\n");
 	list_foreach_safe(task_rmap_elems, node, next) {
 		elem = container_of(node, struct rmap_elem, task_node);
         // cprintf("  > removing: &rmap=%p, elem->ref=%d, &pte=%p, *pte=%p, page=%p, task_pid=%d\n", elem->p_rmap, elem->p_rmap->pp_ref, elem->entry, *elem->entry, pa2page(PAGE_ADDR((*elem->entry))), elem->p_task->task_pid);
@@ -59,6 +61,7 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems){
         list_remove(&elem->rmap_node);
         kfree(elem);
     }
+    // cprintf("rmap_free_task_rmap_elems completed\n");
 }
 
 /* Used by COW to remove the rmap element from the task list. */
@@ -301,9 +304,10 @@ void rmap_free(struct rmap *map){
     if(map == NULL){
         return;
     }
+    // cprintf("rmap_free: (rmap=%p)\n", map);
+    while(!TRY_LOCK_RMAP(map)) cprintf("waiting map=%p\n", map);
     struct rmap_elem *elem;
     struct list *node = NULL, *next = NULL;
-    // cprintf("rmap_free: removing all rmap elems for the page_info\n");
 	list_foreach_safe(&map->elems, node, next) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
         // cprintf("  > removing elem->p_rmap=%p, &pte=%p, pte=(%p)\n", elem->p_rmap, elem->entry, *elem->entry);
@@ -311,13 +315,15 @@ void rmap_free(struct rmap *map){
         list_remove(&elem->rmap_node);
         kfree(elem);
     }
+    UNLOCK_RMAP(map);
     kfree(map);
+    // cprintf("rmap_free: (rmap=%p) completed\n", map);
 }
 
 
 void rmap_decref_swapped_out(physaddr_t pte){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
-    cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
+    // cprintf("rmap_decref_swapped_out *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
         panic("the PTE is already swapped in\n");
         return;
@@ -326,7 +332,7 @@ void rmap_decref_swapped_out(physaddr_t pte){
     int iterations = swap_index_elem->pp_order == BUDDY_4K_PAGE ? 1 : 512;
     swap_index_elem->swap_rmap->pp_ref--;
     if(swap_index_elem->swap_rmap->pp_ref == 0){
-        cprintf("remove whole HPAGE from the disk");
+        // cprintf("remove whole from the disk\n");
         rmap_free(swap_index_elem->swap_rmap);
     }
     for(int i=0; i<iterations; i++){
