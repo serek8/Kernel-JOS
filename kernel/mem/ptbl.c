@@ -111,6 +111,10 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		if(!(pt->entries[i] & PAGE_PRESENT)){ // it also eliminates PAGE_SWAP
 			return 0;
 		}
+		if(pa2page(PAGE_ADDR(pt->entries[i]))->pp_ref != 1){
+			// merge if only all pages has one owner. Otherwiese it'd be hard to handle spliting and swapping
+			return 0;
+		}
 		uint64_t entry_flags = pt->entries[i] & PAGE_MASK;
 		entry_flags &= ~(PAGE_ACCESSED);
 		entry_flags &= ~(PAGE_DIRTY);
