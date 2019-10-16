@@ -1,6 +1,28 @@
 #include <lib.h>
 
-// // Merge big pages and swap out
+
+// int main(int argc, char **argv)
+// {
+// 	pid_t pid = getpid();
+// 	int i;
+
+// 	printf("[PID %5u] Hello in swap test!\n", pid);
+
+// 	uint8_t *addr = (void *)0x1000000;
+// 	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+// 	int a=0;
+// 	for(int i=0; i<512; i++){
+// 		*(addr + i*PAGE_SIZE) = i+1;
+// 	}
+// 	test_swap_out(addr); 
+// 	// test_swap_out(addr); 
+// 	printf("*0x1000000 = %p\n", *addr);
+// 	printf("[PID %5u] I am done! Good bye!\n", getpid());
+
+// 	return 0;
+// }
+
+// Merge big pages and swap out
 int main(int argc, char **argv)
 {
 	pid_t pid = getpid();
@@ -12,7 +34,7 @@ int main(int argc, char **argv)
 	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	int a=0;
 	for(int i=0; i<512; i++){
-		*(addr + i*PAGE_SIZE) = i;
+		*(addr + i*PAGE_SIZE) = i+1;
 	}
 	test_swap_out(addr); 
 	// test_swap_out(addr); 

@@ -137,7 +137,8 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
-		if(page->pp_ref == 1) rmap_free(page->pp_rmap); // toda lab7: lock + pp_ref without locking
+		// at this point we know that pages are present
+		if(page->pp_ref == 1) rmap_free(pte_page->pp_rmap); // toda lab7: lock + pp_ref without locking
 		page_decref(pte_page);
 		tlb_invalidate(info->pml4, (void*)(start_addr + PAGE_SIZE * i));
 	}
