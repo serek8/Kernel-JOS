@@ -82,3 +82,13 @@ void list_advance_head(struct list *head)
         head->next = temp;
         head->next->prev = head;
 }
+
+int list_len(struct list *head) 
+{
+	struct list *node;
+	int count = 0;
+	list_foreach(head, node) {
+		count++;
+	}
+	return count;
+}

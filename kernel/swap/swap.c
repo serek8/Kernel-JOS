@@ -327,7 +327,13 @@ void swap_add(struct page_info *page)
     // set second chance value
     page->pp_swap_node.r = 1; 
     list_push_left(&lru_pages, &page->pp_swap_node.n);
-    // cprintf("add: page=%p, pp_ref=%d, content=%p\n", page, page->pp_ref, *((int*)page2kva(page)));
+    // cprintf("lru_added: page=%p, pp_ref=%d, order=%d, content=%p, lru_len=%d\n", page, page->pp_ref, page->pp_order, *((int*)page2kva(page)), list_len(&lru_pages));
+}
+
+void swap_remove(struct page_info *page) 
+{
+    list_remove(&page->pp_swap_node.n);
+    // cprintf("lru_removed: page=%p, pp_ref=%d, order=%d, content=%p, lru_len=%d\n", page, page->pp_ref, page->pp_order, *((int*)page2kva(page)), list_len(&lru_pages));
 }
 
 void swap_print_lru()
