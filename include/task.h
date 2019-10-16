@@ -111,5 +111,6 @@ struct task {
 	struct list task_rmap_elems; // when destorying the task we can kill all its rmap_elements
 
 	int task_active_pages;
+	int task_swapped_pages;
 };
 

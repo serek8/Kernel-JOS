@@ -163,6 +163,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_type = TASK_TYPE_USER;
 	task->task_status = TASK_RUNNABLE;
 	task->task_cpunum = this_cpu->cpu_id;
+	task->task_swapped_pages = 0;
 	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;

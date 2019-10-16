@@ -136,7 +136,6 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
         cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
-        cprintf("TODO FLUSH\n");
     }
 }
 
@@ -153,10 +152,28 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(page2pa(page));
         // cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
-        cprintf("TODO FLUSH\n");
     }
 }
 
+void swap_decref_task_swap_counter(struct page_info *page){
+    struct rmap_elem *elem;
+	struct list *node;
+    int inc = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
+	list_foreach(&page->pp_rmap->elems, node) {
+		elem = container_of(node, struct rmap_elem, rmap_node);
+        elem->p_task->task_swapped_pages -= inc;
+    }
+}
+
+void swap_incref_task_swap_counter(struct page_info *page){
+    struct rmap_elem *elem;
+	struct list *node;
+    int inc = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
+	list_foreach(&page->pp_rmap->elems, node) {
+		elem = container_of(node, struct rmap_elem, rmap_node);
+        elem->p_task->task_swapped_pages += inc;
+    }
+}
 
 void disc_ahci_write(struct page_info *page, uint64_t addr);
 void disc_ahci_read(struct page_info *page, uint64_t addr);
@@ -170,6 +187,7 @@ int swap_out(struct page_info *page){
         panic("Error! This page seems to be already swapped out!");
     }
     cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);
+    swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
     if(free_index == -1) panic("no more free swap pages!\n");
     int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
@@ -226,6 +244,7 @@ int swap_in(physaddr_t pte){
         swap_index_elem->pp_order = 0;
         disc_ahci_read(page_i, (swap_index + i) * PAGE_SIZE);
     }
+    swap_decref_task_swap_counter(page);
     cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
     return 0;
 }
