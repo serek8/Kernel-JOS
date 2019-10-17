@@ -16,7 +16,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 		return -1;
 	}
 
-	physaddr_t *entry;
+	physaddr_t *entry = NULL;
 	struct page_info *page = page_lookup(task->task_pml4, va, &entry);
 	
 
@@ -58,7 +58,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 		return 0;
 	}
 
-	if(page && *entry & PAGE_SWAP) {
+	if(!page && entry && ((*entry & PAGE_SWAP) == PAGE_SWAP)) {
 		swap_in(*entry);
 		return 0;
 	}
