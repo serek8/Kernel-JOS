@@ -200,7 +200,7 @@ int swap_out(struct page_info *page){
         // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
         panic("Error! This page seems to be already swapped out!");
     }
-    // cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);
+    cprintf("swap_out page->pp_rmap=%p, pp_ref=%d, order=%d\n", page->pp_rmap, page->pp_ref, page->pp_order);
     while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
@@ -235,7 +235,7 @@ int swap_out(struct page_info *page){
 
 int swap_in(physaddr_t pte){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
-    // cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
+    cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
         cprintf("the PTE is already swapped in\n");
         return -1;

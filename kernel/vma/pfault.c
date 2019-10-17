@@ -58,7 +58,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 		return 0;
 	}
 
-	if(page && *entry & PAGE_SWAP) {
+	if(!page && *entry & PAGE_SWAP) {
 		swap_in(*entry);
 		return 0;
 	}

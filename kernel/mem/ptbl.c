@@ -4,6 +4,7 @@
 
 #include <kernel/mem.h>
 #include <kernel/sched/task.h>
+#include <kernel/sched.h>
 
 /* Allocates a page table if none is present for the given entry.
  * If there is already something present in the PTE, then this function simply
@@ -47,12 +48,22 @@ int ptbl_alloc(physaddr_t *entry, uintptr_t base, uintptr_t end,
 int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
+	
+	if((*entry & PAGE_SWAP)){
+		cprintf("ptbl_split: entry & PAGE_SWAP\n");
+		// Swap in, because it's easier to operate on present pages
+		swap_in(*entry);
+	}
+
 	/* LAB 2: your code here. */
 	if((*entry & PAGE_PRESENT) == 0){ // page is not present
+		// cprintf("page is not present\n");
 		ptbl_alloc(entry, base, end, walker);
 		return 0;
 	} else if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) { // huge page
+		cprintf("ptbl_split: page huge page\n");
 		// pml4 is the first element in *_info struct
+		
 		struct page_table *pml4 = (struct page_table*)walker->udata;
 		struct page_info *huge_page = pa2page(PAGE_ADDR(*entry));
 		uint64_t flags = *entry & PAGE_MASK;
@@ -65,6 +76,10 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 			struct page_info *p4k = page_alloc(BUDDY_4K_PAGE);
 			p4k->pp_ref += 1;
+
+			p4k->pp_rmap = kmalloc(sizeof(struct rmap));
+			rmap_init(p4k->pp_rmap);
+			rmap_add_mapping(p4k->pp_rmap, &pt->entries[i], cur_task);
 			swap_add(p4k); // add to LRU list
 			
 			pt->entries[i] = flags | PAGE_ADDR(page2pa(p4k));
@@ -128,6 +143,7 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 	}
 
+	cprintf("merge\n");
 	// now pages in pt can be merged
 	// copy data to huge page
 	struct page_info *page = page_alloc(ALLOC_HUGE);
