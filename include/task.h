@@ -112,5 +112,6 @@ struct task {
 
 	int task_active_pages;
 	int task_swapped_pages;
+	struct spinlock swap_update_lock;
 };
 

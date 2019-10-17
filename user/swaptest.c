@@ -27,21 +27,17 @@ int main(int argc, char **argv)
 {
 	printf("[PID %5u] Hello in swap test!\n", getpid());
 	uint8_t *addr = (void *)0x1000000;
-	// if(fork() == 0){
-	// 	sched_yield();
-	// 	fork();
-	// }
-	fork();
-	fork();
+	
+	for (int i = 0; i < 10; ++i) if (fork() == 0) break;
 	
 	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	
 	int a=0;
-	for(int i=0; i<6; i++){
+	for(int i=0; i<512; i++){
 		*(addr + i*PAGE_SIZE) = i+1;
 	}
 	
-	test_swap_out(addr); 
+	test_swap_out(addr+PAGE_SIZE); 
 	printf("*0x1000000 = %p\n", *addr);
 	printf("[PID %5u] I am done! Good bye!\n", getpid());
 
