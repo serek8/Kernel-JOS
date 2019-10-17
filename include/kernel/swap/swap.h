@@ -30,7 +30,7 @@ struct rmap_elem {
 
 struct swap_disk_mapping_t{
     struct rmap *swap_rmap;    
-    uint8_t is_taken;
+    volatile uint8_t is_taken;
     uint8_t pp_order;
 };
 

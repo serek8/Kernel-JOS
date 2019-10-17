@@ -12,9 +12,13 @@
 #define SWAP_DISC_SIZE  (128 * MB)
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
 
-
 struct list lru_pages;
-// TODO: lock
+struct spinlock disk_lock;
+
+#define LOCK_DISK(disk_lock) do { spin_lock(&disk_lock); } while(0)
+#define UNLOCK_DISK(disk_lock) do { spin_unlock(&disk_lock); } while(0)
+#define TRY_LOCK_DISK(disk_lock) (spin_trylock(&disk_lock))
+
 
 void rmap_init(struct rmap *map){
     // cprintf("rmap_init, rmap=%p\n", map);
@@ -28,6 +32,7 @@ struct swap_disk_mapping_t *swap_disk_mapping;
 void swap_init(){
     cprintf("Initializing swap module. Available swap space: %dMB (%d pages).\n", (SWAP_DISC_SIZE/MB), SWAP_DISC_INDEX_NUM);
     assert(SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t) <= HPAGE_SIZE);
+    spin_init(&disk_lock, "disk_lock");
     swap_disk_mapping = page2kva(page_alloc(ALLOC_ZERO | ALLOC_HUGE));
     list_init(&lru_pages);
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
@@ -190,6 +195,7 @@ int swap_out(struct page_info *page){
         panic("Error! This page seems to be already swapped out!");
     }
     cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);
+    while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
     if(free_index == -1) panic("no more free swap pages!\n");
@@ -213,6 +219,7 @@ int swap_out(struct page_info *page){
     }
 
     // clear page_info struct
+    UNLOCK_RMAP(page->pp_rmap);
     page->pp_rmap = NULL;
     page->pp_ref = 0;
     cprintf("SWAP OUT completed! page=%p\n", page);
@@ -231,6 +238,7 @@ int swap_in(physaddr_t pte){
     int is_huge_page = swap_index_elem->pp_order == BUDDY_2M_PAGE;
     struct page_info *page = page_alloc(is_huge_page ? ALLOC_HUGE : 0);
     page->pp_rmap = swap_index_elem->swap_rmap;
+    while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_in=%p\n", page->pp_rmap);
     page->pp_ref = swap_index_elem->swap_rmap->pp_ref;
     swap_index_elem->swap_rmap = NULL;
     swap_index_elem->is_taken = 0;
@@ -249,6 +257,7 @@ int swap_in(physaddr_t pte){
     }
     swap_decref_task_swap_counter(page);
     cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
+    UNLOCK_RMAP(page->pp_rmap);
     return 0;
 }
 
@@ -262,19 +271,23 @@ int is_consecutive_512_indexes_free(int i){
 }
 
 int find_free_swap_index(int order){
+    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_write\n");
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         if(swap_disk_mapping[i].is_taken == 0){
             if(order == BUDDY_2M_PAGE && !is_consecutive_512_indexes_free(i)){
                 continue;
             }
+            UNLOCK_DISK(disk_lock);
             return i;
         }
     }
     panic("find_free_swap_index no more free swap pages!\n");
+    UNLOCK_DISK(disk_lock);
     return -1;
 }
 
 void disc_ahci_write(struct page_info *page, uint64_t addr){
+    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_write\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
@@ -283,10 +296,11 @@ void disc_ahci_write(struct page_info *page, uint64_t addr){
     while (!disk_poll(disk));
     int64_t disk_write_res = disk_write(disk, buf, size, addr);
     // cprintf("disk_write_res=%d\n", disk_write_res);
-
+    UNLOCK_DISK(disk_lock);
 }
 
 void disc_ahci_read(struct page_info *page, uint64_t addr){
+    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_read\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
@@ -296,6 +310,7 @@ void disc_ahci_read(struct page_info *page, uint64_t addr){
     int64_t disk_read_res = disk_read(disk, buf, size, addr);
     // cprintf("disk_read_res=%d\n", disk_read_res);
     // cprintf("read=%d\n", *(uint64_t*)buf);
+    UNLOCK_DISK(disk_lock);
 }
 
 
