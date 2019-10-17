@@ -65,6 +65,9 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 			struct page_info *p4k = page_alloc(BUDDY_4K_PAGE);
 			p4k->pp_ref += 1;
+			p4k->pp_rmap = kmalloc(sizeof(struct rmap));
+			rmap_init(p4k->pp_rmap);
+			rmap_add_mapping(p4k->pp_rmap, entry, cur_task); //info->taskx
 			swap_add(p4k); // add to LRU list
 			
 			pt->entries[i] = flags | PAGE_ADDR(page2pa(p4k));

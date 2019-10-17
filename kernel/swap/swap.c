@@ -198,7 +198,7 @@ int swap_out(struct page_info *page){
     while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
-    if(free_index == -1) panic("no more free swap pages!\n");
+    if(free_index == -1) return -1;
     int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
     struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[free_index];
     page->pp_rmap->pp_ref = page->pp_ref;
@@ -256,6 +256,7 @@ int swap_in(physaddr_t pte){
         disc_ahci_read(page_i, (swap_index + i) * PAGE_SIZE);
     }
     swap_decref_task_swap_counter(page);
+    swap_add(page);
     cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
     UNLOCK_RMAP(page->pp_rmap);
     return 0;
@@ -429,16 +430,15 @@ void swapd_update_lru()
 
     list_foreach_safe(&lru_pages, node, next) {
         struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
+        cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, page->pp_rmap=%p, page->pp_order=%d\n", page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), page->pp_rmap, page->pp_order);
         
         int updated = 0;
         // iterate over every element in the rmap
         list_foreach(&page->pp_rmap->elems, node_rmap) {
             struct rmap_elem *rmap_elem = container_of(node_rmap, struct rmap_elem, rmap_node);
-            
-            cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, task_pid=%d, PTE=%p, accessed=%d\n", 
-            page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), 
+            cprintf("update_lru: task_pid=%d, PTE=%p, accessed=%d\n",   
             rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
-            
+
             // if page was accessed -> append to lru_pages, reset second chance
             if(((*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED) && !updated) {
                 page->pp_swap_node.r = 1;
@@ -459,20 +459,19 @@ void swapd_update_lru()
 
 void swapd()
 {
-    while(list_is_empty(&lru_pages)) {
+    for(int i=0; i<100; i++) {
         ksched_yield();
     }
-    ksched_yield();
 
     struct list *node;
     int i = 0;
     list_foreach(&lru_pages, node) {
         struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
 
-        if(i==3) {
-            page->pp_swap_node.r = 0;
-            break;
-        }
+        // if(i==3) {
+        //     page->pp_swap_node.r = 0;
+        //     break;
+        // }
         i++;
     }
 
@@ -481,10 +480,35 @@ void swapd()
     // swap_print_lru();
 
     swapd_update_lru();
-    swap_print_lru();
+    // swap_print_lru();
 
-    ksched_yield();
+    // ksched_yield();
 
-    swapd_update_lru();
-    swap_print_lru();
+    // swapd_update_lru();
+    // swap_print_lru();
 }
+
+// only gets activated if <20% memory available
+// void swapd()
+// {
+    // int last_time=read_tsc();
+//     while(nuser) {
+//         while(buddy_pages < 0.2) {
+//             if(last_time-read_tsc() < 20ms) break; // maybe need to take two regs
+
+//             swapd_update_lru();
+
+//             if(buddy_pages < 0.1) {
+//                 struct page_info *page = swap_clock();
+//                 if (swap_out(page) != -1) 
+                    // page->pp_ref = 1;
+                    // page_decref(page);
+                    // else break
+//             }
+
+//         }
+
+//         ksched_yield();
+//     }
+// }
+
