@@ -29,7 +29,8 @@ static inline int oom_get_score(struct task *task)
     }
 
     int score = 0;
-    score += task->task_active_pages;
+    score += task->task_active_pages*2;
+    score += task->task_swapped_pages;
 
     // give zombies a bump of 5000 pages=20MB
     if(task->task_status == TASK_DYING && task->task_ppid != 0) {
@@ -55,7 +56,7 @@ static void oom_print_scores()
 
 void oom_kill()
 {
-    for(int i=0; i<10000; i++) {
+    for(int i=0; i<100; i++) {
         ksched_yield();
     }
     
@@ -65,7 +66,7 @@ void oom_kill()
     int score, bad_max = 0;
     struct task *bad_task = NULL;
     struct task *task = oom_get_next(0);
-    do {
+    while(task) {
         if(task->task_type != TASK_TYPE_KERNEL) {
             score = oom_get_score(task);
             if(score > bad_max) {
@@ -74,7 +75,7 @@ void oom_kill()
             }
         }
         task = oom_get_next(task->task_pid);
-    } while(task);
+    }
 
     cprintf("OOM: killing task=%d, badness=%d\n", bad_task->task_pid, bad_max);
     if(bad_task->task_status == TASK_DYING && bad_task->task_ppid != 0) {
