@@ -167,7 +167,8 @@ KERNEL_BINFILES += \
 	user/mempress \
 	user/swaptest \
 	user/testoomself \
-	user/testoomother
+	user/testoomother \
+	user/testswapd
 
 # Only build files if they exist.
 KERNEL_SRCFILES := $(wildcard $(KERNEL_SRCFILES))

@@ -257,8 +257,8 @@ static inline void outsl(uint16_t port, const void *addr, size_t n)
 
 static inline uint64_t read_tsc(void)
 {
-	unsigned long lo, hi;
-	asm( "rdtsc" : "=a" (lo), "=d" (hi) ); 
+	uint64_t lo, hi;
+	asm volatile( "rdtsc" : "=a" (lo), "=d" (hi) ); 
 	return( lo | (hi << 32) );
 }
 

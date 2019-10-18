@@ -114,6 +114,7 @@ void kmain(struct boot_info *boot_info)
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
+	task_kernel_create(swapd);
 	startup_completed = 1;
 	sched_yield();
 #else

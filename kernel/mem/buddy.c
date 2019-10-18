@@ -430,3 +430,7 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 	return 0;
 }
 
+int free_mem_percent()
+{
+	return (free_pages*100) / npages;
+}

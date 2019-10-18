@@ -12,6 +12,12 @@
 
 #define SWAP_DISC_SIZE  (12 * MB)
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
+#define SWAPD_SCHEDULE_TIME_BLOCK ((uint64_t)(1000*1000*1000)*2)
+
+extern volatile size_t nuser_tasks;
+extern size_t npages;
+extern size_t free_pages;
+
 
 struct list lru_pages;
 struct spinlock disk_lock;
@@ -527,7 +533,7 @@ void swapd_update_lru()
     UNLOCK_LRU(lru_lock);
 }
 
-void swapd()
+void swapd_test()
 {
     for(int i=0; i<100; i++) {
         ksched_yield();
@@ -559,26 +565,34 @@ void swapd()
 }
 
 // only gets activated if <20% memory available
-// void swapd()
-// {
-    // int last_time=read_tsc();
-//     while(nuser) {
-//         while(buddy_pages < 0.2) {
-//             if(last_time-read_tsc() < 20ms) break; // maybe need to take two regs
+void swapd()
+{
+    uint64_t last_time = read_tsc();
+    while(nuser_tasks) {
+        while(free_mem_percent() < 90) {
+            if((read_tsc() - last_time) < SWAPD_SCHEDULE_TIME_BLOCK) {
+                break;
+            }
 
-//             swapd_update_lru();
+            swapd_update_lru();
 
-//             if(buddy_pages < 0.1) {
-//                 struct page_info *page = swap_clock();
-//                 if (swap_out(page) != -1) 
-                    // page->pp_ref = 1;
-                    // page_decref(page);
-                    // else break
-//             }
+            if(free_mem_percent() < 40) {
+                // swap out
+                struct page_info *to_swap = swap_clock();
+                int result = 0;
+                result = swap_out(to_swap);
+                if(result != -1){
+		            cprintf("swapd: to_swap=%p, order=%d\n", to_swap, to_swap->pp_order);
+                    to_swap->pp_ref = 1;
+                    page_decref(to_swap);
+                }
+            }
 
-//         }
+            cprintf("swapd: nuser_tasks=%d, npages=%p, free_pages=%p, percent=%d\n", nuser_tasks, npages, free_pages, free_mem_percent());
+            last_time = read_tsc();
+        }
 
-//         ksched_yield();
-//     }
-// }
+        ksched_yield();
+    }
+}
 
