@@ -9,7 +9,7 @@
 #include <string.h>
 #include <error.h>
 
-#define SWAP_DISC_SIZE  (128 * MB)
+#define SWAP_DISC_SIZE  (12 * MB)
 #define SWAP_DISC_INDEX_NUM SWAP_DISC_SIZE / PAGE_SIZE
 
 struct list lru_pages;
@@ -140,7 +140,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
     // cprintf("rmap_prepare_ptes_for_swap_out:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d, swap_index=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid, swap_index);
 
         // wait until the task is interrupted, so we can replace the PTE. In task_run we use load_pml4, so TLB will be flushed
         while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);
@@ -149,7 +149,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
         UNLOCK_TASK_SWAPPER(elem->p_task);
-        // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 
@@ -204,7 +204,10 @@ int swap_out(struct page_info *page){
     while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
-    if(free_index == -1) return -1;
+    if(free_index == -1) {
+        UNLOCK_RMAP(page->pp_rmap);
+        return -1;
+    }
     int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
     struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[free_index];
     page->pp_rmap->pp_ref = page->pp_ref;
@@ -228,14 +231,14 @@ int swap_out(struct page_info *page){
     UNLOCK_RMAP(page->pp_rmap);
     page->pp_rmap = NULL;
     page->pp_ref = 0;
-    // cprintf("SWAP OUT completed! page=%p\n", page);
+    cprintf("SWAP OUT completed! page=%p\n", page);
     return 0;
 }
 
 
 int swap_in(physaddr_t pte){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
-    cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
+    // cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
         cprintf("the PTE is already swapped in\n");
         return -1;
@@ -263,13 +266,14 @@ int swap_in(physaddr_t pte){
     }
     swap_decref_task_swap_counter(page);
     swap_add(page);
-    // cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
+    cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
     UNLOCK_RMAP(page->pp_rmap);
     return 0;
 }
 
 int is_consecutive_512_indexes_free(int i){
-    for(; i<512; i++){
+    int max = i+512;
+    for(; i<max; i++){
         if(swap_disk_mapping[i].is_taken == 1 || i == SWAP_DISC_INDEX_NUM){
             return 0;
         }
@@ -288,7 +292,7 @@ int find_free_swap_index(int order){
             return i;
         }
     }
-    panic("find_free_swap_index no more free swap pages!\n");
+    // panic("find_free_swap_index no more free swap pages!\n");
     UNLOCK_DISK(disk_lock);
     return -1;
 }
@@ -345,7 +349,7 @@ void rmap_free(struct rmap *map){
 
 void rmap_decref_swapped_out(physaddr_t pte){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
-    // cprintf("rmap_decref_swapped_out *pte=%p, swap_index=%d\n", pte, swap_index);
+    cprintf("rmap_decref_swapped_out *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
         panic("the PTE is already swapped in\n");
         return;
@@ -436,14 +440,14 @@ void swapd_update_lru()
 
     list_foreach_safe(&lru_pages, node, next) {
         struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
-        cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, page->pp_rmap=%p, page->pp_order=%d\n", page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), page->pp_rmap, page->pp_order);
+        // cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, page->pp_rmap=%p, page->pp_order=%d\n", page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), page->pp_rmap, page->pp_order);
         
         int updated = 0;
         // iterate over every element in the rmap
         list_foreach(&page->pp_rmap->elems, node_rmap) {
             struct rmap_elem *rmap_elem = container_of(node_rmap, struct rmap_elem, rmap_node);
-            cprintf("update_lru: task_pid=%d, PTE=%p, accessed=%d\n",   
-            rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
+            // cprintf("update_lru: task_pid=%d, PTE=%p, accessed=%d\n",   
+            // rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
 
             // if page was accessed -> append to lru_pages, reset second chance
             if(((*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED) && !updated) {
@@ -474,19 +478,19 @@ void swapd()
     list_foreach(&lru_pages, node) {
         struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
 
-        // if(i==3) {
-        //     page->pp_swap_node.r = 0;
-        //     break;
-        // }
+        if(i==3) {
+            page->pp_swap_node.r = 0;
+            break;
+        }
         i++;
     }
 
     swap_print_lru();
-    // swap_clock();
+    swap_clock();
     // swap_print_lru();
 
     swapd_update_lru();
-    // swap_print_lru();
+    swap_print_lru();
 
     // ksched_yield();
 
