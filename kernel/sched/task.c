@@ -15,6 +15,7 @@
 
 extern uint64_t gsbase_in_msr;
 extern char bootstack[];
+extern int runq_len;
 
 pid_t pid_max = 1 << 16;
 struct task **tasks = (struct task **)PIDMAP_BASE;
@@ -504,6 +505,18 @@ void task_destroy(struct task *task)
 
 	LOCK_TASK(task);
 	int ppid = task->task_ppid;
+
+
+	if(!current){
+		if(task->task_status != TASK_RUNNING){
+			if(task->task_cpunum == TASK_CPUNUM_GLOBAL_RUNQ){
+				atomic_dec(&runq_len);
+			}
+			else{
+				atomic_dec(&cpus[task->task_cpunum].runq_len);
+			}
+		}
+	}
 
 	task->task_status = TASK_DYING;
 	

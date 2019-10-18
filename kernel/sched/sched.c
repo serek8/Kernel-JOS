@@ -2,6 +2,7 @@
 #include <cpu.h>
 #include <list.h>
 #include <stdio.h>
+#include <atomic.h>
 
 #include <x86-64/asm.h>
 #include <x86-64/paging.h>
@@ -58,7 +59,6 @@ void sched_yield(void)
 		task_destroy(cur_task);
 	} else 	if(cur_task != NULL && (cur_task->task_status == TASK_RUNNABLE || cur_task->task_status == TASK_RUNNING)){ 
 		if(cur_task->schedule_ts != SCHEDULE_TIME_EXPIRED && read_tsc() - cur_task->schedule_ts < SCHEDULE_TIME_BLOCK){
-			// task_run(cur_task);
 			sched_yield_run_task(cur_task);
 		} else{ // allocated time for a task expires
 			ADD_NEXTQ(cur_task);
@@ -85,8 +85,8 @@ void sched_yield(void)
 					}else{
 						panic("no more tasks to migrate");
 					}
-					lrunq_len--;
-					runq_len++;
+					atomic_dec(&lrunq_len);
+					atomic_inc(&runq_len);
 					LOCK_TASK(task);
 					task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
 					list_push_left(&runq, &task->task_node);
@@ -126,7 +126,7 @@ void sched_yield(void)
 							// cprintf("refused to local queue cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
 							continue;
 						}
-						runq_len--;
+						atomic_dec(&runq_len);
 						// cprintf("add to local queue cpu=%d, task->pid=%d,\n", this_cpu->cpu_id, task->task_pid);
 						LOCK_TASK(task);
 						task->task_cpunum = this_cpu->cpu_id;
@@ -155,8 +155,8 @@ void sched_yield(void)
 					}else{
 						panic("no more tasks to migrate");
 					}
-					lrunq_len--;
-					runq_len++;
+					atomic_dec(&lrunq_len);
+					atomic_inc(&runq_len);
 					LOCK_TASK(task);
 					task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
 					list_push_left(&runq, &task->task_node);
@@ -165,7 +165,7 @@ void sched_yield(void)
 				spin_unlock(&runq_lock);
 			}
 		}
-
+		
 		if(list_is_empty(&lrunq) && !list_is_empty(&lnextq)) {
 			// swap lrunq and lnextq
 			struct list *head_nextq = list_head(&lnextq);
@@ -175,7 +175,7 @@ void sched_yield(void)
 	}
 
 	struct task *next_task = container_of(list_pop_left(&lrunq), struct task, task_node);
-	lrunq_len--;
+	atomic_dec(&lrunq_len);
 	next_task->schedule_ts = read_tsc();
 	sched_yield_run_task(next_task);
 }
@@ -184,13 +184,12 @@ void sched_yield(void)
 
 void sched_yield_run_task(struct task *next_task){
 	int should_migrate = !is_affiliated_to_this_cpu(next_task);
-	// cprintf("cpu=%d, pid=%d, check migrate=%x\n",this_cpu->cpu_id, next_task->task_pid, should_migrate);
 	if(should_migrate && spin_trylock(&runq_lock)){ // task wants to migrate
 	// cprintf("cpu=%d, cpu_mask=0x%x, will migrate=%d\n",this_cpu->cpu_id, next_task->cpu_mask.bits, (!(next_task->cpu_mask.bits & (1 << this_cpu->cpu_id))));
 		LOCK_TASK(next_task);
 		next_task->task_cpunum = TASK_CPUNUM_GLOBAL_RUNQ;
 		list_push_left(&runq, &next_task->task_node);
-		runq_len++;
+		atomic_inc(&runq_len);
 		UNLOCK_TASK(next_task);
 		spin_unlock(&runq_lock);
 		cur_task = NULL;
