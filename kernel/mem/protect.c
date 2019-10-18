@@ -15,7 +15,7 @@ struct protect_info {
 static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
-	cprintf("protect_pte base=%p\n", base);
+	// cprintf("protect_pte base=%p\n", base);
 	struct protect_info *info = walker->udata;
 
 	if(*entry & PAGE_SWAP) {

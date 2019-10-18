@@ -138,7 +138,7 @@ void write_to_disk(void *addr, uint64_t index);
 void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index){
     struct rmap_elem *elem;
 	struct list *node;
-    // cprintf("rmap_prepare_ptes_for_swap_out:\n");
+    //  cprintf("rmap_prepare_ptes_for_swap_out:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
         // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d, swap_index=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid, swap_index);
@@ -168,7 +168,7 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
 
-        cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        // cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
         *elem->entry &= (~PAGE_SWAP);
         *elem->entry |= (PAGE_PRESENT);
         *elem->entry &= (PAGE_MASK);
@@ -178,7 +178,7 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
         *elem->entry |= elem->flag_write ? PAGE_WRITE : 0;
         *elem->entry |= elem->flag_no_exec ? PAGE_NO_EXEC : 0;
         *elem->entry |= elem->flag_huge ? PAGE_HUGE : 0;
-        cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+        // cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 
@@ -211,10 +211,10 @@ int swap_out(struct page_info *page){
     if(!page){
         return -1;
     }
-    if((uint64_t)page < KPAGES+(KERNEL_LMA/PAGE_SIZE)*sizeof(*page)){ 
-        // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
-        panic("Error! This page seems to be already swapped out!");
-    }
+    // if((uint64_t)page < KPAGES+(KERNEL_LMA/PAGE_SIZE)*sizeof(*page)){ 
+    //     // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
+    //     cprintf("Error! This page seems to be already swapped out! page=%p\n", page);
+    // }
     // cprintf("swap_out page->pp_rmap=%p, pp_ref=%d, order=%d\n", page->pp_rmap, page->pp_ref, page->pp_order);
     while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
@@ -243,6 +243,7 @@ int swap_out(struct page_info *page){
     }
 
     // clear page_info struct
+    swap_remove(page);
     UNLOCK_RMAP(page->pp_rmap);
     page->pp_rmap = NULL;
     page->pp_ref = 0;
