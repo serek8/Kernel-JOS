@@ -164,7 +164,7 @@ void sched_yield(void)
 				spin_unlock(&runq_lock);
 			}
 		}
-		
+		cprintf("lrunq_len=%d, nextq_len=%d, nuser_task=%d\n", list_len(&lrunq), list_len(&lnextq), nuser_tasks);
 		if(list_is_empty(&lrunq) && !list_is_empty(&lnextq)) {
 			// swap lrunq and lnextq
 			struct list *head_nextq = list_head(&lnextq);

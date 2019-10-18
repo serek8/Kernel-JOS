@@ -16,7 +16,7 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct remove_info *info = walker->udata;
 	struct page_info *page;
-	cprintf("remove_pte\n");
+	// cprintf("remove_pte\n");
 	if(*entry & PAGE_SWAP){
 		// swap_in(*entry); // todo lab7: optimalize by removing pages directly from the hard drive
 		rmap_decref_swapped_out(*entry);
@@ -40,25 +40,25 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct remove_info *info = walker->udata;
 	struct page_info *page;
-	cprintf("remove_pde\n");
+	// cprintf("remove_pde\n");
 	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)){
 		if(info->size >= HPAGE_SIZE) {
-			cprintf("remove_pde: swapping in entry=%p, base=%p, end=%p, info->size=%p\n", *entry, base, end, info->size);
+			// cprintf("remove_pde: swapping in entry=%p, base=%p, end=%p, info->size=%p\n", *entry, base, end, info->size);
 			rmap_decref_swapped_out(*entry); // removes directly from the disk
 			*entry = 0; 
 			tlb_invalidate(info->pml4, (void*)base);
 		} else{
-			cprintf("remove_pde swap in\n");
+			// cprintf("remove_pde swap in\n");
 			swap_in(*entry);
 		}
 	}
-	cprintf("remove_pde 2\n");
+	// cprintf("remove_pde 2\n");
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)){
 
 		// if we are deleting the complete huge page, remove it immediately
 		if(info->size >= HPAGE_SIZE) {
 			struct page_info *page = pa2page(PAGE_ADDR(*entry)); // free the page it was pointing to
-			cprintf("remove_pde: remove huge entry=%p, base=%p, end=%p, info->size=%p, page=%p\n", *entry, base, end, info->size, page);
+			// cprintf("remove_pde: remove huge entry=%p, base=%p, end=%p, info->size=%p, page=%p\n", *entry, base, end, info->size, page);
 			page_decref(page);
 			*entry = 0; // BONUS_LAB3: set entry to 0 to mitigate Foreshadow
 			tlb_invalidate(info->pml4, (void*)base);
@@ -86,7 +86,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			}
 		}
 	}
-	cprintf("remove_pde end\n");
+	// cprintf("remove_pde end\n");
 
 	return 0;
 }

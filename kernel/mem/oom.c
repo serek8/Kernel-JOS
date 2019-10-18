@@ -78,14 +78,15 @@ int oom_kill()
     }
 
     cprintf("OOM: killing task=%d, badness=%d\n", bad_task->task_pid, bad_max);
+
+    task_destroy(bad_task);
+
     if(bad_task->task_status == TASK_DYING && bad_task->task_ppid != 0) {
 		struct task *parent = pid2task(bad_task->task_ppid, 0);
 		cprintf("[PID %5u] Reaping task with PID %d\n", cur_task->task_pid, bad_task->task_pid);
 		LOCK_TASK(parent);
 		task_remove_child(bad_task);
 		UNLOCK_TASK(parent);
-    } else {
-        task_destroy(bad_task);        
     }
     return 0;
 }

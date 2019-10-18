@@ -218,23 +218,27 @@ struct page_info *page_alloc(int alloc_flags)
 		struct page_info *to_swap = swap_clock();
 		int result = 0;
 		result = swap_out(to_swap);
+		cprintf("buddy swap out to_swap=%p, order=%d, free_pages=%d, page=%p\n", to_swap, order, free_pages, page);
 		if (result != -1) {
 			to_swap->pp_ref = 0;
 			rmap_free(to_swap->pp_rmap); 
 			page_free(to_swap);
 			page = buddy_find(order);
-			// cprintf("test order=%d, free_pages=%d, page=%p\n", order, free_pages, page);
 		} else {
 			// we are out of swap space -> kill process
-			int cur_task_pid = 0;
-			if(cur_task) cur_task_pid = cur_task->task_pid;
-			cprintf("buddy OOM killer - order=%d, free_pages=%d, cur_task_pid=%d\n", order, free_pages, cur_task_pid);
 			#ifndef USE_BIG_KERNEL_LOCK
 			spin_unlock(&buddy_lock);
 			#endif
-			oom_kill();
-			// cprintf("test order=%d, free_pages=%d, cur_task=%p\n", order, free_pages, cur_task);
-			// check if cur_task is still alive, otherwise sched_yield
+			// if current task is killed, we sched_yield in task_destroy and never come back here
+			if(oom_kill() == 0) {
+				page = buddy_find(order);
+				cprintf("buddy OOM killer - order=%d, free_pages=%d, page=%p\n", order, free_pages, page);
+				
+				#ifndef USE_BIG_KERNEL_LOCK
+				spin_lock(&buddy_lock);
+				#endif
+				continue;
+			}
 
 			// should never be reached
 			panic("Could not allocate page of order %d. Out of memory.", order);
