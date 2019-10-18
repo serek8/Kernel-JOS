@@ -81,6 +81,9 @@ void kmain(struct boot_info *boot_info)
 	// Set up swapping
 	swap_init();
 
+	// Set up OOM killer
+	oom_init();
+
 	// lab3_check_populate_protect(kernel_pml4);
 	
 	#ifdef BONUS_LAB5
