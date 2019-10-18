@@ -15,11 +15,15 @@
 
 struct list lru_pages;
 struct spinlock disk_lock;
+struct spinlock lru_lock;
 
 #define LOCK_DISK(disk_lock) do { spin_lock(&disk_lock); } while(0)
 #define UNLOCK_DISK(disk_lock) do { spin_unlock(&disk_lock); } while(0)
 #define TRY_LOCK_DISK(disk_lock) (spin_trylock(&disk_lock))
 
+#define LOCK_LRU(lru_lock) do { spin_lock(&lru_lock); } while(0)
+#define UNLOCK_LRU(lru_lock) do { spin_unlock(&lru_lock); } while(0)
+#define TRY_LOCK_LRU(lru_lock) (spin_trylock(&lru_lock))
 
 void rmap_init(struct rmap *map){
     // cprintf("rmap_init, rmap=%p\n", map);
@@ -34,6 +38,7 @@ void swap_init(){
     cprintf("Initializing swap module. Available swap space: %dMB (%d pages).\n", (SWAP_DISC_SIZE/MB), SWAP_DISC_INDEX_NUM);
     assert(SWAP_DISC_INDEX_NUM * sizeof(struct swap_disk_mapping_t) <= HPAGE_SIZE);
     spin_init(&disk_lock, "disk_lock");
+    spin_init(&lru_lock, "lru_lock");
     swap_disk_mapping = page2kva(page_alloc(ALLOC_ZERO | ALLOC_HUGE));
     list_init(&lru_pages);
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
@@ -416,20 +421,25 @@ void mprotect_swapped_out(physaddr_t *pte, uint64_t flags){
 
 void swap_add(struct page_info *page)
 {
+    LOCK_LRU(lru_lock);
     // set second chance value
     page->pp_swap_node.r = 1; 
     list_push_left(&lru_pages, &page->pp_swap_node.n);
     // cprintf("lru_added: page=%p, pp_ref=%d, order=%d, content=%p, lru_len=%d\n", page, page->pp_ref, page->pp_order, *((int*)page2kva(page)), list_len(&lru_pages));
+    UNLOCK_LRU(lru_lock);
 }
 
 void swap_remove(struct page_info *page) 
 {
+    LOCK_LRU(lru_lock);
     list_remove(&page->pp_swap_node.n);
     // cprintf("lru_removed: page=%p, pp_ref=%d, order=%d, content=%p, lru_len=%d\n", page, page->pp_ref, page->pp_order, *((int*)page2kva(page)), list_len(&lru_pages));
+    UNLOCK_LRU(lru_lock);
 }
 
 void swap_print_lru()
 {
+    LOCK_LRU(lru_lock);
     cprintf("----------\nLRU pages\n\n");
     // cprintf("%p, prev=%p, next=%p\n", &lru_pages,lru_pages.prev, lru_pages.next);
     struct list *node;
@@ -442,6 +452,7 @@ void swap_print_lru()
         i++;
     }
     cprintf("\n----------\n");
+    UNLOCK_LRU(lru_lock);
 }
 
 /**
@@ -451,11 +462,13 @@ void swap_print_lru()
  */
 struct page_info *swap_clock()
 {
+    LOCK_LRU(lru_lock);
     struct page_info *page;
     while(1) {
         page = GET_PAGE_FROM_SWAP_NODE_N(lru_pages.next);
         if(page->pp_swap_node.r == 0) {
             list_pop_left(&lru_pages);
+            UNLOCK_LRU(lru_lock);
             return page;
         }
         page->pp_swap_node.r = 0;
@@ -463,6 +476,7 @@ struct page_info *swap_clock()
         // advance head of list
         list_advance_head(&lru_pages);
     }
+    UNLOCK_LRU(lru_lock);
     return NULL;
 }
 
@@ -475,6 +489,7 @@ struct page_info *swap_clock()
  */
 void swapd_update_lru()
 {
+    LOCK_LRU(lru_lock);
     struct list *node, *next, *node_rmap;
     // Save the last element of lru_pages. We're going to append to it on the fly.
     struct list *last = lru_pages.prev;
@@ -484,6 +499,7 @@ void swapd_update_lru()
         // cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, page->pp_rmap=%p, page->pp_order=%d\n", page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), page->pp_rmap, page->pp_order);
         
         int updated = 0;
+        LOCK_RMAP(page->pp_rmap);
         // iterate over every element in the rmap
         list_foreach(&page->pp_rmap->elems, node_rmap) {
             struct rmap_elem *rmap_elem = container_of(node_rmap, struct rmap_elem, rmap_node);
@@ -501,11 +517,14 @@ void swapd_update_lru()
             // reset accessed flag
             *rmap_elem->entry &= ~(PAGE_ACCESSED);
         }
+        UNLOCK_RMAP(page->pp_rmap);
+
         // exit loop once we iterated over every item
         if(node == last) {
             break;
         }
     }
+    UNLOCK_LRU(lru_lock);
 }
 
 void swapd()

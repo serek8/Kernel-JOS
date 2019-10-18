@@ -5,3 +5,4 @@
 #include <paging.h>
 
 int oom_kill();
+void oom_init();

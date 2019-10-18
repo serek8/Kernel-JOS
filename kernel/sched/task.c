@@ -84,6 +84,8 @@ void task_init(void)
 		struct page_info *page = page_alloc(ALLOC_ZERO);
 		page_insert(kernel_pml4, page, (void*)PIDMAP_BASE+i, PAGE_PRESENT | PAGE_WRITE | PAGE_NO_EXEC);
 	}
+
+	spin_init(&tasks_lock, "tasks_lock");
 }
 
 /* Sets up the virtual address space for the task. */

@@ -34,6 +34,7 @@ void sched_init(void)
 	list_init(&lnextq);
 	sched_i = 0;
 	lrunq_len = 0;
+	spin_init(&runq_lock, "runq_lock");
 }
 
 void sched_init_mp(void)
@@ -164,6 +165,7 @@ void sched_yield(void)
 				spin_unlock(&runq_lock);
 			}
 		}
+		
 		if(list_is_empty(&lrunq) && !list_is_empty(&lnextq)) {
 			// swap lrunq and lnextq
 			struct list *head_nextq = list_head(&lnextq);

@@ -9,8 +9,19 @@
 #include <string.h>
 #include <error.h>
 
+struct spinlock oom_lock = {
+#ifdef DEBUG_SPINLOCK
+	.name = "oom_lock",
+#endif
+};
+
 extern struct task **tasks;
 extern pid_t pid_max;
+
+void oom_init()
+{
+    spin_init(&oom_lock, "oom_lock");
+}
 
 static inline struct task *oom_get_next(pid_t start_pid)
 {
@@ -56,6 +67,7 @@ static void oom_print_scores()
 
 int oom_kill()
 {
+    spin_lock(&oom_lock);
     oom_print_scores();
 
     // determine which task to kill
@@ -74,6 +86,7 @@ int oom_kill()
     }
 
     if(!bad_task) {
+        spin_unlock(&oom_lock);
         return -1;
     }
 
@@ -88,5 +101,7 @@ int oom_kill()
 		task_remove_child(bad_task);
 		UNLOCK_TASK(parent);
     }
+    
+    spin_unlock(&oom_lock);
     return 0;
 }

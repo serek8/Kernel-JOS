@@ -11,6 +11,8 @@
 extern struct list page_free_list[];
 extern size_t ncpus;
 
+extern struct spinlock buddy_lock;
+
 /* The kernel's initial PML4. */
 struct page_table *kernel_pml4;
 
@@ -153,6 +155,8 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Check the buddy allocator. */
 	// lab2_check_buddy(boot_info);
+
+	spin_init(&buddy_lock, "buddy_lock");
 }
 
 void mem_init_mp(void)
