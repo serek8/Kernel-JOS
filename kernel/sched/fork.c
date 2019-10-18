@@ -27,6 +27,9 @@ struct page_info *copy_ptbl(physaddr_t *entry, struct task *clone_task)
 			clone_ptbl->entries[i] &= ~(PAGE_WRITE);
 
 			// increase refcount
+			if(orig_ptbl->entries[i] & PAGE_SWAP){
+				swap_in(orig_ptbl->entries[i]);
+			}
 			struct page_info *entry_page = pa2page(PAGE_ADDR(orig_ptbl->entries[i]));
 			atomic_inc(&entry_page->pp_ref);
 
@@ -65,6 +68,9 @@ struct page_info *copy_pdir(physaddr_t *entry, struct task *clone_task)
 	struct page_table *clone_pdir = page2kva(page);
 
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
+		if(orig_pdir->entries[i] & PAGE_SWAP){
+				swap_in(orig_pdir->entries[i]);
+		}
 		if(orig_pdir->entries[i]) {
 			if(orig_pdir->entries[i] & PAGE_HUGE) {
 				clone_pdir->entries[i] = orig_pdir->entries[i];
