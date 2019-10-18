@@ -384,6 +384,9 @@ void idt_init_mp(void)
 
 void int_dispatch(struct int_frame *frame)
 {
+	// cprintf("frame->int_no=%d\n", frame->int_no);
+	// cprintf("UNLOCK_TASK_SWAPPER, pid=%d\n", cur_task->task_pid);
+	UNLOCK_TASK_SWAPPER(cur_task);
 	/* Handle processor exceptions:
 	 *  - Fall through to the kernel monitor on a breakpoint.
 	 *  - Dispatch page faults to page_fault_handler().
@@ -425,7 +428,7 @@ void int_handler(struct int_frame *frame)
 	#ifdef USE_BIG_KERNEL_LOCK
 	spin_lock(&kernel_lock);
 	#endif
-
+	
 	/* The task may have set DF and some versions of GCC rely on DF being
 	 * clear. */
 	asm volatile("cld" ::: "cc");
@@ -439,6 +442,7 @@ void int_handler(struct int_frame *frame)
 	// cprintf("Incoming INT frame at %p\n", frame);
 
 	if ((frame->cs & 3) == 3 || cur_task->task_type==TASK_TYPE_KERNEL) {
+		// cprintf("user int\n");
 		/* Interrupt from user mode. */
 		assert(cur_task);
 

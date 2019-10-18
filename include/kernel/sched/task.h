@@ -50,3 +50,7 @@ void task_load_elf(struct task *task, uint8_t *binary);
 	#define UNLOCK_TASK(task) do { spin_unlock(&task->task_lock); } while(0)
 	#define TRY_LOCK_TASK(task) (spin_trylock(&task->task_lock))
 #endif
+
+#define LOCK_TASK_SWAPPER(task) do { spin_lock(&task->swap_update_lock); } while(0)
+#define UNLOCK_TASK_SWAPPER(task) do { spin_unlock(&task->swap_update_lock); } while(0)
+#define TRY_LOCK_TASK_SWAPPER(task) (spin_trylock(&task->swap_update_lock))

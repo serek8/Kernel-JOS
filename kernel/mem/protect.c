@@ -16,7 +16,9 @@ static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct protect_info *info = walker->udata;
-
+	if(*entry & PAGE_SWAP) {
+		swap_in(*entry);
+	}
 	/* LAB 3: your code here. */
 	// check if flags actually change
 	if((*entry & PAGE_MASK) != info->flags) {
@@ -36,7 +38,9 @@ static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
 	struct protect_info *info = walker->udata;
-
+	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)) {
+		swap_in(*entry);
+	}
 	/* LAB 3: your code here. */
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {
 		// covers full huge page
@@ -47,6 +51,7 @@ static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 				tlb_invalidate(info->pml4, (void*)base);
 			}
 		} else {
+			cprintf("will ptbl_split\n");
 			ptbl_split(entry, base, end, walker);
 		}
 	}

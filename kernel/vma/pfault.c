@@ -25,7 +25,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	page != NULL &&
 	(*entry & PAGE_WRITE) != (PAGE_WRITE) && 
 	(vma->vm_flags & VM_WRITE) == (VM_WRITE)) {
-		cprintf("pfault: COW!\n");
+		// cprintf("pfault: COW!\n");
 
 		if(page && *entry & PAGE_SWAP) {
 			swap_in(*entry);

@@ -165,6 +165,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_cpunum = this_cpu->cpu_id;
 	task->task_swapped_pages = 0;
 	spin_init(&task->task_lock, "task_lock");
+	spin_init(&task->swap_update_lock, "swap_update_lock");
 	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
@@ -668,8 +669,12 @@ void task_run(struct task *task)
 		sched_yield();
 	}
 
+	// This lock prevents swapper from updating this task's PTEs
+	while(!TRY_LOCK_TASK_SWAPPER(task)) cprintf("PID %d is waiting task_run\n", task->task_pid);
+
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;
+	// It also flushes TLB. So all the swapper modifications are updated.
 	load_pml4((void*)PADDR(task->task_pml4));
 	#ifdef USE_BIG_KERNEL_LOCK
 	// cprintf("task_pop_frame, task_type=%d\n", cur_task->task_type);

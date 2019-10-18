@@ -1,6 +1,45 @@
 #include <lib.h>
 
 
+#include <lib.h>
+#include <string.h>
+
+int main(int argc, char **argv)
+{
+	struct vma_info info;
+	char *addr = (void *)0x1000000;
+
+	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
+	for(int i=0; i<512; i++){
+		uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
+		*a = i+1;
+	}
+	// memset(addr, 1, HPAGE_SIZE);
+
+	test_swap_out(addr); 
+	mprotect(addr+PAGE_SIZE, PAGE_SIZE, PROT_READ);
+	for(int i=0; i<512; i++){
+		uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
+		printf("i <=> %u\n", *a);
+	}
+	
+
+	mquery(&info, addr);
+
+	switch (info.vm_mapped) {
+		case VM_UNMAPPED: printf("unmapped\n"); break;
+		case VM_4K_PAGE: printf("4K page\n"); break;
+		case VM_2M_PAGE: printf("2M page\n"); break;
+	}
+
+	print_vmas();
+
+	printf("loop\n");
+	// while(1);
+
+	return 0;
+}
+
 // int main(int argc, char **argv)
 // {
 // 	pid_t pid = getpid();
@@ -23,30 +62,26 @@
 // }
 
 // // Merge big pages and swap out
-int main(int argc, char **argv)
-{
-	printf("[PID %5u] Hello in swap test!\n", getpid());
-	uint8_t *addr = (void *)0x1000000;
-	// if(fork() == 0){
-	// 	sched_yield();
-	// 	fork();
-	// }
-	fork();
-	fork();
+// int main(int argc, char **argv)
+// {
+// 	printf("[PID %5u] Hello in swap test!\n", getpid());
+// 	uint8_t *addr = (void *)0x1000000;
 	
-	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+// 	for (int i = 0; i < 10; ++i) if (fork() == 0) break;
 	
-	int a=0;
-	for(int i=0; i<6; i++){
-		*(addr + i*PAGE_SIZE) = i+1;
-	}
+// 	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
 	
-	test_swap_out(addr); 
-	printf("*0x1000000 = %p\n", *addr);
-	printf("[PID %5u] I am done! Good bye!\n", getpid());
+// 	int a=0;
+// 	for(int i=0; i<512; i++){
+// 		*(addr + i*PAGE_SIZE) = i+1;
+// 	}
+	
+// 	test_swap_out(addr+PAGE_SIZE); 
+// 	printf("*0x1000000 = %p\n", *addr);
+// 	printf("[PID %5u] I am done! Good bye!\n", getpid());
 
-	return 0;
-}
+// 	return 0;
+// }
 
 
 // // // Merge big pages

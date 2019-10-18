@@ -103,7 +103,9 @@ void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
     // cprintf("rmap_add_mapping: &rmap=%p, &pte=%p, *pte=%p, page=%p, PID=%d\n", map, pte, *pte, pa2page(PAGE_ADDR((*pte))), p_task->task_pid);
     struct rmap_elem *map_elem = kmalloc(sizeof(struct rmap_elem));
     rmap_elem_init(map_elem);
+    while(!TRY_LOCK_RMAP(map)) cprintf("waiting rmap_add_mapping=%p\n", map);
     list_push_left(&map->elems, &map_elem->rmap_node);
+    UNLOCK_RMAP(map);
     list_push_left(&p_task->task_rmap_elems, &map_elem->task_node);
     map_elem->entry = pte; // kernel address space
     map_elem->p_rmap = map;
@@ -138,12 +140,16 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
     // cprintf("rmap_prepare_ptes_for_swap_out:\n");
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
-        cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+        // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+
+        // wait until the task is interrupted, so we can replace the PTE. In task_run we use load_pml4, so TLB will be flushed
+        while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);
         *elem->entry &= (~PAGE_PRESENT);
         *elem->entry |= (PAGE_SWAP);
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
-        cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        UNLOCK_TASK_SWAPPER(elem->p_task);
+        // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 
@@ -194,7 +200,7 @@ int swap_out(struct page_info *page){
         // We should never have page that points below KERNEL_LMA. If it does, it's probably swap index!
         panic("Error! This page seems to be already swapped out!");
     }
-    cprintf("swap_out page->pp_rmap=%p, pp_ref=%d\n", page->pp_rmap, page->pp_ref);
+    cprintf("swap_out page->pp_rmap=%p, pp_ref=%d, order=%d\n", page->pp_rmap, page->pp_ref, page->pp_order);
     while(!TRY_LOCK_RMAP(page->pp_rmap)) cprintf("waiting swap_out=%p\n", page->pp_rmap);
     swap_incref_task_swap_counter(page);
     int free_index = find_free_swap_index(page->pp_order);
@@ -222,7 +228,7 @@ int swap_out(struct page_info *page){
     UNLOCK_RMAP(page->pp_rmap);
     page->pp_rmap = NULL;
     page->pp_ref = 0;
-    cprintf("SWAP OUT completed! page=%p\n", page);
+    // cprintf("SWAP OUT completed! page=%p\n", page);
     return 0;
 }
 
@@ -257,7 +263,7 @@ int swap_in(physaddr_t pte){
     }
     swap_decref_task_swap_counter(page);
     swap_add(page);
-    cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
+    // cprintf("swap_in completed! page_info=%p, pp_ref=%d\n", page, page->pp_ref);
     UNLOCK_RMAP(page->pp_rmap);
     return 0;
 }
@@ -288,7 +294,7 @@ int find_free_swap_index(int order){
 }
 
 void disc_ahci_write(struct page_info *page, uint64_t addr){
-    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_write\n");
+    while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_write\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
@@ -301,7 +307,7 @@ void disc_ahci_write(struct page_info *page, uint64_t addr){
 }
 
 void disc_ahci_read(struct page_info *page, uint64_t addr){
-    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_read\n");
+    while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_read\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
