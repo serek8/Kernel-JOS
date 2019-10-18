@@ -4,4 +4,4 @@
 #include <list.h>
 #include <paging.h>
 
-void oom_kill();
+int oom_kill();

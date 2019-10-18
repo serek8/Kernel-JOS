@@ -143,7 +143,6 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		}
 	}
 
-	cprintf("merge\n");
 	// now pages in pt can be merged
 	// copy data to huge page
 	struct page_info *page = page_alloc(ALLOC_HUGE);

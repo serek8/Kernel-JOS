@@ -44,22 +44,18 @@ static void oom_print_scores()
 {
     cprintf("----------\nOOM killer - badness scores\n\n");
     struct task *task = oom_get_next(0);
-    do {
+    while(task) {
         cprintf("PID=%2d, score=%4d, type=%s\n", 
             task->task_pid, 
             oom_get_score(task),
             task->task_type == TASK_TYPE_KERNEL ? "TASK_TYPE_KERNEL":"TASK_TYPE_USER");
         task = oom_get_next(task->task_pid);
-    } while(task);
+    }
     cprintf("\n----------\n");
 }
 
-void oom_kill()
+int oom_kill()
 {
-    for(int i=0; i<100; i++) {
-        ksched_yield();
-    }
-    
     oom_print_scores();
 
     // determine which task to kill
@@ -77,6 +73,10 @@ void oom_kill()
         task = oom_get_next(task->task_pid);
     }
 
+    if(!bad_task) {
+        return -1;
+    }
+
     cprintf("OOM: killing task=%d, badness=%d\n", bad_task->task_pid, bad_max);
     if(bad_task->task_status == TASK_DYING && bad_task->task_ppid != 0) {
 		struct task *parent = pid2task(bad_task->task_ppid, 0);
@@ -87,6 +87,5 @@ void oom_kill()
     } else {
         task_destroy(bad_task);        
     }
-
-    oom_print_scores();
+    return 0;
 }

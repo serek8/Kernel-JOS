@@ -6,10 +6,14 @@
 #include <atomic.h>
 
 #include <kernel/mem.h>
+#include <kernel/sched.h>
+#include <kernel/swap/swap.h>
 
 /* Physical page metadata. */
 size_t npages;
 struct page_info *pages;
+
+size_t free_pages;
 
 /* Lists of physical pages. */
 struct list page_free_list[BUDDY_MAX_ORDER];
@@ -209,8 +213,33 @@ struct page_info *page_alloc(int alloc_flags)
 	uint64_t order = (alloc_flags & ALLOC_HUGE) ? BUDDY_2M_PAGE : BUDDY_4K_PAGE; 
 	struct page_info *page = buddy_find(order);
 	
-	if(page == NULL) {
-		panic("Could not allocate page of order %d. Out of memory.", order);
+	while(page == NULL) {
+		// swap out
+		struct page_info *to_swap = swap_clock();
+		int result = 0;
+		result = swap_out(to_swap);
+		if (result != -1) {
+			to_swap->pp_ref = 0;
+			rmap_free(to_swap->pp_rmap); 
+			page_free(to_swap);
+			page = buddy_find(order);
+			// cprintf("test order=%d, free_pages=%d, page=%p\n", order, free_pages, page);
+		} else {
+			// we are out of swap space -> kill process
+			int cur_task_pid = 0;
+			if(cur_task) cur_task_pid = cur_task->task_pid;
+			cprintf("buddy OOM killer - order=%d, free_pages=%d, cur_task_pid=%d\n", order, free_pages, cur_task_pid);
+			#ifndef USE_BIG_KERNEL_LOCK
+			spin_unlock(&buddy_lock);
+			#endif
+			oom_kill();
+			// cprintf("test order=%d, free_pages=%d, cur_task=%p\n", order, free_pages, cur_task);
+			// check if cur_task is still alive, otherwise sched_yield
+
+			// should never be reached
+			panic("Could not allocate page of order %d. Out of memory.", order);
+		}
+				
 	}
 	if(page->pp_free == 0) {
 		panic("Tried to allocate page but already free. pa=%p", page2pa(page));
@@ -238,6 +267,12 @@ struct page_info *page_alloc(int alloc_flags)
 	if(alloc_flags & ALLOC_ZERO){
 		void *page_ka = page2kva(page);
 		memset(page_ka, '\0', ORDER_TO_SIZE(order));
+	}
+
+	if(order == BUDDY_4K_PAGE) {
+		free_pages--;
+	} else {
+		free_pages -= 512;
 	}
 
 	#ifndef USE_BIG_KERNEL_LOCK
@@ -279,6 +314,12 @@ void page_free(struct page_info *pp)
 	memset(page2kva(pp), POISON_BYTE, ORDER_TO_SIZE(pp->pp_order));
 	#endif
 	
+	if(pp->pp_order == BUDDY_4K_PAGE) {
+		free_pages++;
+	} else {
+		free_pages += 512;
+	}
+
 	pp->pp_free = 0x1;
 	pp = buddy_merge(pp);
 	list_push(&page_free_list[pp->pp_order], &pp->pp_node); 
@@ -380,6 +421,7 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 	}
 
 	npages = index + nblocks;
+	free_pages = npages;
 
 	return 0;
 }

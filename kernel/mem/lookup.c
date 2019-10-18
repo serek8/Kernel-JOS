@@ -17,7 +17,7 @@ static int lookup_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 
 	/* LAB 2: your code here. */
 	if(*entry & PAGE_SWAP) {
-		cprintf("lookup_pte swap bit detected\n");
+		// cprintf("lookup_pte swap bit detected\n");
 		info->entry = entry;
 	}
 	if(*entry & PAGE_PRESENT) {
@@ -39,7 +39,7 @@ static int lookup_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 		info->entry = entry;
 	}
 	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)) {
-		cprintf("lookup_pde swap bit detected\n");
+		// cprintf("lookup_pde swap bit detected\n");
 		info->entry = entry;
 	}
 
