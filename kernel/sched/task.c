@@ -508,10 +508,10 @@ void task_destroy(struct task *task)
 	if(!current){
 		if(task->task_status != TASK_RUNNING){
 			if(task->task_cpunum == TASK_CPUNUM_GLOBAL_RUNQ){
-				runq_len--;
+				atomic_dec(&runq_len);
 			}
 			else{
-				cpus[task->task_cpunum].runq_len--;
+				atomic_dec(&cpus[task->task_cpunum].runq_len);
 			}
 		}
 	}

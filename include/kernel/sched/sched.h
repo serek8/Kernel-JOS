@@ -16,5 +16,5 @@ int sys_sched_getaffinity(pid_t pid, unsigned cpusetsize, cpu_set_t *mask);
 	#define LOCK_RUNQ(runq) do { spin_lock(&runq); } while(0)
 	#define UNLOCK_RUNQ(runq) do { spin_unlock(&runq); } while(0)
 
-	#define ADD_NEXTQ(task) do {  lrunq_len++; list_push_left(&lnextq, &task->task_node); } while(0)
+	#define ADD_NEXTQ(task) do {  atomic_inc(&lrunq_len); list_push_left(&lnextq, &task->task_node); } while(0)
 #endif
