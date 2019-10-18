@@ -164,6 +164,7 @@ struct task *task_clone(struct task *task)
 	clone->task_active_pages = task->task_active_pages;
 	// copy number of swap pages
 	clone->task_swapped_pages = task->task_swapped_pages;
+	clone->task_cpunum = task->task_cpunum;
 
 	list_init(&clone->task_rmap_elems);	
 
