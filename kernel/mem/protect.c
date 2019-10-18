@@ -15,13 +15,18 @@ struct protect_info {
 static int protect_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
     struct page_walker *walker)
 {
+	cprintf("protect_pte base=%p\n", base);
 	struct protect_info *info = walker->udata;
+
 	if(*entry & PAGE_SWAP) {
-		swap_in(*entry);
+		// cprintf("protect_pte & PAGE_SWAP base=%p\n", base);
+		mprotect_swapped_out(entry, info->flags); // change permissions directly on the disk
+		tlb_invalidate(info->pml4, (void*)base);
+		return 0;
 	}
-	/* LAB 3: your code here. */
-	// check if flags actually change
-	if((*entry & PAGE_MASK) != info->flags) {
+	
+	if((*entry & PAGE_MASK) != info->flags) { // check if flags actually change
+		// cprintf("protect_pte & PAGE_MASK base=%p\n", base);
 		*entry = info->flags | PAGE_ADDR(*entry);
 		tlb_invalidate(info->pml4, (void*)base);
 	}

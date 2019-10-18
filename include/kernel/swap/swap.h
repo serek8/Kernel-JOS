@@ -26,6 +26,9 @@ struct rmap_elem {
     physaddr_t *entry; // PTE entry
     struct rmap *p_rmap; // parent rmap
     struct task *p_task; // parent task | just for debuging | remove later
+    uint8_t flag_write;
+    uint8_t flag_huge;
+    uint8_t flag_no_exec;
 };
 
 struct swap_disk_mapping_t{
@@ -47,6 +50,7 @@ void rmap_free_task_rmap_elems(struct list *task_rmap_elems);
 void rmap_unlink_task_rmap_elem_by_rmap_obj(struct list *task_rmap_elems, struct rmap *rmap_obj);
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task);
 struct swap_disk_mapping_t *get_swap_disk_mapping_by_id(int i);
+void mprotect_swapped_out(physaddr_t *pte, uint64_t flags);
 
 void swapd();
 void swap_add(struct page_info *page);
