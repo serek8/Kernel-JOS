@@ -16,7 +16,7 @@ static int remove_pte(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct remove_info *info = walker->udata;
 	struct page_info *page;
-	// cprintf("remove_pte\n");
+	// cprintf("remove_pte base=%p\n", base);
 	if(*entry & PAGE_SWAP){
 		// swap_in(*entry); // todo lab7: optimalize by removing pages directly from the hard drive
 		rmap_decref_swapped_out(*entry);

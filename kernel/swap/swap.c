@@ -145,9 +145,16 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
 
         // wait until the task is interrupted, so we can replace the PTE. In task_run we use load_pml4, so TLB will be flushed
         while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);
-        *elem->entry &= (~PAGE_PRESENT);
+        
+        // backup flags
+        elem->flag_write = ((*elem->entry & PAGE_WRITE) == PAGE_WRITE);
+        elem->flag_no_exec = ((*elem->entry & PAGE_NO_EXEC) == PAGE_NO_EXEC);
+        elem->flag_huge = ((*elem->entry & PAGE_HUGE) == PAGE_HUGE);
+        
+        // update PTE by replacing PRESENT bit with SWAP bit
+        *elem->entry &= (~PAGE_PRESENT); // clear PAGE_PRESENT
         *elem->entry |= (PAGE_SWAP);
-        *elem->entry &= (PAGE_MASK);
+        *elem->entry &= (PAGE_MASK); // clear all flags
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
         UNLOCK_TASK_SWAPPER(elem->p_task);
         // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
@@ -161,12 +168,17 @@ void rmap_prepare_ptes_for_swap_in(struct page_info *page){
 	list_foreach(&page->pp_rmap->elems, node) {
 		elem = container_of(node, struct rmap_elem, rmap_node);
 
-        // cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
+        cprintf("  > before updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
         *elem->entry &= (~PAGE_SWAP);
         *elem->entry |= (PAGE_PRESENT);
         *elem->entry &= (PAGE_MASK);
         *elem->entry |= PAGE_ADDR(page2pa(page));
-        // cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
+
+        // restore flags
+        *elem->entry |= elem->flag_write ? PAGE_WRITE : 0;
+        *elem->entry |= elem->flag_no_exec ? PAGE_NO_EXEC : 0;
+        *elem->entry |= elem->flag_huge ? PAGE_HUGE : 0;
+        cprintf("  > after updating PTE p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }
 
@@ -372,6 +384,31 @@ void rmap_decref_swapped_out(physaddr_t pte){
     }
 }
 
+
+void mprotect_swapped_out(physaddr_t *pte, uint64_t flags){
+    uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(*pte);
+    if(!(*pte & PAGE_SWAP)) {
+        panic("the PTE is already swapped in\n");
+        return;
+    }
+    struct swap_disk_mapping_t *swap_index_elem = &swap_disk_mapping[swap_index];
+    struct rmap *map = swap_index_elem->swap_rmap;
+    while(!TRY_LOCK_RMAP(map)) cprintf("waiting mprotect_swapped_out=%p\n", map);
+    struct rmap_elem *elem;
+	struct list *node;
+    // cprintf("rmap_prepare_ptes_for_swap_in:\n");
+	list_foreach(&map->elems, node) {
+		elem = container_of(node, struct rmap_elem, rmap_node);
+        if(elem->entry == pte){
+            // cprintf("mprotect_swapped_out changed pte on the disk\n");
+            elem->flag_write = ((flags & PAGE_WRITE) == PAGE_WRITE);
+            elem->flag_no_exec = ((flags & PAGE_NO_EXEC) == PAGE_NO_EXEC);
+            elem->flag_huge = ((flags & PAGE_HUGE) == PAGE_HUGE);
+        }
+        break;
+    }
+    UNLOCK_RMAP(map);
+}
 
 
 
