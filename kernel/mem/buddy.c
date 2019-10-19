@@ -88,6 +88,18 @@ size_t count_total_free_pages(void)
 	return nfree;
 }
 
+size_t get_actual_free_pages()
+{
+	size_t nfree = 0;
+	for (int order = 0; order < BUDDY_MAX_ORDER; ++order) {
+		size_t nfree_pages = count_free_pages(order);
+		nfree += nfree_pages * (1 << order);
+		// cprintf("order=%d, nfree_pages=%d, nfree+=%d\n", order, nfree_pages, nfree_pages * (1 << order));
+	}
+
+	return nfree;
+}
+
 /* Splits lhs into free pages until the order of the page is the requested
  * order req_order.
  *
@@ -425,7 +437,6 @@ int buddy_map_chunk(struct page_table *pml4, size_t index)
 	}
 
 	npages = index + nblocks;
-	free_pages = npages;
 
 	return 0;
 }

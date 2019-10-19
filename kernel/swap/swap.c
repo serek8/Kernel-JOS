@@ -584,23 +584,25 @@ void swapd_test()
 void swapd()
 {
     uint64_t last_time = read_tsc();
-    while(nuser_tasks) {
-        while(free_mem_percent() < 90) {
+    while(nuser_tasks - 1) { // do not count this kernel task
+        while(free_mem_percent() < 20) {
             if((read_tsc() - last_time) < SWAPD_SCHEDULE_TIME_BLOCK) {
                 break;
             }
 
             swapd_update_lru();
 
-            if(free_mem_percent() < 40) {
+            while(free_mem_percent() < 10) {
                 // swap out
                 struct page_info *to_swap = swap_clock();
                 int result = 0;
                 result = swap_out(to_swap, SWAP_SYNC_BACKGROUND);
+                cprintf("swapd: to_swap=%p, order=%d\n", to_swap, to_swap->pp_order);
                 if(result != -1){
-		            cprintf("swapd: to_swap=%p, order=%d\n", to_swap, to_swap->pp_order);
                     to_swap->pp_ref = 1;
                     page_decref(to_swap);
+                } else {
+                    break;
                 }
             }
 

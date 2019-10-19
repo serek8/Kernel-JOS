@@ -63,6 +63,7 @@ void page_decref(struct page_info *pp);
 void buddy_migrate(void);
 int buddy_map_chunk(struct page_table *pml4, size_t index);
 int free_mem_percent();
+size_t get_actual_free_pages();
 
 static inline physaddr_t page2pa(struct page_info *pp)
 {

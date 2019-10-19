@@ -11,6 +11,7 @@
 extern struct list page_free_list[];
 extern size_t ncpus;
 
+extern size_t free_pages;
 extern struct spinlock buddy_lock;
 
 /* The kernel's initial PML4. */
@@ -155,6 +156,9 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Check the buddy allocator. */
 	// lab2_check_buddy(boot_info);
+
+	free_pages = get_actual_free_pages();
+	cprintf("Total 4K pages: %d, used by kernel: %d, actual free pages: %d\n", npages, npages-free_pages, free_pages);
 
 	spin_init(&buddy_lock, "buddy_lock");
 }
