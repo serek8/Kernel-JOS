@@ -28,7 +28,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 		// cprintf("pfault: COW!\n");
 
 		if(page && *entry & PAGE_SWAP) {
-			swap_in(*entry);
+			swap_in(*entry, SWAP_SYNC_DIRECT);
 		}
 
 		if(page->pp_ref == 1) {
@@ -59,7 +59,7 @@ int task_page_fault_handler(struct task *task, void *va, int flags)
 	}
 
 	if(!page && entry && ((*entry & PAGE_SWAP) == PAGE_SWAP)) {
-		swap_in(*entry);
+		swap_in(*entry, SWAP_SYNC_DIRECT);
 		return 0;
 	}
 

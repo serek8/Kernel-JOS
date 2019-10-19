@@ -434,6 +434,7 @@ void ktask_base(void *kernel_task_entry){
 	ksched_yield();
 }
 
+// This function can be used only from a kernel thread
 void ksched_yield(){
 	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
 }

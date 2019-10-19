@@ -143,8 +143,8 @@ void print_task_rmap_elems(struct task *taskx){
         // cprintf("  > &p_rmap=%p, &pte=%p, *pte=%p\n", elem->p_rmap, elem->entry, *elem->entry);
     }
 }
-void read_from_disk(void *addr, uint64_t index);
-void write_to_disk(void *addr, uint64_t index);
+void read_from_disk(void *addr, uint64_t index, int sync);
+void write_to_disk(void *addr, uint64_t index, int sync);
 
 void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index){
     struct rmap_elem *elem;
@@ -155,7 +155,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d, swap_index=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid, swap_index);
 
         // wait until the task is interrupted, so we can replace the PTE. In task_run we use load_pml4, so TLB will be flushed
-        while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);
+        while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) { /*cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);*/ }
         
         // backup flags
         elem->flag_write = ((*elem->entry & PAGE_WRITE) == PAGE_WRITE);
@@ -215,10 +215,10 @@ void swap_incref_task_swap_counter(struct page_info *page){
     }
 }
 
-void disc_ahci_write(struct page_info *page, uint64_t addr);
-void disc_ahci_read(struct page_info *page, uint64_t addr);
+void disc_ahci_write(struct page_info *page, uint64_t addr, int sync);
+void disc_ahci_read(struct page_info *page, uint64_t addr, int sync);
 
-int swap_out(struct page_info *page){
+int swap_out(struct page_info *page, int sync){
     if(!page){
         return -1;
     }
@@ -241,7 +241,7 @@ int swap_out(struct page_info *page){
     swap_index_elem->is_taken = 1;
     swap_index_elem->pp_order = page->pp_order;
     rmap_prepare_ptes_for_swap_out(page, free_index);
-    disc_ahci_write(page, free_index * PAGE_SIZE);
+    disc_ahci_write(page, free_index * PAGE_SIZE, sync);
 
     // huge pages
     for(int i=1; i<iterations; i++){
@@ -250,7 +250,7 @@ int swap_out(struct page_info *page){
         swap_index_elem->swap_rmap = NULL;
         swap_index_elem->is_taken = 1;
         swap_index_elem->pp_order = 0x2; // error value
-        disc_ahci_write(page_i, (free_index + i) * PAGE_SIZE);
+        disc_ahci_write(page_i, (free_index + i) * PAGE_SIZE, sync);
     }
 
     // clear page_info struct
@@ -263,7 +263,7 @@ int swap_out(struct page_info *page){
 }
 
 
-int swap_in(physaddr_t pte){
+int swap_in(physaddr_t pte, int sync){
     uint64_t swap_index = PAGE_ADDR_TO_SWAP_INDEX(pte);
     // cprintf("swap_in *pte=%p, swap_index=%d\n", pte, swap_index);
     if(!(pte & PAGE_SWAP)) {
@@ -279,7 +279,7 @@ int swap_in(physaddr_t pte){
     swap_index_elem->swap_rmap = NULL;
     swap_index_elem->is_taken = 0;
     rmap_prepare_ptes_for_swap_in(page); // todo: lab7 flush
-    disc_ahci_read(page, swap_index * PAGE_SIZE);
+    disc_ahci_read(page, swap_index * PAGE_SIZE, sync);
     int iterations = page->pp_order == BUDDY_4K_PAGE ? 1 : 512;
 
     // huge pages
@@ -289,7 +289,7 @@ int swap_in(physaddr_t pte){
         swap_index_elem->swap_rmap = NULL;
         swap_index_elem->is_taken = 0;
         swap_index_elem->pp_order = 0;
-        disc_ahci_read(page_i, (swap_index + i) * PAGE_SIZE);
+        disc_ahci_read(page_i, (swap_index + i) * PAGE_SIZE, sync);
     }
     swap_decref_task_swap_counter(page);
     swap_add(page);
@@ -309,7 +309,7 @@ int is_consecutive_512_indexes_free(int i){
 }
 
 int find_free_swap_index(int order){
-    while(!TRY_LOCK_DISK(disk_lock)) cprintf("waiting disc_ahci_write\n");
+    while(!TRY_LOCK_DISK(disk_lock)) { /*cprintf("waiting disc_ahci_write\n")*/ }
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         if(swap_disk_mapping[i].is_taken == 0){
             if(order == BUDDY_2M_PAGE && !is_consecutive_512_indexes_free(i)){
@@ -324,27 +324,43 @@ int find_free_swap_index(int order){
     return -1;
 }
 
-void disc_ahci_write(struct page_info *page, uint64_t addr){
+void disc_ahci_write(struct page_info *page, uint64_t addr, int sync){
     while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_write\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
     addr = addr / 512;
     assert(disk_write(disk, buf, size, addr) == -EAGAIN);
-    while (!disk_poll(disk));
+    int poll = disk_poll(disk);
+    // cprintf("task_pid=%d, cpu=%d\n", cur_task->task_pid, this_cpu->cpu_id);
+    while (!poll){
+        if(sync == SWAP_SYNC_BACKGROUND) { 
+            // cprintf("async write worked, cpu=%d\n", this_cpu->cpu_id); 
+            ksched_yield();
+        }
+        poll = disk_poll(disk);
+    }
     int64_t disk_write_res = disk_write(disk, buf, size, addr);
     // cprintf("disk_write_res=%d\n", disk_write_res);
     UNLOCK_DISK(disk_lock);
 }
 
-void disc_ahci_read(struct page_info *page, uint64_t addr){
+void disc_ahci_read(struct page_info *page, uint64_t addr, int sync){
     while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_read\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
     int size = 8; // 8*512sectors = PAGE_SIZE
     addr = addr / 512;
     assert(disk_read(disk, buf, size, addr)  == -EAGAIN);
-    while (!disk_poll(disk));
+    int poll = disk_poll(disk);
+    // cprintf("task_pid=%d, cpu=%d\n", cur_task->task_pid, this_cpu->cpu_id);
+    while (!poll){
+        if(sync == SWAP_SYNC_BACKGROUND) {
+            // cprintf("async read worked, cpu=%d\n", this_cpu->cpu_id); 
+            ksched_yield();
+        }
+        poll = disk_poll(disk);
+    }
     int64_t disk_read_res = disk_read(disk, buf, size, addr);
     // cprintf("disk_read_res=%d\n", disk_read_res);
     // cprintf("read=%d\n", *(uint64_t*)buf);
@@ -580,7 +596,7 @@ void swapd()
                 // swap out
                 struct page_info *to_swap = swap_clock();
                 int result = 0;
-                result = swap_out(to_swap);
+                result = swap_out(to_swap, SWAP_SYNC_BACKGROUND);
                 if(result != -1){
 		            cprintf("swapd: to_swap=%p, order=%d\n", to_swap, to_swap->pp_order);
                     to_swap->pp_ref = 1;

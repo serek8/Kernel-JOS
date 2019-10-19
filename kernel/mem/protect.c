@@ -44,7 +44,7 @@ static int protect_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 {
 	struct protect_info *info = walker->udata;
 	if((*entry & (PAGE_SWAP | PAGE_HUGE)) == (PAGE_SWAP | PAGE_HUGE)) {
-		swap_in(*entry);
+		swap_in(*entry, SWAP_SYNC_DIRECT);
 	}
 	/* LAB 3: your code here. */
 	if((*entry & (PAGE_PRESENT | PAGE_HUGE)) == (PAGE_PRESENT | PAGE_HUGE)) {

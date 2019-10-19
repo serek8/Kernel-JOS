@@ -10,6 +10,9 @@
 #define PAGE_ADDR_TO_SWAP_INDEX(x) (PAGE_ADDR(x) >> PAGE_TABLE_SHIFT)
 #define MB (1024*1024)
 
+#define SWAP_SYNC_BACKGROUND 0
+#define SWAP_SYNC_DIRECT 1
+
 struct rmap {
     struct list elems;
     uint16_t pp_ref;
@@ -41,8 +44,8 @@ struct page_info;
 struct task;
 
 void swap_init();
-int swap_out(struct page_info *page); // returns 0 on success
-int swap_in(physaddr_t pte); // returns 0 on success
+int swap_out(struct page_info *page, int sync); // returns 0 on success
+int swap_in(physaddr_t pte, int sync); // returns 0 on success
 void rmap_init(struct rmap *map);
 void rmap_free(struct rmap *map);
 void rmap_decref_swapped_out(physaddr_t pte);
