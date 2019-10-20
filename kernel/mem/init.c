@@ -149,6 +149,8 @@ void mem_init(struct boot_info *boot_info)
 
 	/* Add the rest of the physical memory to the buddy allocator. */
 	cprintf("Adding the rest of the physical memory to the buddy allocator\n");
+	
+	kmem_init();
 	page_init_ext(boot_info);
 
 	/* Check the buddy allocator. */

@@ -9,6 +9,7 @@
  */
 int kmem_init(void)
 {
+	// cprintf("kmem_init_mp this_cpu=%d\n", this_cpu->cpu_id);
 	nslabs = 32;
 
 	struct slab *slab;
@@ -50,9 +51,10 @@ void *kmalloc(size_t size)
 	index = (size / SLAB_ALIGN) - 1;
 
 	if (index >= nslabs) {
+		panic("kmalloc is out of memory! index >= nslabs <==> %d >= %d\n", index, nslabs);
 		return NULL;
 	}
-
+	// cprintf("allocated slabs=%d, index=%d", slabs, index);
 	return slab_alloc(slabs + index);
 }
 

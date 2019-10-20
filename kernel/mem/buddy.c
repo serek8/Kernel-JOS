@@ -280,6 +280,7 @@ void page_free(struct page_info *pp)
 	#endif
 	
 	pp->pp_free = 0x1;
+	// rmap_free(pp->pp_rmap);
 	pp = buddy_merge(pp);
 	list_push(&page_free_list[pp->pp_order], &pp->pp_node); 
 }
