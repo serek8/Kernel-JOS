@@ -111,6 +111,10 @@ void rmap_elem_init(struct rmap_elem *elem){
 
 /* address to 'pte' is in kernel address space */
 void rmap_add_mapping(struct rmap *map, physaddr_t *pte, struct task *p_task){
+    if(p_task == NULL){
+        return;
+        panic("omit task!\n");
+    }
     assert((uint64_t)pte > KERNEL_VMA); // make sure PTE is in kernel address space
     // cprintf("rmap_add_mapping: &rmap=%p, &pte=%p, *pte=%p, page=%p, PID=%d\n", map, pte, *pte, pa2page(PAGE_ADDR((*pte))), p_task->task_pid);
     struct rmap_elem *map_elem = kmalloc(sizeof(struct rmap_elem));
