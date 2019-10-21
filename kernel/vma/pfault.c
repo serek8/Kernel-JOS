@@ -8,6 +8,7 @@
 int task_page_fault_handler(struct task *task, void *va, int flags)
 {
 	/* LAB 4: your code here. */
+	va = ROUNDDOWN(va, PAGE_SIZE);
 	struct vma *vma = find_vma(NULL, NULL, &task->task_rb, va);
 
 	// cprintf("pfault: vma=%p, va=%p vm_base=%p\n", vma, va, vma->vm_base);
