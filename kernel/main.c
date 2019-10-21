@@ -102,7 +102,7 @@ void kmain(struct boot_info *boot_info)
 
 	
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	// task_kernel_create(swapd);
+	task_kernel_create(kernel_task_example);
 	// cpu_set_t mask;
 	// CPU_ZERO(mask);
 	// CPU_SET(mask, 1);
@@ -114,7 +114,7 @@ void kmain(struct boot_info *boot_info)
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
-	task_kernel_create(swapd);
+	// task_kernel_create(swapd);
 	startup_completed = 1;
 	sched_yield();
 #else

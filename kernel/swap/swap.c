@@ -159,7 +159,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         // cprintf("  > before updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d, swap_index=%d\n", elem->p_rmap, page, elem->entry, *elem->entry, elem->p_task->task_pid, swap_index);
 
         // wait until the task is interrupted, so we can replace the PTE. In task_run we use load_pml4, so TLB will be flushed
-        while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) { /*cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);*/ }
+        // while(!TRY_LOCK_TASK_SWAPPER(elem->p_task)) { /*cprintf("waiting for the task [%d] to get sched_yield=%p\n", elem->p_task->task_pid);*/ }
         
         // backup flags
         elem->flag_write = ((*elem->entry & PAGE_WRITE) == PAGE_WRITE);
@@ -171,7 +171,7 @@ void rmap_prepare_ptes_for_swap_out(struct page_info *page, uint64_t swap_index)
         *elem->entry |= (PAGE_SWAP);
         *elem->entry &= (PAGE_MASK); // clear all flags
         *elem->entry |= PAGE_ADDR(swap_index << PAGE_TABLE_SHIFT);
-        UNLOCK_TASK_SWAPPER(elem->p_task);
+        // UNLOCK_TASK_SWAPPER(elem->p_task);
         // cprintf("  > after updating PTE elem->p_rmap=%p, page=%p, &pte=%p, *pte=%p, PID=%d\n", elem->p_rmap, PAGE_ADDR(*elem->entry), elem->entry, *elem->entry, elem->p_task->task_pid);
     }
 }

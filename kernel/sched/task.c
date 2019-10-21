@@ -167,6 +167,7 @@ struct task *task_alloc(pid_t ppid)
 	task->task_status = TASK_RUNNABLE;
 	task->task_cpunum = this_cpu->cpu_id;
 	task->task_swapped_pages = 0;
+	task->kstack = NULL;
 	task->task_active_pages = 0;
 	spin_init(&task->task_lock, "task_lock");
 	spin_init(&task->swap_update_lock, "swap_update_lock");
@@ -436,6 +437,20 @@ void ktask_base(void *kernel_task_entry){
 
 // This function can be used only from a kernel thread
 void ksched_yield(){
+	if(cur_task->task_type == TASK_TYPE_USER){
+		if(cur_task->kstack == NULL){
+			cur_task->kstack = page2kva(page_alloc(0));
+		}
+		memcpy(cur_task->kstack, (void*)(this_cpu->cpu_tss.rsp[0]-PAGE_SIZE), PAGE_SIZE);
+		cur_task->task_frame_bak = cur_task->task_frame;
+		// interrupt
+		isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
+		// here the task will be continued
+		// clean up
+		page_decref(pa2page(PADDR(cur_task->kstack)));
+		cur_task->task_frame = cur_task->task_frame_bak;
+		return;
+	}
 	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
 }
 
@@ -637,6 +652,12 @@ void task_pop_frame(struct int_frame *frame)
 			this_cpu->gsbase_in_msr = 1;
 		}
 		lapic_eoi();
+		volatile struct task *tt=cur_task;
+		if(cur_task->task_type == TASK_TYPE_USER && (cur_task->task_frame.cs & 3) == 0 && cur_task->kstack){
+			uint64_t rr = this_cpu->cpu_tss.rsp[0] + PAGE_SIZE;
+			asm volatile("movq %0, %%rsp\n" :: "r" (rr)); 
+			memcpy((void*)(this_cpu->cpu_tss.rsp[0]-PAGE_SIZE), cur_task->kstack, PAGE_SIZE);
+		}
 		iret64(frame); 
 		break;
 	}
@@ -687,7 +708,7 @@ void task_run(struct task *task)
 	}
 
 	// This lock prevents swapper from updating this task's PTEs
-	while(!TRY_LOCK_TASK_SWAPPER(task)) cprintf("PID %d is waiting task_run\n", task->task_pid);
+	// while(!TRY_LOCK_TASK_SWAPPER(task)) cprintf("PID %d is waiting task_run\n", task->task_pid);
 
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;

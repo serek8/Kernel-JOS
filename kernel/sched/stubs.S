@@ -65,13 +65,39 @@ isr_common_stub:
 	movq %rsp, %rdi
 	jmp int_handler
 
+// .global isr_kernel_task_stub
+// isr_kernel_task_stub:
+// 	// %rdi = this_cpu->cpu_tss.rsp[0] (KSTACK_TOP of a specific CPU)
+// 	pushq %rax
+// 	movq %ss, %rax // ss
+// 	movq %rax, -8(%rdi) // ss
+// 	movq %rsp, -16(%rdi) // rsp
+// 	pushf 
+// 	popq %rax 
+// 	movq %rax, -24(%rdi) // rflags
+// 	movq %cs, %rax
+// 	movq %rax, -32(%rdi) // // cs
+// 	movq 8(%rsp), %rax // mov retaddr
+// 	movq %rax, -40(%rdi) // // rip
+// 	movq $1234, -48(%rdi) // error code
+// 	movq $0x20, -56(%rdi) // IRQ int number
+// 	pop %rax
+// 	mov %rdi, %rsp
+// 	sub $56, %rsp
+// 	jmp isr_common_stub
+
 .global isr_kernel_task_stub
 isr_kernel_task_stub:
 	// %rdi = this_cpu->cpu_tss.rsp[0] (KSTACK_TOP of a specific CPU)
+	
 	pushq %rax
 	movq %ss, %rax // ss
 	movq %rax, -8(%rdi) // ss
-	movq %rsp, -16(%rdi) // rsp
+	movq %rsp, %rax
+
+	add $0x10, %rax // rsp
+	movq %rax, -16(%rdi) 
+	
 	pushf 
 	popq %rax 
 	movq %rax, -24(%rdi) // rflags

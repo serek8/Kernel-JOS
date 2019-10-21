@@ -6,35 +6,42 @@
 
 int main(int argc, char **argv)
 {
-	struct vma_info info;
-	char *addr = (void *)0x1000000;
+	printf("u1\n");
+	test_swap_out((void*)0x1234); 
+	printf("u2\n");
+	// test_swap_out(NULL); 
+	// printf("u3\n");
 
-	mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
-	for(int i=0; i<512; i++){
-		uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
-		*a = i+1;
-	}
-	// memset(addr, 1, HPAGE_SIZE);
 
-	test_swap_out(addr); 
-	mprotect(addr+PAGE_SIZE, PAGE_SIZE, PROT_READ);
-	for(int i=0; i<512; i++){
-		uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
-		printf("i <=> %u\n", *a);
-	}
+	// struct vma_info info;
+	// char *addr = (void *)0x1000000;
+
+	// mmap(addr, HPAGE_SIZE, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
+	// for(int i=0; i<512; i++){
+	// 	uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
+	// 	*a = i+1;
+	// }
+	// // memset(addr, 1, HPAGE_SIZE);
+
+	
+	// mprotect(addr+PAGE_SIZE, PAGE_SIZE, PROT_READ);
+	// for(int i=0; i<512; i++){
+	// 	uint64_t *a = (uint64_t*)(addr + i*PAGE_SIZE);
+	// 	printf("i <=> %u\n", *a);
+	// }
 	
 
-	mquery(&info, addr);
+	// mquery(&info, addr);
 
-	switch (info.vm_mapped) {
-		case VM_UNMAPPED: printf("unmapped\n"); break;
-		case VM_4K_PAGE: printf("4K page\n"); break;
-		case VM_2M_PAGE: printf("2M page\n"); break;
-	}
+	// switch (info.vm_mapped) {
+	// 	case VM_UNMAPPED: printf("unmapped\n"); break;
+	// 	case VM_4K_PAGE: printf("4K page\n"); break;
+	// 	case VM_2M_PAGE: printf("2M page\n"); break;
+	// }
 
-	print_vmas();
+	// print_vmas();
 
-	printf("loop\n");
+	// printf("loop\n");
 	// while(1);
 
 	return 0;

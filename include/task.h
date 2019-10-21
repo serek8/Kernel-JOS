@@ -113,5 +113,8 @@ struct task {
 	int task_active_pages;
 	int task_swapped_pages;
 	struct spinlock swap_update_lock;
+	// user in kernel space backup
+	void *kstack; // points to copy of a kernel stack if 'ksched_yield' used in user task
+	struct int_frame task_frame_bak; // copy of the user frame before ksched_yield
 };
 

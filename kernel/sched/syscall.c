@@ -196,16 +196,11 @@ unsigned sys_getcpuid(){
 }
 
 int sys_swap_out(void *addr){
-	physaddr_t *entry_store;
-	struct page_info *p = page_lookup(cur_task->task_pml4, addr, &entry_store);
-	if(*entry_store & PAGE_SWAP){
-		cprintf("Error! Tried to swap already swapped page!\n");
-		return -1;
-	}
-	// cprintf("sys_swap_out, *entry=0x%x\n", *entry_store);
-	swap_out(p, SWAP_SYNC_DIRECT);
-	p->pp_ref=1;
-	page_decref(p);
+	cprintf("k1 addr=%p, &addr=%p\n", addr, &addr);
+	ksched_yield();
+	cprintf("k2 addr=%p, &addr=%p\n", addr, &addr);
+	ksched_yield();
+	cprintf("k3 addr=%p\n", addr);
 	return 0;
 }
 
@@ -296,7 +291,7 @@ void syscall_handler(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	spin_lock(&kernel_lock);
 	#endif
 	// cprintf("syscall_handler, pid=%d", cur_task->task_pid);
-	UNLOCK_TASK_SWAPPER(cur_task);
+	// UNLOCK_TASK_SWAPPER(cur_task);
 
 	this_cpu->gsbase_in_msr = 0;
 	/* Syscall from user mode. */

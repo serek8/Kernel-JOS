@@ -13,6 +13,7 @@
 #include <kernel/acpi/lapic.h>
 
 #include <kernel/sched/task.h>
+#include <kernel/sched.h>
 #include <kernel/vma.h>
 #include <spinlock.h>
 
@@ -393,7 +394,7 @@ void int_dispatch(struct int_frame *frame)
 	// }
 	//  cprintf("frame->int_no=%d\n", frame->int_no);
 	// cprintf("UNLOCK_TASK_SWAPPER, pid=%d\n", cur_task->task_pid);
-	UNLOCK_TASK_SWAPPER(cur_task);
+	// UNLOCK_TASK_SWAPPER(cur_task);
 	/* Handle processor exceptions:
 	 *  - Fall through to the kernel monitor on a breakpoint.
 	 *  - Dispatch page faults to page_fault_handler().
@@ -413,6 +414,9 @@ void int_dispatch(struct int_frame *frame)
 		case INT_BREAK:
 			while(1) monitor(NULL);
 		case IRQ_TIMER:
+			if(frame->err_code == 1234){
+				sched_set_expired();
+			}
 			// cprintf("timer: cpu=%d\n", this_cpu->cpu_id);
 			sched_yield();
 			
@@ -448,7 +452,7 @@ void int_handler(struct int_frame *frame)
 
 	// cprintf("Incoming INT frame at %p\n", frame);
 
-	if ((frame->cs & 3) == 3 || cur_task->task_type==TASK_TYPE_KERNEL) {
+	// if ((frame->cs & 3) == 3 || cur_task->task_type==TASK_TYPE_KERNEL) {
 		// cprintf("user int\n");
 		/* Interrupt from user mode. */
 		assert(cur_task);
@@ -460,7 +464,7 @@ void int_handler(struct int_frame *frame)
 
 		/* Avoid using the frame on the stack. */
 		frame = &cur_task->task_frame;
-	}
+	// }
 
 	/* Dispatch based on the type of interrupt that occurred. */
 	int_dispatch(frame);
