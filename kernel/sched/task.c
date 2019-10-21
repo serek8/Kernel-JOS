@@ -229,7 +229,7 @@ struct task *task_kernel_alloc(pid_t ppid)
 	#ifndef USE_BIG_KERNEL_LOCK
 	spin_lock(&tasks_lock);
 	#endif
-	for (pid = 1; pid < pid_max; ++pid) {
+	for (pid = 1000; pid < pid_max; ++pid) {
 		if (!tasks[pid]) {
 			tasks[pid] = task;
 			task->task_pid = pid;
