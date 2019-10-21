@@ -266,6 +266,7 @@ struct page_info *page_alloc(int alloc_flags)
 	page->pp_rmap = NULL;
 	page->pp_free = 0;
 	list_remove(&page->pp_node);
+	list_init(&page->pp_swap_node.n);
 
 	#ifdef BONUS_LAB1
 	// page_info corruption

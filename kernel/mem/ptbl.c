@@ -159,7 +159,9 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	// clear up pages
 	for(int i=0; i<PAGE_TABLE_ENTRIES; i++) {
 		struct page_info *pte_page = pa2page(PAGE_ADDR(pt->entries[i]));
-		swap_remove(pte_page); // remove from LRU list
+		if(info->pml4 != kernel_pml4) {
+			swap_remove(pte_page); // remove from LRU list
+		}
 		// at this point we know that pages are present
 		page_decref(pte_page);
 		tlb_invalidate(info->pml4, (void*)(start_addr + PAGE_SIZE * i));
@@ -168,7 +170,9 @@ int ptbl_merge(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	page->pp_rmap = kmalloc(sizeof(struct rmap));
 	rmap_init(page->pp_rmap);
 	rmap_add_mapping(page->pp_rmap, entry, cur_task); //info->taskx
-	swap_add(page); // add to LRU list
+	if(info->pml4 != kernel_pml4) {
+		swap_add(page); // add to LRU list
+	}
 
 	page_decref(pt_page);
 	return 0;
