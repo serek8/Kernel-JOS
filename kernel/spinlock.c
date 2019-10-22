@@ -15,7 +15,7 @@ struct spinlock kernel_lock = {
 };
 #endif
 
-static int holding(struct spinlock *lock)
+int holding(struct spinlock *lock)
 {
 	return lock->locked && lock->cpu == this_cpu;
 }

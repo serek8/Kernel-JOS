@@ -439,6 +439,7 @@ void ktask_base(void *kernel_task_entry){
 // This function can be used only from a kernel thread
 void ksched_yield(){
 	if(cur_task->task_type == TASK_TYPE_USER){
+		while(!TRY_LOCK_TASK_SWAPPER(cur_task));
 		if(cur_task->kstack == NULL){
 			cur_task->kstack = page2kva(page_alloc(0));
 		}
@@ -451,6 +452,7 @@ void ksched_yield(){
 		page_decref(pa2page(PADDR(cur_task->kstack)));
 		cur_task->task_frame = cur_task->task_frame_bak;
 		cur_task->kstack = NULL;
+		UNLOCK_TASK_SWAPPER(cur_task);
 		return;
 	}
 	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);

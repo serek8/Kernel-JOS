@@ -229,8 +229,14 @@ struct page_info *page_alloc(int alloc_flags)
 		// swap out
 		struct page_info *to_swap = swap_clock();
 		int result = 0;
-		result = swap_out(to_swap, SWAP_SYNC_DIRECT);
 		// cprintf("buddy swap out to_swap=%p, order=%d, free_pages=%d, page=%p\n", to_swap, order, free_pages, page);
+		#ifndef USE_BIG_KERNEL_LOCK
+		spin_unlock(&buddy_lock);
+		#endif
+		result = swap_out(to_swap, SWAP_SYNC_BACKGROUND);
+		#ifndef USE_BIG_KERNEL_LOCK
+		spin_lock(&buddy_lock);
+		#endif
 		if (result != -1) {
 			to_swap->pp_ref = 0;
 			rmap_free(to_swap->pp_rmap); 

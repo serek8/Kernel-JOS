@@ -313,8 +313,10 @@ int is_consecutive_512_indexes_free(int i){
 }
 
 int find_free_swap_index(int order){
-    // TODO: check if user task && lock currently held by same core
-
+    while(holding(&disk_lock)) {
+        // cprintf("find_free_swap_index: ksched_yield. cur_task=%d\n", cur_task->task_pid);
+        ksched_yield();
+    }
     while(!TRY_LOCK_DISK(disk_lock)) { /*cprintf("waiting disc_ahci_write\n")*/ }
     for(int i=0; i<SWAP_DISC_INDEX_NUM; i++){
         if(swap_disk_mapping[i].is_taken == 0){
@@ -331,6 +333,12 @@ int find_free_swap_index(int order){
 }
 
 void disc_ahci_write(struct page_info *page, uint64_t addr, int sync){
+    // TODO: check if user task && lock currently held by same core
+    while(holding(&disk_lock)) {
+        // cprintf("disc_ahci_write: ksched_yield. cur_task=%d\n", cur_task->task_pid);
+        ksched_yield();
+    }
+
     while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_write\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
@@ -352,6 +360,11 @@ void disc_ahci_write(struct page_info *page, uint64_t addr, int sync){
 }
 
 void disc_ahci_read(struct page_info *page, uint64_t addr, int sync){
+    while(holding(&disk_lock)) {
+        // cprintf("disc_ahci_read: user task ksched_yield. cur_task=%d\n", cur_task->task_pid);
+        ksched_yield();
+    }
+
     while(!TRY_LOCK_DISK(disk_lock));// cprintf("waiting disc_ahci_read\n");
     struct disk *disk = disks[1];
     char *buf = page2kva(page);
@@ -379,6 +392,12 @@ void rmap_free(struct rmap *map){
     if(map == NULL){
         return;
     }
+
+    while(holding(&map->rmap_lock)) {
+        // cprintf("rmap_free: ksched_yield. cur_task=%d\n", cur_task->task_pid);
+        ksched_yield();
+    }
+
     // cprintf("rmap_free: (rmap=%p)\n", map);
     while(!TRY_LOCK_RMAP(map)) cprintf("waiting map=%p\n", map);
     struct rmap_elem *elem;
@@ -602,7 +621,7 @@ void swapd()
                 // swap out
                 struct page_info *to_swap = swap_clock();
                 int result = 0;
-                result = swap_out(to_swap, SWAP_SYNC_DIRECT);
+                result = swap_out(to_swap, SWAP_SYNC_BACKGROUND);
                 // cprintf("swapd: to_swap=%p, order=%d\n", to_swap, to_swap->pp_order);
                 if(result != -1){
                     to_swap->pp_ref = 1;
