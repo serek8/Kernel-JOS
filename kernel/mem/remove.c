@@ -49,7 +49,7 @@ static int remove_pde(physaddr_t *entry, uintptr_t base, uintptr_t end,
 			tlb_invalidate(info->pml4, (void*)base);
 		} else{
 			// cprintf("remove_pde swap in\n");
-			swap_in(*entry, SWAP_SYNC_DIRECT);
+			swap_in(*entry, SWAP_SYNC_BACKGROUND);
 		}
 	}
 	// cprintf("remove_pde 2\n");

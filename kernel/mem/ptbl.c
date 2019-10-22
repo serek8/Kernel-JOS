@@ -52,7 +52,7 @@ int ptbl_split(physaddr_t *entry, uintptr_t base, uintptr_t end,
 	if((*entry & PAGE_SWAP)){
 		cprintf("ptbl_split: entry & PAGE_SWAP\n");
 		// Swap in, because it's easier to operate on present pages
-		swap_in(*entry, SWAP_SYNC_DIRECT);
+		swap_in(*entry, SWAP_SYNC_BACKGROUND);
 	}
 
 	/* LAB 2: your code here. */

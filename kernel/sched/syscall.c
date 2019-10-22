@@ -214,7 +214,7 @@ int sys_swap_in(void *addr){
 	physaddr_t *entry_store = NULL;
 	page_lookup(cur_task->task_pml4, addr, &entry_store);
 	cprintf("custom swap-in\n");
-	return swap_in(*entry_store, SWAP_SYNC_DIRECT);
+	return swap_in(*entry_store, SWAP_SYNC_BACKGROUND);
 }
 
 /* Dispatches to the correct kernel function, passing the arguments. */
