@@ -545,6 +545,14 @@ void swapd_update_lru()
         struct page_info *page = GET_PAGE_FROM_SWAP_NODE_N(node);
         // cprintf("update_lru: swap_node.r=%d, page=%p, pp_ref=%d, content=%p, page->pp_rmap=%p, page->pp_order=%d\n", page->pp_swap_node.r, page, page->pp_ref, *((uint8_t*)page2kva(page)), page->pp_rmap, page->pp_order);
         
+        if(list_is_empty(&page->pp_rmap->elems)) {
+            // exit loop once we iterated over every item
+            if(node == last) {
+                break;
+            }
+            continue;
+        }
+
         int updated = 0;
         LOCK_RMAP(page->pp_rmap);
         // iterate over every element in the rmap
@@ -553,6 +561,9 @@ void swapd_update_lru()
             // cprintf("update_lru: task_pid=%d, PTE=%p, accessed=%d\n",   
             // rmap_elem->p_task->task_pid, *rmap_elem->entry, (*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED);
 
+            if(rmap_elem == NULL) { 
+                break;
+            }
             // if page was accessed -> append to lru_pages, reset second chance
             if(((*rmap_elem->entry & PAGE_ACCESSED) == PAGE_ACCESSED) && !updated) {
                 page->pp_swap_node.r = 1;
