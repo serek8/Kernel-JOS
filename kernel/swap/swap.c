@@ -333,7 +333,6 @@ int find_free_swap_index(int order){
 }
 
 void disc_ahci_write(struct page_info *page, uint64_t addr, int sync){
-    // TODO: check if user task && lock currently held by same core
     while(holding(&disk_lock)) {
         // cprintf("disc_ahci_write: ksched_yield. cur_task=%d\n", cur_task->task_pid);
         ksched_yield();
@@ -471,6 +470,7 @@ void swap_add(struct page_info *page)
     LOCK_LRU(lru_lock);
     // set second chance value
     page->pp_swap_node.r = 1; 
+    list_remove(&page->pp_swap_node.n);
     list_push_left(&lru_pages, &page->pp_swap_node.n);
     // cprintf("lru_added: page=%p, pp_ref=%d, order=%d, content=%p, lru_len=%d\n", page, page->pp_ref, page->pp_order, *((int*)page2kva(page)), list_len(&lru_pages));
     UNLOCK_LRU(lru_lock);

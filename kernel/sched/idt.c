@@ -393,7 +393,7 @@ void int_dispatch(struct int_frame *frame)
 	// 	panic("kernel page fault at rip=%p, cpu=%d\n", frame->rip, this_cpu->cpu_id);
 	// }
 	//  cprintf("frame->int_no=%d\n", frame->int_no);
-	UNLOCK_TASK_SWAPPER(cur_task);
+	if(cur_task->task_type == TASK_TYPE_USER) UNLOCK_TASK_SWAPPER(cur_task);
 	/* Handle processor exceptions:
 	 *  - Fall through to the kernel monitor on a breakpoint.
 	 *  - Dispatch page faults to page_fault_handler().
