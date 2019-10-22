@@ -252,6 +252,7 @@ struct task *task_kernel_alloc(pid_t ppid)
 	task->task_type = TASK_TYPE_KERNEL;
 	task->task_status = TASK_RUNNABLE;
 	task->task_cpunum = this_cpu->cpu_id;
+	spin_init(&task->swap_update_lock, "swap_update_lock");
 	CPU_SET_ALL(task->cpu_mask);
 	task->task_runs = 0;
 	task->schedule_ts = 0;
@@ -709,7 +710,7 @@ void task_run(struct task *task)
 	}
 
 	// This lock prevents swapper from updating this task's PTEs
-	// while(!TRY_LOCK_TASK_SWAPPER(task)) cprintf("PID %d is waiting task_run\n", task->task_pid);
+	while(!TRY_LOCK_TASK_SWAPPER(task)) cprintf("PID %d is waiting task_run\n", task->task_pid);
 
 	task->task_status = TASK_RUNNING;
 	task->task_runs += 1;

@@ -195,12 +195,18 @@ unsigned sys_getcpuid(){
 	return rbx >> 24;
 }
 
+
+/* This is just an example how to use locks in the kernel mode from user task */
 int sys_swap_out(void *addr){
+	while(!TRY_LOCK_TASK_SWAPPER(cur_task));
+
 	cprintf("k1 addr=%p, &addr=%p\n", addr, &addr);
 	ksched_yield();
 	cprintf("k2 addr=%p, &addr=%p\n", addr, &addr);
 	ksched_yield();
 	cprintf("k3 addr=%p\n", addr);
+	
+	UNLOCK_TASK_SWAPPER(cur_task);
 	return 0;
 }
 
@@ -291,7 +297,7 @@ void syscall_handler(uint64_t syscallno, uint64_t a1, uint64_t a2, uint64_t a3,
 	spin_lock(&kernel_lock);
 	#endif
 	// cprintf("syscall_handler, pid=%d", cur_task->task_pid);
-	// UNLOCK_TASK_SWAPPER(cur_task);
+	UNLOCK_TASK_SWAPPER(cur_task);
 
 	this_cpu->gsbase_in_msr = 0;
 	/* Syscall from user mode. */

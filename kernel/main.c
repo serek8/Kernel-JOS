@@ -32,9 +32,6 @@ void kernel_task_example(){
 	int loop_limit = 10;
 	for(int i=0; i<loop_limit; i++){
 		cprintf("[PID %5u] Kernel task running on CPU %u(%d/%d)\n", cur_task->task_pid, this_cpu->cpu_id, i, loop_limit);
-		// cprintf("kernel task loop (%d/%d) | CPU=%d\n", i, loop_limit, sys_getcpuid());
-		
-		// all kernel tasks are non pre-emptive, so we use 'ksched_yield' to give away the CPU
 		ksched_yield();
 	}
 }
@@ -102,7 +99,7 @@ void kmain(struct boot_info *boot_info)
 
 	
 	// TASK_CREATE(user_yield, TASK_TYPE_USER);
-	task_kernel_create(kernel_task_example);
+	// task_kernel_create(kernel_task_example);
 	// cpu_set_t mask;
 	// CPU_ZERO(mask);
 	// CPU_SET(mask, 1);
@@ -114,7 +111,7 @@ void kmain(struct boot_info *boot_info)
 
 #if defined(TEST)
 	TASK_CREATE(TEST, TASK_TYPE_USER);
-	// task_kernel_create(swapd);
+	task_kernel_create(swapd);
 	startup_completed = 1;
 	sched_yield();
 #else
