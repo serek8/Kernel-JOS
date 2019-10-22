@@ -449,6 +449,7 @@ void ksched_yield(){
 		// clean up
 		page_decref(pa2page(PADDR(cur_task->kstack)));
 		cur_task->task_frame = cur_task->task_frame_bak;
+		cur_task->kstack = NULL;
 		return;
 	}
 	isr_kernel_task_stub(this_cpu->cpu_tss.rsp[0]);
