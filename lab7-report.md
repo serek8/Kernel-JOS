@@ -25,5 +25,50 @@ To optimize the calculation time of the badness scores the kernel keeps track of
 
 The circular linked list `lru_pages` keeps track of all user pages in a least recently used manner. It is regularly updated by `swapd` according to the `PAGE_ACCESSED` bit in the PTEs where the page is mapped. When a page needs to be swapped the second chance / CLOCK algorithm is used to efficiently determine the next page to be swapped out. 
 
-### Features
+
+
+### Reverse mapping
+
+In our design, reverse mapping *rmap* is implemented as an object that maintains a list of pointers to *rmap_elem*s. Each *rmap_elem* is a link between *page table entry*, *rmap* and a *task*, as shown on the Figure 1. This approach allows us to replace content of all page table entries that point to the same physical page, when the page is being swapped out. 
+
+![design](report_images/design.png)
+
+Figure 1. Reverse mapping design
+
+#### Swap out
+
+The swap out procedure is performed in the following way:
+
+1. swap_out procedure knows the page_info it should transfer to the disk. Firstly, it extracts *rmap* object from *page_info* and iterate over all the elements in *elem* list.
+   1. For each *rmap_elem* we update the page table entry for each pml4 structure as we store a direct pointer to it in *entry* field of *rmap_elem*. We clear PAGE_PRESENT bit and set the PAGE_SWAP bit in the page table entry and replace the current physical address of the page with an offset within the *global array of disk representation*. The design on the global array is shown below.
+
+![phys](report_images/phys.png)
+
+Figure 2. Global array of disk representation
+
+Below, we present an example(Figure 2) that shows swapping out a page that was used in many page table entries by different tasks. When swapping out a page, we can easily identify all the rmap_elems, as they are stored in *pp_rmap* field of *page_info*. Therefore, we can easily update necessary page table entries.
+
+![ex1](report_images/ex1.png)
+
+Figure 3. Swap out a page that was held by many page table entries
+
+#### Swap in
+
+Swap in mechanism starts from the page table entry that has PAGE_SWAP bit set. We extract offset to the global disk representation and retrive the pointer to the *rmap*. Then we alloc a new page with page_alloc and copy over the data from the disk. Finally we find all the page table entries that we need to update by interating over *elems* list of *rmap*.
+
+
+
+## Features
+
+#### Async operation on disk
+
+Disk opeartions are by far the most expensive part of swapping in and out, so in our implementation, we interrupt the task and move it to the waiting queue whenever it waits wait until the disk operation is completed by the current task or other tasks. However, in our codebase we give user an option to turn on and off the async feature by specifying a relevant flag `SWAP_SYNC_BACKGROUND` or `SWAP_SYNC_DIRECT`.
+
+
+
 ### Limitations
+
+
+
+
+
