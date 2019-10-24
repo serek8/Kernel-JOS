@@ -60,13 +60,28 @@ Swap in mechanism starts from the page table entry that has PAGE_SWAP bit set. W
 
 ## Features
 
-#### Async operation on disk
+#### Asynchronous operation on disk
 
-Disk opeartions are by far the most expensive part of swapping in and out, so in our implementation, we interrupt the task and move it to the waiting queue whenever it waits wait until the disk operation is completed by the current task or other tasks. However, in our codebase we give user an option to turn on and off the async feature by specifying a relevant flag `SWAP_SYNC_BACKGROUND` or `SWAP_SYNC_DIRECT`.
+Disk opeartions are by far the most expensive part of swapping in and out. Therefore, whenever a task needs to wait for the disk device, we interrupt the task and move it to the waiting queue. However, in our codebase we give user an option to turn on and off the async feature by specifying a relevant flag `SWAP_SYNC_BACKGROUND` or `SWAP_SYNC_DIRECT`.
 
 
 
-### Limitations
+#### Managing swapped-out pages
+
+Our implementation supports management of a swapped-out page as it was in RAM memory. So, whenever we want to decrement or increment  the reference counter of a swapped-page, we perform it on swapped-out data. When the reference counter is decremented to 0, we remove the page directly from the disk.
+
+
+
+#### Multi-core support
+
+To support multicore operations, we use locks for synchronisation. In our implementation we have 3 locks for managing different critical sections.
+
+1. Reverse mapping lock
+   Each *rmap* object, which links to a specific *page_info* object, has a lock that is always locked whenever there is any operation involving this page.
+2. Dick device lock
+   Since the access to the disk should be granted only to one execution at one time, we use a lock to prevent other cores to use disk interface at the same time.
+3. Task lock
+   During swapping out a shared page by two different processes, we need to ensure that the task that doesn't trigger swapping, will also update its TLB cache.
 
 
 
