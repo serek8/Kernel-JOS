@@ -78,7 +78,7 @@ To support multicore operations, we use locks for synchronisation. In our implem
 
 1. Reverse mapping lock<br>
    Each *rmap* object, which links to a specific *page_info* object, has a lock that is always locked whenever there is any operation involving this page.
-2. Dick device lock<br>
+2. Disk device lock<br>
    Since the access to the disk should be granted only to one execution at one time, we use a lock to prevent other cores to use disk interface at the same time.
 3. Task lock<br>
    During swapping out a shared page by two different processes, we need to ensure that the task that doesn't trigger swapping, will also update its TLB cache.
