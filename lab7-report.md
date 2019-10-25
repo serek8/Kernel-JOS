@@ -46,7 +46,7 @@ The swap out procedure is performed in the following way:
 
 Figure 2. Global array of disk representation
 
-Below, we present an example(Figure 2) that shows swapping out a page that was used in many page table entries by different tasks. When swapping out a page, we can easily identify all the rmap_elems, as they are stored in *pp_rmap* field of *page_info*. Therefore, we can easily update necessary page table entries.
+Below, we present an example(Figure 3) that shows swapping out a page that was used in many page table entries by different tasks. When swapping out a page, we can easily identify all the rmap_elems, as they are stored in *pp_rmap* field of *page_info*. Therefore, we can easily update necessary page table entries.
 
 ![ex1](report_images/ex1.png)
 
@@ -76,14 +76,16 @@ Our implementation supports management of a swapped-out page as it was in RAM me
 
 To support multicore operations, we use locks for synchronisation. In our implementation we have 3 locks for managing different critical sections.
 
-1. Reverse mapping lock
+1. Reverse mapping lock<br>
    Each *rmap* object, which links to a specific *page_info* object, has a lock that is always locked whenever there is any operation involving this page.
-2. Dick device lock
+2. Dick device lock<br>
    Since the access to the disk should be granted only to one execution at one time, we use a lock to prevent other cores to use disk interface at the same time.
-3. Task lock
+3. Task lock<br>
    During swapping out a shared page by two different processes, we need to ensure that the task that doesn't trigger swapping, will also update its TLB cache.
 
+#### Huge pages
 
+Our kernel supports the swapping out and in of transparent and user huge pages.
 
 
 
