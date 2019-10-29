@@ -1,4 +1,4 @@
-# Kernel for x64-64bit
+# Kernel for Intel x86 64bit
 
 This is an implementation of a simple 64 bit kernel for x86 processors. It's a small project just to learn how operating systems work and understand recent security meltdowns.
 
